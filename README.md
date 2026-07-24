@@ -17,14 +17,14 @@ nix run .
 After publishing the repository:
 
 ```sh
-nix run github:YOUR-USER/t3code-nightly-flake
+nix run github:PJalv/t3code-nightly-flake
 ```
 
 Or use it as an input:
 
 ```nix
 {
-  inputs.t3code-nightly.url = "github:YOUR-USER/t3code-nightly-flake";
+  inputs.t3code-nightly.url = "github:PJalv/t3code-nightly-flake";
 }
 ```
 
