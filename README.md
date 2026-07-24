@@ -41,6 +41,11 @@ The flake follows the `nixpkgs` revision used by `llm-agents.nix` and advertises
 Numtide's binary cache, allowing Codex to be substituted instead of rebuilt
 when the local Nix daemon trusts that cache.
 
+The launcher also passes Electron's `--ignore-certificate-errors` flag for
+development environments that use untrusted HTTPS certificates. This disables
+Chromium certificate verification globally within T3 Code and should only be
+used with development systems you trust.
+
 ## Update policy
 
 Update to the newest nightly at least 48 hours old:

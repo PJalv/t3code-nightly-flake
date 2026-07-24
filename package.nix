@@ -35,11 +35,13 @@ appimageTools.wrapType2 {
         "$desktop_file"
 
       wrapProgram "$out/bin/${pname}" \
+        --add-flags "--ignore-certificate-errors" \
         --set CHROME_DESKTOP "$desktop_basename" \
         --prefix XDG_DATA_DIRS : "$out/share" \
         --prefix PATH : "${lib.makeBinPath [ codex ]}"
     else
       wrapProgram "$out/bin/${pname}" \
+        --add-flags "--ignore-certificate-errors" \
         --prefix XDG_DATA_DIRS : "$out/share" \
         --prefix PATH : "${lib.makeBinPath [ codex ]}"
     fi
