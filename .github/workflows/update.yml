@@ -1,0 +1,37 @@
+name: Update delayed nightly
+
+on:
+  schedule:
+    - cron: "17 18 * * *"
+  workflow_dispatch:
+    inputs:
+      delay_hours:
+        description: Minimum nightly age in hours
+        default: "48"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Select delayed nightly
+        env:
+          T3CODE_DELAY_HOURS: ${{ inputs.delay_hours || '48' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/update.sh
+      - run: nix flake check --print-build-logs
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automation/update-delayed-nightly
+          delete-branch: true
+          commit-message: "t3code: update delayed nightly"
+          title: "t3code: update delayed nightly"
+          body: |
+            Automated update to the newest T3 Code nightly past the configured stabilization delay.
+          labels: dependencies
