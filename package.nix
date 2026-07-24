@@ -57,7 +57,7 @@ appimageTools.wrapType2 {
   };
 
   meta = {
-    description = "T3 Code delayed-nightly with a bundled Codex CLI";
+    description = "Latest T3 Code nightly with a bundled Codex CLI";
     homepage = "https://github.com/pingdotgg/t3code";
     changelog = "https://github.com/pingdotgg/t3code/releases/tag/v${version}";
     license = lib.licenses.mit;

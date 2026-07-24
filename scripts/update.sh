@@ -2,15 +2,43 @@
 set -euo pipefail
 
 repo="pingdotgg/t3code"
-delay_hours="${T3CODE_DELAY_HOURS:-48}"
+delay_hours="${T3CODE_DELAY_HOURS:-0}"
 check_only=false
+
+write_npm_package_files() (
+  set -euo pipefail
+  local version="$1"
+  local tarball_url="$2"
+  local tmpdir
+  tmpdir="$(mktemp -d)"
+  trap 'rm -rf "$tmpdir"' EXIT
+
+  curl -fsSL "$tarball_url" -o "$tmpdir/package.tgz"
+  tar -xzf "$tmpdir/package.tgz" -C "$tmpdir"
+
+  mkdir -p "$root/npm"
+  cp "$tmpdir/package/package.json" "$root/npm/package.json"
+
+  (
+    cd "$tmpdir/package"
+    node -e '
+      const fs = require("fs");
+      const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+      delete pkg.overrides;
+      fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
+    '
+    npm install --package-lock-only --ignore-scripts >/dev/null
+  )
+  cp "$tmpdir/package/package-lock.json" "$root/npm/package-lock.json"
+  echo "refreshed npm metadata for t3@${version}"
+)
 
 usage() {
   cat <<'EOF'
 Usage: scripts/update.sh [--delay-hours HOURS] [--check]
 
-Selects the newest T3 Code nightly that has been published for at least 48
-hours (or HOURS), updates source.json, and refreshes the Nix inputs.
+Selects the newest T3 Code nightly. Use --delay-hours HOURS to require a
+minimum release age. Updates source.json and refreshes the Nix inputs.
 EOF
 }
 
@@ -83,6 +111,14 @@ fi
 
 new_version="$(jq -r '.version' "$candidate")"
 old_version="$(jq -r '.version' "$root/source.json")"
+npm_metadata="$(curl -fsSL "https://registry.npmjs.org/t3/${new_version}")"
+npm_url="$(jq -r '.dist.tarball // empty' <<<"$npm_metadata")"
+npm_hash="$(jq -r '.dist.integrity // empty' <<<"$npm_metadata")"
+
+if [ -z "$npm_url" ] || [ -z "$npm_hash" ]; then
+  echo "matching npm package t3@${new_version} is not ready" >&2
+  exit 1
+fi
 
 if [ "$new_version" = "$old_version" ]; then
   echo "T3 Code already current: ${new_version} (${delay_hours}-hour delay)"
@@ -97,8 +133,14 @@ else
 
   url="$(jq -r '.url' "$candidate")"
   hash="$(nix store prefetch-file --json "$url" | jq -r '.hash')"
-  jq --arg hash "$hash" '. + { hash: $hash }' "$candidate" > "$root/source.json.new"
+  jq \
+    --arg hash "$hash" \
+    --arg npmUrl "$npm_url" \
+    --arg npmHash "$npm_hash" \
+    '. + { hash: $hash, npmUrl: $npmUrl, npmHash: $npmHash }' \
+    "$candidate" > "$root/source.json.new"
   mv "$root/source.json.new" "$root/source.json"
+  write_npm_package_files "$new_version" "$npm_url"
   echo "updated T3 Code: ${old_version} -> ${new_version}"
 fi
 

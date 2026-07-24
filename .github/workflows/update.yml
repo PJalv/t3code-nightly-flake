@@ -1,4 +1,4 @@
-name: Update delayed nightly
+name: Update latest nightly
 
 on:
   schedule:
@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
     inputs:
       delay_hours:
-        description: Minimum nightly age in hours
-        default: "48"
+        description: Minimum nightly age in hours (0 means latest)
+        default: "0"
         required: true
 
 permissions:
@@ -22,7 +22,7 @@ jobs:
       - uses: cachix/install-nix-action@v31
       - name: Select delayed nightly
         env:
-          T3CODE_DELAY_HOURS: ${{ inputs.delay_hours || '48' }}
+          T3CODE_DELAY_HOURS: ${{ inputs.delay_hours || '0' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./scripts/update.sh
       - run: nix flake check --print-build-logs
@@ -30,8 +30,8 @@ jobs:
         with:
           branch: automation/update-delayed-nightly
           delete-branch: true
-          commit-message: "t3code: update delayed nightly"
-          title: "t3code: update delayed nightly"
+          commit-message: "t3code: update latest nightly"
+          title: "t3code: update latest nightly"
           body: |
-            Automated update to the newest T3 Code nightly past the configured stabilization delay.
+            Automated update to the newest T3 Code nightly matching the configured minimum age.
           labels: dependencies

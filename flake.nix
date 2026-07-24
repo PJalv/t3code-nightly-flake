@@ -1,5 +1,5 @@
 {
-  description = "T3 Code delayed-nightly, bundled with Codex from llm-agents.nix";
+  description = "Latest T3 Code nightly, bundled with Codex from llm-agents.nix";
 
   nixConfig = {
     extra-substituters = [ "https://cache.numtide.com" ];
@@ -20,11 +20,17 @@
       t3code = pkgs.callPackage ./package.nix {
         codex = llm-agents.packages.${system}.codex;
       };
+      server = pkgs.callPackage ./package-server.nix {
+        codex = llm-agents.packages.${system}.codex;
+      };
     in
     {
       packages.${system} = {
         default = t3code;
         inherit t3code;
+        inherit server;
+        t3code-server = server;
+        t3 = server;
       };
 
       apps.${system} = {
@@ -34,6 +40,16 @@
           program = "${t3code}/bin/t3code";
           meta = t3code.meta;
         };
+        server = {
+          type = "app";
+          program = "${server}/bin/t3code-server";
+          meta = server.meta;
+        };
+        t3 = {
+          type = "app";
+          program = "${server}/bin/t3";
+          meta = server.meta;
+        };
       };
 
       checks.${system} = {
@@ -41,6 +57,9 @@
         bundled-codex = pkgs.runCommand "t3code-bundled-codex" { } ''
           test -x ${t3code.passthru.codex}/bin/codex
           ${t3code.passthru.codex}/bin/codex --version > "$out"
+        '';
+        server-help = pkgs.runCommand "t3code-server-help" { } ''
+          ${server}/bin/t3code-server --help > "$out"
         '';
       };
     };

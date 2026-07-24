@@ -1,11 +1,10 @@
 # t3code-nightly-flake
 
-T3 Code nightlies for Nix, held back for a short stabilization window and
-bundled with Codex from [`numtide/llm-agents.nix`](https://github.com/numtide/llm-agents.nix).
+The latest T3 Code nightly for Nix, bundled with Codex from
+[`numtide/llm-agents.nix`](https://github.com/numtide/llm-agents.nix).
 
-The default policy selects the newest upstream nightly that is at least 48
-hours old. This is age-based rather than “two release numbers behind,” because
-upstream can publish several nightlies in one day.
+The default policy selects the newest available upstream nightly. An optional
+minimum release age can still be supplied to the updater when desired.
 
 ## Run
 
@@ -35,6 +34,25 @@ The package is available as:
 inputs.t3code-nightly.packages.${pkgs.system}.t3code
 ```
 
+## Headless server
+
+The matching nightly npm server is exposed as `server`, `t3code-server`, and
+`t3`. Run it without opening a local browser with:
+
+```sh
+nix run .#server -- --host 0.0.0.0 --port 13773
+```
+
+Then open the URL printed by the server from a browser. Binding to `0.0.0.0`
+makes it reachable from other machines, so use a firewall or trusted network
+and follow the pairing/authentication details printed at startup.
+
+Use the full upstream CLI with:
+
+```sh
+nix run .#t3 -- --help
+```
+
 The launcher prepends the pinned `llm-agents.nix` Codex package to `PATH`, so
 T3 Code consistently sees the bundled CLI rather than a host installation.
 The flake follows the `nixpkgs` revision used by `llm-agents.nix` and advertises
@@ -48,13 +66,13 @@ used with development systems you trust.
 
 ## Update policy
 
-Update to the newest nightly at least 48 hours old:
+Update to the newest available nightly:
 
 ```sh
 ./scripts/update.sh
 ```
 
-Use a different delay:
+Optionally require a stabilization delay:
 
 ```sh
 ./scripts/update.sh --delay-hours 72

@@ -18,3 +18,5 @@ jobs:
       - run: nix flake check --print-build-logs
       - run: nix build .#t3code --print-build-logs
       - run: test -x result/bin/t3code
+      - run: nix build .#server --print-build-logs
+      - run: test -x result/bin/t3code-server
