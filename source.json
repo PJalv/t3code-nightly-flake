@@ -1,9 +1,9 @@
 {
-  "version": "0.0.29-nightly.20260723.888",
-  "tag": "v0.0.29-nightly.20260723.888",
-  "publishedAt": "2026-07-23T21:43:57Z",
-  "url": "https://github.com/pingdotgg/t3code/releases/download/v0.0.29-nightly.20260723.888/T3-Code-0.0.29-nightly.20260723.888-x86_64.AppImage",
-  "hash": "sha256-UmLHxfsWl9qqOmmi05lFDuDXYzghKOOGMYCIlEinmho=",
-  "npmUrl": "https://registry.npmjs.org/t3/-/t3-0.0.29-nightly.20260723.888.tgz",
-  "npmHash": "sha512-4T4ddsJEhHIPqsAJ7btq2hjHEOhJA6v7QNOLEl32Despgp2fmyn064behzaZ8OdhcNkEC4qr5EZDqcqfCE0QMw=="
+  "version": "0.0.30-nightly.20260728.933",
+  "tag": "v0.0.30-nightly.20260728.933",
+  "publishedAt": "2026-07-28T16:08:59Z",
+  "url": "https://github.com/pingdotgg/t3code/releases/download/v0.0.30-nightly.20260728.933/T3-Code-0.0.30-nightly.20260728.933-x86_64.AppImage",
+  "hash": "sha256-t24DQD08kuN4oyzc28YuAjc5noh59o0y6ejvA2W56hQ=",
+  "npmUrl": "https://registry.npmjs.org/t3/-/t3-0.0.30-nightly.20260728.933.tgz",
+  "npmHash": "sha512-vPraSliI/prqpWUBFRXKx6ka5ZkfDLeiOkLL4DFrp5n6m1qYt9H4pXJq9xyQvneutZhhkM3EFEH39SB9Kwu8CA=="
 }
