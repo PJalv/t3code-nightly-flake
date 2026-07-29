@@ -34,4 +34,3 @@ jobs:
           title: "t3code: update latest nightly"
           body: |
             Automated update to the newest T3 Code nightly matching the configured minimum age.
-          labels: dependencies
