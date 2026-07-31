@@ -9,7 +9,7 @@
     "t3": "./dist/bin.mjs"
   },
   "type": "module",
-  "version": "0.0.32-nightly.20260730.958",
+  "version": "0.0.32-nightly.20260731.966",
   "engines": {
     "node": "^22.16 || ^23.11 || >=24.10"
   },
@@ -30,19 +30,19 @@
     "yaml": "^2.9.0"
   },
   "overrides": {
-    "@clerk/backend": "3.13.0",
-    "@clerk/clerk-js": "6.25.7",
+    "@clerk/backend": "3.14.0",
+    "@clerk/clerk-js": "6.25.12",
     "@clerk/clerk-js>@base-org/account": "-",
     "@clerk/clerk-js>@coinbase/wallet-sdk": "-",
     "@clerk/clerk-js>@solana/wallet-adapter-base": "-",
     "@clerk/clerk-js>@solana/wallet-adapter-react": "-",
     "@clerk/clerk-js>@solana/wallet-standard": "-",
     "@clerk/clerk-js>@wallet-standard/core": "-",
-    "@clerk/electron": "0.0.18",
+    "@clerk/electron": "0.0.24",
     "@clerk/electron-passkeys": "0.0.3",
-    "@clerk/expo": "4.0.2",
-    "@clerk/react": "6.12.7",
-    "@clerk/shared": "4.25.7",
+    "@clerk/expo": "4.1.2",
+    "@clerk/react": "6.12.9",
+    "@clerk/shared": "4.25.9",
     "@effect/atom-react": "4.0.0-beta.102",
     "@effect/platform-bun": "4.0.0-beta.102",
     "@effect/platform-node": "4.0.0-beta.102",
