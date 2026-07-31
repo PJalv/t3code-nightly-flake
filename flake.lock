@@ -98,7 +98,8 @@
         "nixpkgs": [
           "llm-agents",
           "nixpkgs"
-        ]
+        ],
+        "t3code-source": "t3code-source"
       }
     },
     "systems": {
@@ -113,6 +114,23 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "t3code-source": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1785531555,
+        "narHash": "sha256-wMWg85rlWSMZYmIwMDkCG11dgZgPqyC1hZ3Nk2FJDTo=",
+        "owner": "PJalv",
+        "repo": "t3code",
+        "rev": "2d2c8a27d5ffb39cd902c2a156507dce01005973",
+        "type": "github"
+      },
+      "original": {
+        "owner": "PJalv",
+        "repo": "t3code",
+        "rev": "2d2c8a27d5ffb39cd902c2a156507dce01005973",
         "type": "github"
       }
     },

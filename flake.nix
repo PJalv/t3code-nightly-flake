@@ -11,20 +11,32 @@
   inputs = {
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
+    t3code-source = {
+      url = "github:PJalv/t3code/2d2c8a27d5ffb39cd902c2a156507dce01005973";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, llm-agents }:
+  outputs = { self, nixpkgs, llm-agents, t3code-source }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
+      lib = pkgs.lib;
+      source = lib.importJSON ./source.json;
+      sourceAssets = pkgs.callPackage ./package-source.nix {
+        src = t3code-source;
+        inherit (source) version;
+      };
       t3code = pkgs.callPackage ./package.nix {
         codex = llm-agents.packages.${system}.codex;
+        inherit sourceAssets;
       };
       t3codeWithCheckpoints = t3code.override {
         disableCheckpoints = false;
       };
       server = pkgs.callPackage ./package-server.nix {
         codex = llm-agents.packages.${system}.codex;
+        inherit sourceAssets;
       };
       serverWithCheckpoints = server.override {
         disableCheckpoints = false;
@@ -39,6 +51,7 @@
         t3code-server = server;
         t3 = server;
         server-with-checkpoints = serverWithCheckpoints;
+        source-assets = sourceAssets;
       };
 
       apps.${system} = {
@@ -75,6 +88,12 @@
         bundled-codex = pkgs.runCommand "t3code-bundled-codex" { } ''
           test -x ${t3code.passthru.codex}/bin/codex
           ${t3code.passthru.codex}/bin/codex --version > "$out"
+        '';
+        source-features = pkgs.runCommand "t3code-source-features" { } ''
+          grep -q providerNativeFileChangesEnabled ${sourceAssets}/apps/server/dist/bin.mjs
+          grep -q T3_DISABLE_CHECKPOINTS ${sourceAssets}/apps/server/dist/bin.mjs
+          grep -R -q "Provider-native file changes" ${sourceAssets}/apps/server/dist/client
+          touch "$out"
         '';
         server-help = pkgs.runCommand "t3code-server-help" { } ''
           ${server}/bin/t3code-server --help > "$out"

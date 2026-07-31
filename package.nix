@@ -3,9 +3,9 @@
 , asar
 , fetchurl
 , makeWrapper
-, nodejs_24
 , runCommand
 , codex
+, sourceAssets
 , disableCheckpoints ? true
 }:
 
@@ -21,34 +21,43 @@ let
   appimageContents = appimageTools.extractType2 {
     inherit pname version src;
   };
-  patchedAppimageContents = runCommand "${pname}-${version}-checkpoint-patched" {
-    nativeBuildInputs = [ nodejs_24 ];
+  sourceAppimageContents = runCommand "${pname}-${version}-source-patched" {
+    nativeBuildInputs = [ asar ];
   } ''
     mkdir -p "$out"
     cp -a ${appimageContents}/. "$out/"
-    chmod u+w "$out/resources/app.asar"
+    chmod -R u+w "$out/resources"
 
-    node ${./scripts/patch-checkpoint-asar.mjs} \
-      ${asar}/lib/node_modules/@electron/asar/lib/disk.js \
+    mkdir app
+    asar extract "$out/resources/app.asar" app
+
+    rm -rf app/apps/server/dist app/apps/desktop/dist-electron
+    cp -r ${sourceAssets}/apps/server/dist app/apps/server/
+    cp -r ${sourceAssets}/apps/desktop/dist-electron app/apps/desktop/
+
+    rm -f "$out/resources/app.asar"
+    rm -rf "$out/resources/app.asar.unpacked"
+    asar pack \
+      --unpack-dir 'node_modules/{@ff-labs,@msgpackr-extract,@yuuang,node-pty}' \
+      app \
       "$out/resources/app.asar"
+
+    test -f "$out/resources/app.asar"
+    test -d "$out/resources/app.asar.unpacked/node_modules/node-pty"
   '';
-  runtimeAppimageContents = if disableCheckpoints then
-    patchedAppimageContents
-  else
-    appimageContents;
   checkpointWrapperArgs = lib.optionalString disableCheckpoints
     "--set T3_DISABLE_CHECKPOINTS 1";
 in
 appimageTools.wrapAppImage {
   inherit pname version;
-  contents = runtimeAppimageContents;
+  contents = sourceAppimageContents;
   nativeBuildInputs = [ makeWrapper ];
 
   extraInstallCommands = ''
     mkdir -p "$out/share"
 
-    if [ -d ${runtimeAppimageContents}/usr/share ]; then
-      cp -r ${runtimeAppimageContents}/usr/share/* "$out/share/"
+    if [ -d ${sourceAppimageContents}/usr/share ]; then
+      cp -r ${sourceAppimageContents}/usr/share/* "$out/share/"
     fi
 
     desktop_file="$(find "$out/share" -type f -name '*.desktop' | head -n 1 || true)"
@@ -75,13 +84,13 @@ appimageTools.wrapAppImage {
         --prefix PATH : "${lib.makeBinPath [ codex ]}"
     fi
 
-    if [ -f ${runtimeAppimageContents}/.DirIcon ]; then
-      install -Dm444 ${runtimeAppimageContents}/.DirIcon "$out/share/pixmaps/${pname}.png"
+    if [ -f ${sourceAppimageContents}/.DirIcon ]; then
+      install -Dm444 ${sourceAppimageContents}/.DirIcon "$out/share/pixmaps/${pname}.png"
     fi
   '';
 
   passthru = {
-    inherit codex disableCheckpoints;
+    inherit codex disableCheckpoints sourceAppimageContents sourceAssets;
     release = source;
   };
 
@@ -92,6 +101,6 @@ appimageTools.wrapAppImage {
     license = lib.licenses.mit;
     mainProgram = pname;
     platforms = [ "x86_64-linux" ];
-    sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
+    sourceProvenance = with lib.sourceTypes; [ fromSource binaryNativeCode ];
   };
 }

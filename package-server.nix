@@ -7,6 +7,7 @@
 , nodejs_24
 , openssh
 , codex
+, sourceAssets
 , disableCheckpoints ? true
 }:
 
@@ -58,38 +59,8 @@ buildNpmPackage {
       fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
     '
 
-    node <<'NODE'
-    const fs = require("fs");
-    const bundlePath = "dist/bin.mjs";
-    const source = fs.readFileSync(bundlePath, "utf8");
-    const regionStartMarker =
-      "//#region src/orchestration/Layers/CheckpointReactor.ts";
-    const regionEndMarker =
-      "//#region src/orchestration/Layers/ThreadDeletionReactor.ts";
-    const regionStart = source.indexOf(regionStartMarker);
-    const regionEnd = source.indexOf(regionEndMarker, regionStart);
-
-    if (regionStart < 0 || regionEnd < 0) {
-      throw new Error("T3 Code checkpoint reactor region was not found");
-    }
-
-    const before = source.slice(0, regionStart);
-    const region = source.slice(regionStart, regionEnd);
-    const after = source.slice(regionEnd);
-    const needle = 'start: Effect.fn("start")(function* () {';
-    const replacement =
-      needle + ' if (process.env.T3_DISABLE_CHECKPOINTS === "1") return;';
-    const occurrences = region.split(needle).length - 1;
-
-    if (occurrences !== 1) {
-      throw new Error(
-        "Expected exactly one checkpoint reactor start function, found " +
-          occurrences,
-      );
-    }
-
-    fs.writeFileSync(bundlePath, before + region.replace(needle, replacement) + after);
-    NODE
+    rm -rf dist
+    cp -r ${sourceAssets}/apps/server/dist ./dist
 
     test -f ${lib.escapeShellArg binPath}
   '';
@@ -115,7 +86,7 @@ buildNpmPackage {
   '';
 
   passthru = {
-    inherit codex disableCheckpoints;
+    inherit codex disableCheckpoints sourceAssets;
     release = source;
   };
 

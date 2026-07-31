@@ -1,7 +1,11 @@
 # t3code-nightly-flake
 
-The latest T3 Code nightly for Nix, bundled with Codex from
+The latest T3 Code nightly runtime for Nix, bundled with Codex from
 [`numtide/llm-agents.nix`](https://github.com/numtide/llm-agents.nix).
+
+The web, server, and desktop JavaScript bundles are built from the pinned
+[`PJalv/t3code`](https://github.com/PJalv/t3code) source fork. The upstream
+AppImage supplies Electron and its prebuilt native modules.
 
 The default policy selects the newest available upstream nightly. An optional
 minimum release age can still be supplied to the updater when desired.
@@ -46,8 +50,13 @@ nix run .#server -- --host 0.0.0.0 --port 13773
 The server packages disable T3 Code's hidden Git checkpoints by default. Those
 checkpoints run `git add -A` against the project workspace at turn boundaries,
 which can be prohibitively expensive for large repositories containing build
-artifacts. The package patches the server to honor
-`T3_DISABLE_CHECKPOINTS=1`, and its wrappers set that variable automatically.
+artifacts. The source build honors `T3_DISABLE_CHECKPOINTS=1`, and its wrappers
+set that variable automatically.
+
+The patched source also adds **Provider-native file changes** under Settings →
+Beta. When enabled, T3 Code records file diffs reported by Codex and OpenCode,
+including absolute paths outside the selected project and files in non-Git
+directories. This review feature is independent from Git checkpoints.
 
 To retain upstream checkpoint behavior, use the explicit opt-in variant:
 
