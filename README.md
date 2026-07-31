@@ -55,6 +55,13 @@ To retain upstream checkpoint behavior, use the explicit opt-in variant:
 nix run .#server-with-checkpoints -- --host 0.0.0.0 --port 13773
 ```
 
+The default desktop package also disables checkpoints. To run the desktop
+application with upstream checkpoint behavior, use:
+
+```sh
+nix run .#desktop-with-checkpoints
+```
+
 Then open the URL printed by the server from a browser. Binding to `0.0.0.0`
 makes it reachable from other machines, so use a firewall or trusted network
 and follow the pairing/authentication details printed at startup.

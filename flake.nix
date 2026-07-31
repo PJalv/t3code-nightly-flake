@@ -20,6 +20,9 @@
       t3code = pkgs.callPackage ./package.nix {
         codex = llm-agents.packages.${system}.codex;
       };
+      t3codeWithCheckpoints = t3code.override {
+        disableCheckpoints = false;
+      };
       server = pkgs.callPackage ./package-server.nix {
         codex = llm-agents.packages.${system}.codex;
       };
@@ -31,6 +34,7 @@
       packages.${system} = {
         default = t3code;
         inherit t3code;
+        desktop-with-checkpoints = t3codeWithCheckpoints;
         inherit server;
         t3code-server = server;
         t3 = server;
@@ -43,6 +47,11 @@
           type = "app";
           program = "${t3code}/bin/t3code";
           meta = t3code.meta;
+        };
+        desktop-with-checkpoints = {
+          type = "app";
+          program = "${t3codeWithCheckpoints}/bin/t3code";
+          meta = t3codeWithCheckpoints.meta;
         };
         server = {
           type = "app";

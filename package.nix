@@ -1,4 +1,13 @@
-{ lib, appimageTools, fetchurl, makeWrapper, codex }:
+{ lib
+, appimageTools
+, asar
+, fetchurl
+, makeWrapper
+, nodejs_24
+, runCommand
+, codex
+, disableCheckpoints ? true
+}:
 
 let
   source = lib.importJSON ./source.json;
@@ -12,16 +21,34 @@ let
   appimageContents = appimageTools.extractType2 {
     inherit pname version src;
   };
+  patchedAppimageContents = runCommand "${pname}-${version}-checkpoint-patched" {
+    nativeBuildInputs = [ nodejs_24 ];
+  } ''
+    mkdir -p "$out"
+    cp -a ${appimageContents}/. "$out/"
+    chmod u+w "$out/resources/app.asar"
+
+    node ${./scripts/patch-checkpoint-asar.mjs} \
+      ${asar}/lib/node_modules/@electron/asar/lib/disk.js \
+      "$out/resources/app.asar"
+  '';
+  runtimeAppimageContents = if disableCheckpoints then
+    patchedAppimageContents
+  else
+    appimageContents;
+  checkpointWrapperArgs = lib.optionalString disableCheckpoints
+    "--set T3_DISABLE_CHECKPOINTS 1";
 in
-appimageTools.wrapType2 {
-  inherit pname version src;
+appimageTools.wrapAppImage {
+  inherit pname version;
+  contents = runtimeAppimageContents;
   nativeBuildInputs = [ makeWrapper ];
 
   extraInstallCommands = ''
     mkdir -p "$out/share"
 
-    if [ -d ${appimageContents}/usr/share ]; then
-      cp -r ${appimageContents}/usr/share/* "$out/share/"
+    if [ -d ${runtimeAppimageContents}/usr/share ]; then
+      cp -r ${runtimeAppimageContents}/usr/share/* "$out/share/"
     fi
 
     desktop_file="$(find "$out/share" -type f -name '*.desktop' | head -n 1 || true)"
@@ -37,22 +64,24 @@ appimageTools.wrapType2 {
       wrapProgram "$out/bin/${pname}" \
         --add-flags "--ignore-certificate-errors" \
         --set CHROME_DESKTOP "$desktop_basename" \
+        ${checkpointWrapperArgs} \
         --prefix XDG_DATA_DIRS : "$out/share" \
         --prefix PATH : "${lib.makeBinPath [ codex ]}"
     else
       wrapProgram "$out/bin/${pname}" \
         --add-flags "--ignore-certificate-errors" \
+        ${checkpointWrapperArgs} \
         --prefix XDG_DATA_DIRS : "$out/share" \
         --prefix PATH : "${lib.makeBinPath [ codex ]}"
     fi
 
-    if [ -f ${appimageContents}/.DirIcon ]; then
-      install -Dm444 ${appimageContents}/.DirIcon "$out/share/pixmaps/${pname}.png"
+    if [ -f ${runtimeAppimageContents}/.DirIcon ]; then
+      install -Dm444 ${runtimeAppimageContents}/.DirIcon "$out/share/pixmaps/${pname}.png"
     fi
   '';
 
   passthru = {
-    inherit codex;
+    inherit codex disableCheckpoints;
     release = source;
   };
 
