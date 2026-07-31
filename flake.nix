@@ -23,6 +23,9 @@
       server = pkgs.callPackage ./package-server.nix {
         codex = llm-agents.packages.${system}.codex;
       };
+      serverWithCheckpoints = server.override {
+        disableCheckpoints = false;
+      };
     in
     {
       packages.${system} = {
@@ -31,6 +34,7 @@
         inherit server;
         t3code-server = server;
         t3 = server;
+        server-with-checkpoints = serverWithCheckpoints;
       };
 
       apps.${system} = {
@@ -49,6 +53,11 @@
           type = "app";
           program = "${server}/bin/t3";
           meta = server.meta;
+        };
+        server-with-checkpoints = {
+          type = "app";
+          program = "${serverWithCheckpoints}/bin/t3code-server";
+          meta = serverWithCheckpoints.meta;
         };
       };
 

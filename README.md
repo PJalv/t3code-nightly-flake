@@ -43,6 +43,18 @@ The matching nightly npm server is exposed as `server`, `t3code-server`, and
 nix run .#server -- --host 0.0.0.0 --port 13773
 ```
 
+The server packages disable T3 Code's hidden Git checkpoints by default. Those
+checkpoints run `git add -A` against the project workspace at turn boundaries,
+which can be prohibitively expensive for large repositories containing build
+artifacts. The package patches the server to honor
+`T3_DISABLE_CHECKPOINTS=1`, and its wrappers set that variable automatically.
+
+To retain upstream checkpoint behavior, use the explicit opt-in variant:
+
+```sh
+nix run .#server-with-checkpoints -- --host 0.0.0.0 --port 13773
+```
+
 Then open the URL printed by the server from a browser. Binding to `0.0.0.0`
 makes it reachable from other machines, so use a firewall or trusted network
 and follow the pairing/authentication details printed at startup.
