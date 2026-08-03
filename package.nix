@@ -54,19 +54,26 @@ let
         test -d "$out/resources/app.asar.unpacked/node_modules/node-pty"
 
         find "$out" -type f -print0 | while IFS= read -r -d $'\0' elf; do
-          if patchelf --print-interpreter "$elf" >/dev/null 2>&1; then
+          if patchelf --print-needed "$elf" >/dev/null 2>&1; then
             chmod u+w "$elf"
             patchelf \
-              --set-interpreter ${pkgs.stdenv.cc.bintools.dynamicLinker} \
               --force-rpath \
               --add-rpath "$out/usr/lib:${runtimeLibraryPath}" \
               "$elf"
+
+            if patchelf --print-interpreter "$elf" >/dev/null 2>&1; then
+              patchelf \
+                --set-interpreter ${pkgs.stdenv.cc.bintools.dynamicLinker} \
+                "$elf"
+            fi
           fi
         done
       '';
   checkpointWrapperArgs = lib.optionalString disableCheckpoints "--set T3_DISABLE_CHECKPOINTS 1";
   runtimeLibraryPath = lib.makeLibraryPath (
-    appimageTools.defaultFhsEnvArgs.targetPkgs pkgs ++ appimageTools.defaultFhsEnvArgs.multiPkgs pkgs
+    appimageTools.defaultFhsEnvArgs.targetPkgs pkgs
+    ++ appimageTools.defaultFhsEnvArgs.multiPkgs pkgs
+    ++ [ pkgs.stdenv.cc.cc.lib ]
   );
 in
 runCommand "${pname}-${version}"
