@@ -26,7 +26,10 @@ let
   sourceAppimageContents =
     runCommand "${pname}-${version}-source-patched"
       {
-        nativeBuildInputs = [ asar ];
+        nativeBuildInputs = [
+          asar
+          pkgs.patchelf
+        ];
       }
       ''
         mkdir -p "$out"
@@ -49,6 +52,17 @@ let
 
         test -f "$out/resources/app.asar"
         test -d "$out/resources/app.asar.unpacked/node_modules/node-pty"
+
+        find "$out" -type f -print0 | while IFS= read -r -d $'\0' elf; do
+          if patchelf --print-interpreter "$elf" >/dev/null 2>&1; then
+            chmod u+w "$elf"
+            patchelf \
+              --set-interpreter ${pkgs.stdenv.cc.bintools.dynamicLinker} \
+              --force-rpath \
+              --add-rpath "$out/usr/lib:${runtimeLibraryPath}" \
+              "$elf"
+          fi
+        done
       '';
   checkpointWrapperArgs = lib.optionalString disableCheckpoints "--set T3_DISABLE_CHECKPOINTS 1";
   runtimeLibraryPath = lib.makeLibraryPath (
@@ -100,10 +114,12 @@ runCommand "${pname}-${version}"
         "$desktop_file"
     fi
 
-    makeWrapper ${sourceAppimageContents}/AppRun "$out/bin/${pname}" \
+    makeWrapper ${sourceAppimageContents}/${pname} "$out/bin/${pname}" \
       --add-flags "--ignore-certificate-errors" \
       ${checkpointWrapperArgs} \
-      --prefix LD_LIBRARY_PATH : "${runtimeLibraryPath}" \
+      --set APPDIR "${sourceAppimageContents}" \
+      --set GSETTINGS_SCHEMA_DIR "${sourceAppimageContents}/usr/share/glib-2.0/schemas" \
+      --run 'if ! ${pkgs.util-linux}/bin/unshare -Ur true 2>/dev/null; then set -- --no-sandbox "$@"; fi' \
       --prefix XDG_DATA_DIRS : "$out/share" \
       --prefix PATH : "${lib.makeBinPath [ codex ]}"
 
