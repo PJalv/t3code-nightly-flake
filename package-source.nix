@@ -23,7 +23,7 @@ stdenvNoCC.mkDerivation {
       "t3..."
       "@t3tools/desktop..."
     ];
-    hash = "sha256-575YF8GxePRqkFi4bQvXnQLk5TKpSt7uJmb3Z/9LPUM=";
+    hash = "sha256-T4cchShV3HI4jWWw1n6oENciExjQKupN9P1YEIbIbcc=";
   };
 
   pnpmWorkspaces = [
