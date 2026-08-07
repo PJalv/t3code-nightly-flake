@@ -23,7 +23,7 @@ stdenvNoCC.mkDerivation {
       "t3..."
       "@t3tools/desktop..."
     ];
-    hash = "sha256-T4cchShV3HI4jWWw1n6oENciExjQKupN9P1YEIbIbcc=";
+    hash = "sha256-HnqOErzfioPUiMIGLndetFLv+pTAsEL/OvhwsheVZd8=";
   };
 
   pnpmWorkspaces = [
@@ -51,8 +51,13 @@ stdenvNoCC.mkDerivation {
       apps/web/package.json \
       apps/desktop/package.json
     do
-      substituteInPlace "$packageJson" \
-        --replace-fail '"version": "0.0.31"' '"version": "${version}"'
+      node -e '
+        const fs = require("fs");
+        const [file, version] = process.argv.slice(1);
+        const packageJson = JSON.parse(fs.readFileSync(file, "utf8"));
+        packageJson.version = version;
+        fs.writeFileSync(file, JSON.stringify(packageJson, null, 2) + "\n");
+      ' "$packageJson" "${version}"
     done
   '';
 

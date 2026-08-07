@@ -9,7 +9,7 @@
     "t3": "./dist/bin.mjs"
   },
   "type": "module",
-  "version": "0.0.32-nightly.20260806.1015",
+  "version": "0.0.33-nightly.20260807.1026",
   "engines": {
     "node": "^22.16 || ^23.11 || >=24.10"
   },
@@ -31,7 +31,7 @@
   },
   "overrides": {
     "@clerk/backend": "3.14.0",
-    "@clerk/clerk-js": "6.25.12",
+    "@clerk/clerk-js": "6.25.13",
     "@clerk/clerk-js>@base-org/account": "-",
     "@clerk/clerk-js>@coinbase/wallet-sdk": "-",
     "@clerk/clerk-js>@solana/wallet-adapter-base": "-",
@@ -40,9 +40,9 @@
     "@clerk/clerk-js>@wallet-standard/core": "-",
     "@clerk/electron": "0.0.24",
     "@clerk/electron-passkeys": "0.0.3",
-    "@clerk/expo": "4.1.2",
-    "@clerk/react": "6.12.9",
-    "@clerk/shared": "4.25.9",
+    "@clerk/expo": "4.2.0",
+    "@clerk/react": "6.12.10",
+    "@clerk/shared": "4.25.10",
     "@effect/atom-react": "4.0.0-beta.103",
     "@effect/platform-bun": "4.0.0-beta.103",
     "@effect/platform-node": "4.0.0-beta.103",
