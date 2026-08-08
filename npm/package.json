@@ -9,7 +9,7 @@
     "t3": "./dist/bin.mjs"
   },
   "type": "module",
-  "version": "0.0.33-nightly.20260807.1026",
+  "version": "0.0.33-nightly.20260808.1035",
   "engines": {
     "node": "^22.16 || ^23.11 || >=24.10"
   },
