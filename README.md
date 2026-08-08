@@ -54,7 +54,7 @@ artifacts. The source build honors `T3_DISABLE_CHECKPOINTS=1`, and its wrappers
 set that variable automatically.
 
 The patched source also adds **Provider-native file changes** under Settings →
-Beta. When enabled, T3 Code records file diffs reported by Codex and OpenCode,
+General. When enabled, T3 Code records file diffs reported by Codex and OpenCode,
 including absolute paths outside the selected project and files in non-Git
 directories. This review feature is independent from Git checkpoints.
 
