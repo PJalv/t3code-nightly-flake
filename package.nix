@@ -130,7 +130,7 @@ runCommand "${pname}-${version}"
       --set GSETTINGS_SCHEMA_DIR "${sourceAppimageContents}/usr/share/glib-2.0/schemas" \
       --run 'if ! ${pkgs.util-linux}/bin/unshare -Ur true 2>/dev/null; then set -- --no-sandbox "$@"; fi' \
       --prefix XDG_DATA_DIRS : "$out/share" \
-      --prefix PATH : "${lib.makeBinPath [ codex pi ]}"
+      --prefix PATH : "${lib.makeBinPath [ codex pi pkgs.lsof ]}"
 
     if [ -n "$desktop_file" ]; then
       wrapProgram "$out/bin/${pname}" \

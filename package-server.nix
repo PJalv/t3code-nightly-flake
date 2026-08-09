@@ -6,6 +6,7 @@
 , makeWrapper
 , nodejs_24
 , openssh
+, lsof
 , codex
 , pi
 , sourceAssets
@@ -18,7 +19,7 @@ let
   packageJsonForNpm = builtins.removeAttrs packageJson [ "overrides" ];
   packageLockJson = lib.importJSON ./npm/package-lock.json;
   binPath = lib.removePrefix "./" packageJson.bin.t3;
-  runtimePath = lib.makeBinPath [ codex pi git openssh ];
+  runtimePath = lib.makeBinPath [ codex pi git openssh lsof ];
   checkpointWrapperArgs = lib.optionalString disableCheckpoints
     "--set T3_DISABLE_CHECKPOINTS 1";
 in
