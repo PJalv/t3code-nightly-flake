@@ -12,7 +12,7 @@
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
     t3code-source = {
-      url = "github:PJalv/t3code/70ff50c84ca71a2ad92a85f4adbc8b61925d1664";
+      url = "github:PJalv/t3code/e4c2d9c312557da29a8e7d5ecde6a16b5a81c03f";
       flake = false;
     };
   };
