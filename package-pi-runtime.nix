@@ -20,7 +20,15 @@
     substituteInPlace "$out/index.ts" \
       --replace-fail \
         'const agents = discovery.agents;' \
-        'const agents = discovery.agents.map((agent) => ({ ...agent, model: agent.model ?? (ctx.model ? ctx.model.provider + "/" + ctx.model.id : undefined) }));'
+        'const agents = discovery.agents.map((agent) => ({ ...agent, model: agent.model ?? (ctx.model ? ctx.model.provider + "/" + ctx.model.id : undefined) }));' \
+      --replace-fail \
+        'export default function (pi: ExtensionAPI) {' \
+        'export default function (pi: ExtensionAPI) {
+	const userAgentNames = discoverAgents(process.cwd(), "user").agents.map((agent) => agent.name).join(", ") || "none";' \
+      --replace-fail \
+        '"Modes: single (agent + task), parallel (tasks array), chain (sequential with {previous} placeholder).",' \
+        '"Modes: single (agent + task), parallel (tasks array), chain (sequential with {previous} placeholder).",
+			`Available user agent names: ''${userAgentNames}. Use an exact listed name for every task; never use "default".`,'
 
     substituteInPlace "$out/agents.ts" \
       --replace-fail \
