@@ -91,8 +91,8 @@ outside its core:
   contains `mcp` takes precedence over the bundled adapter.
 - Pi's reference `subagent` extension provides single, parallel, and chained
   child agents. A user package or extension whose name contains `subagent`
-  replaces the bundled extension. Within the bundled extension, user-defined
-  agents take precedence over the scout, planner, reviewer, and worker defaults.
+  replaces the bundled extension. The bundled extension provides one neutral
+  `default` agent and also discovers user-defined and project-local agents.
 
 Both extensions continue to read normal user and project Pi configuration.
 T3 Code translates their activity into MCP tool rows, the Agents panel, and

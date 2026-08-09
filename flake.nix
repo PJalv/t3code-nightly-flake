@@ -103,8 +103,9 @@
           test -f ${piRuntime.passthru.piMcpAdapter}/lib/pi-mcp-adapter/index.ts
           test -f ${piRuntime.passthru.subagentExtension}/index.ts
           grep -q 'agent.model ??' ${piRuntime.passthru.subagentExtension}/index.ts
-          grep -q 'never use "default"' ${piRuntime.passthru.subagentExtension}/index.ts
-          grep -q '^tools:.*mcp' ${piRuntime.passthru.subagentExtension}/agents/scout.md
+          grep -q 'Use "default" unless' ${piRuntime.passthru.subagentExtension}/index.ts
+          test -f ${piRuntime.passthru.subagentExtension}/agents/default.md
+          test "$(find ${piRuntime.passthru.subagentExtension}/agents -maxdepth 1 -name '*.md' | wc -l)" -eq 1
           ${t3code.passthru.pi}/bin/pi --version > "$out"
         '';
         source-features = pkgs.runCommand "t3code-source-features" { } ''

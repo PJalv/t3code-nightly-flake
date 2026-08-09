@@ -11,11 +11,15 @@
     cp -r ${pi}/libexec/pi/examples/extensions/subagent/. "$out/"
     chmod -R u+w "$out"
 
-    # The upstream examples pin Anthropic models. Let each child use the
-    # user's configured Pi model instead, and expose the MCP gateway to all
-    # bundled read-only roles.
-    sed -i '/^model:/d' "$out"/agents/*.md
-    sed -i '/^tools:/ s/$/, mcp/' "$out"/agents/*.md
+    # Provide one neutral built-in role instead of Pi's specialized example
+    # roles. The child inherits the active parent model and all available tools.
+    rm -rf "$out/agents"
+    mkdir -p "$out/agents"
+    substitute ${pi}/libexec/pi/examples/extensions/subagent/agents/worker.md "$out/agents/default.md" \
+      --replace-fail 'name: worker' 'name: default' \
+      --replace-fail 'description: General-purpose subagent with full capabilities, isolated context' 'description: General-purpose subagent with full capabilities and isolated context' \
+      --replace-fail 'You are a worker agent with full capabilities.' 'You are the default subagent with full capabilities.'
+    sed -i '/^model:/d' "$out/agents/default.md"
 
     substituteInPlace "$out/index.ts" \
       --replace-fail \
@@ -28,7 +32,7 @@
       --replace-fail \
         '"Modes: single (agent + task), parallel (tasks array), chain (sequential with {previous} placeholder).",' \
         '"Modes: single (agent + task), parallel (tasks array), chain (sequential with {previous} placeholder).",
-			`Available user agent names: ''${userAgentNames}. Use an exact listed name for every task; never use "default".`,'
+			`Available user agent names: ''${userAgentNames}. Use "default" unless the user requests a specialized agent by name.`,'
 
     substituteInPlace "$out/agents.ts" \
       --replace-fail \
