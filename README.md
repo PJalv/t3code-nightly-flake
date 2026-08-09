@@ -1,6 +1,6 @@
 # t3code-nightly-flake
 
-The latest T3 Code nightly runtime for Nix, bundled with Codex from
+The latest T3 Code nightly runtime for Nix, bundled with Codex and Pi from
 [`numtide/llm-agents.nix`](https://github.com/numtide/llm-agents.nix).
 
 The web, server, and desktop JavaScript bundles are built from the pinned
@@ -81,11 +81,26 @@ Use the full upstream CLI with:
 nix run .#t3 -- --help
 ```
 
-The launcher prepends the pinned `llm-agents.nix` Codex package to `PATH`, so
-T3 Code consistently sees the bundled CLI rather than a host installation.
+The launcher prepends the pinned `llm-agents.nix` Codex and Pi packages to
+`PATH`, so T3 Code consistently sees the bundled CLIs rather than host
+installations. The Pi wrapper supplies two baseline capabilities that Pi keeps
+outside its core:
+
+- `pi-mcp-adapter` provides lazy MCP server discovery, calls, OAuth, and output
+  limits. An installed `pi-mcp-adapter` package or an extension whose file name
+  contains `mcp` takes precedence over the bundled adapter.
+- Pi's reference `subagent` extension provides single, parallel, and chained
+  child agents. A user package or extension whose name contains `subagent`
+  replaces the bundled extension. Within the bundled extension, user-defined
+  agents take precedence over the scout, planner, reviewer, and worker defaults.
+
+Both extensions continue to read normal user and project Pi configuration.
+T3 Code translates their activity into MCP tool rows, the Agents panel, and
+per-agent usage without replacing `~/.pi/agent`.
+
 The flake follows the `nixpkgs` revision used by `llm-agents.nix` and advertises
-Numtide's binary cache, allowing Codex to be substituted instead of rebuilt
-when the local Nix daemon trusts that cache.
+Numtide's binary cache, allowing the agent CLIs to be substituted instead of
+rebuilt when the local Nix daemon trusts that cache.
 
 The launcher also passes Electron's `--ignore-certificate-errors` flag for
 development environments that use untrusted HTTPS certificates. This disables

@@ -1,5 +1,5 @@
 {
-  description = "Latest T3 Code nightly, bundled with Codex from llm-agents.nix";
+  description = "Latest T3 Code nightly, bundled with Codex and Pi from llm-agents.nix";
 
   nixConfig = {
     extra-substituters = [ "https://cache.numtide.com" ];
@@ -12,7 +12,7 @@
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
     t3code-source = {
-      url = "github:PJalv/t3code/88d4063c3175055f85bc733e6e85d718808af53d";
+      url = "github:PJalv/t3code/c23f18d8c533095839d357cc7baf57b67dd4e909";
       flake = false;
     };
   };
@@ -27,8 +27,14 @@
         src = t3code-source;
         inherit (source) version;
       };
+      piMcpAdapter = pkgs.callPackage ./package-pi-mcp-adapter.nix { };
+      piRuntime = pkgs.callPackage ./package-pi-runtime.nix {
+        pi = llm-agents.packages.${system}.pi;
+        inherit piMcpAdapter;
+      };
       t3code = pkgs.callPackage ./package.nix {
         codex = llm-agents.packages.${system}.codex;
+        pi = piRuntime;
         inherit sourceAssets;
       };
       t3codeWithCheckpoints = t3code.override {
@@ -36,6 +42,7 @@
       };
       server = pkgs.callPackage ./package-server.nix {
         codex = llm-agents.packages.${system}.codex;
+        pi = piRuntime;
         inherit sourceAssets;
       };
       serverWithCheckpoints = server.override {
@@ -52,6 +59,8 @@
         t3 = server;
         server-with-checkpoints = serverWithCheckpoints;
         source-assets = sourceAssets;
+        pi = piRuntime;
+        pi-mcp-adapter = piMcpAdapter;
       };
 
       apps.${system} = {
@@ -89,10 +98,21 @@
           test -x ${t3code.passthru.codex}/bin/codex
           ${t3code.passthru.codex}/bin/codex --version > "$out"
         '';
+        bundled-pi = pkgs.runCommand "t3code-bundled-pi" { } ''
+          test -x ${t3code.passthru.pi}/bin/pi
+          test -f ${piRuntime.passthru.piMcpAdapter}/lib/pi-mcp-adapter/index.ts
+          test -f ${piRuntime.passthru.subagentExtension}/index.ts
+          grep -q 'agent.model ??' ${piRuntime.passthru.subagentExtension}/index.ts
+          grep -q '^tools:.*mcp' ${piRuntime.passthru.subagentExtension}/agents/scout.md
+          ${t3code.passthru.pi}/bin/pi --version > "$out"
+        '';
         source-features = pkgs.runCommand "t3code-source-features" { } ''
-          grep -q providerNativeFileChangesEnabled ${sourceAssets}/apps/server/dist/bin.mjs
-          grep -q T3_DISABLE_CHECKPOINTS ${sourceAssets}/apps/server/dist/bin.mjs
+          grep -a -q providerNativeFileChangesEnabled ${sourceAssets}/apps/server/dist/bin.mjs
+          grep -a -q T3_DISABLE_CHECKPOINTS ${sourceAssets}/apps/server/dist/bin.mjs
           grep -R -q "Provider-native file changes" ${sourceAssets}/apps/server/dist/client
+          grep -a -q get_session_stats ${sourceAssets}/apps/server/dist/bin.mjs
+          grep -a -q pi-mcp-adapter ${sourceAssets}/apps/server/dist/bin.mjs
+          grep -R -q PiAgentIcon ${sourceAssets}/apps/server/dist/client
           touch "$out"
         '';
         server-help = pkgs.runCommand "t3code-server-help" { } ''

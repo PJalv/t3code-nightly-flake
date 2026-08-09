@@ -7,6 +7,7 @@
   pkgs,
   runCommand,
   codex,
+  pi,
   sourceAssets,
   disableCheckpoints ? true,
 }:
@@ -83,6 +84,7 @@ runCommand "${pname}-${version}"
     passthru = {
       inherit
         codex
+        pi
         disableCheckpoints
         sourceAppimageContents
         sourceAssets
@@ -91,7 +93,7 @@ runCommand "${pname}-${version}"
     };
 
     meta = {
-      description = "Latest T3 Code nightly with a bundled Codex CLI";
+      description = "Latest T3 Code nightly with bundled Codex and Pi agent CLIs";
       homepage = "https://github.com/pingdotgg/t3code";
       changelog = "https://github.com/pingdotgg/t3code/releases/tag/v${version}";
       license = lib.licenses.mit;
@@ -128,7 +130,7 @@ runCommand "${pname}-${version}"
       --set GSETTINGS_SCHEMA_DIR "${sourceAppimageContents}/usr/share/glib-2.0/schemas" \
       --run 'if ! ${pkgs.util-linux}/bin/unshare -Ur true 2>/dev/null; then set -- --no-sandbox "$@"; fi' \
       --prefix XDG_DATA_DIRS : "$out/share" \
-      --prefix PATH : "${lib.makeBinPath [ codex ]}"
+      --prefix PATH : "${lib.makeBinPath [ codex pi ]}"
 
     if [ -n "$desktop_file" ]; then
       wrapProgram "$out/bin/${pname}" \

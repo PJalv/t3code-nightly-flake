@@ -7,6 +7,7 @@
 , nodejs_24
 , openssh
 , codex
+, pi
 , sourceAssets
 , disableCheckpoints ? true
 }:
@@ -17,7 +18,7 @@ let
   packageJsonForNpm = builtins.removeAttrs packageJson [ "overrides" ];
   packageLockJson = lib.importJSON ./npm/package-lock.json;
   binPath = lib.removePrefix "./" packageJson.bin.t3;
-  runtimePath = lib.makeBinPath [ codex git openssh ];
+  runtimePath = lib.makeBinPath [ codex pi git openssh ];
   checkpointWrapperArgs = lib.optionalString disableCheckpoints
     "--set T3_DISABLE_CHECKPOINTS 1";
 in
@@ -86,12 +87,12 @@ buildNpmPackage {
   '';
 
   passthru = {
-    inherit codex disableCheckpoints sourceAssets;
+    inherit codex pi disableCheckpoints sourceAssets;
     release = source;
   };
 
   meta = {
-    description = "Headless T3 Code nightly server for browser access";
+    description = "Headless T3 Code nightly server with bundled Codex and Pi agent CLIs";
     homepage = "https://github.com/pingdotgg/t3code";
     license = lib.licenses.mit;
     mainProgram = "t3code-server";
