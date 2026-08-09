@@ -12,7 +12,7 @@
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
     t3code-source = {
-      url = "github:PJalv/t3code/2c05a3d6a19eb35d7d4de6e864d2ef657e3dff26";
+      url = "github:PJalv/t3code/588904c3e5b1327d9f369d718aaec1b6fb5536c5";
       flake = false;
     };
   };
@@ -101,6 +101,7 @@
         bundled-pi = pkgs.runCommand "t3code-bundled-pi" { } ''
           test -x ${t3code.passthru.pi}/bin/pi
           test -f ${piRuntime.passthru.piMcpAdapter}/lib/pi-mcp-adapter/index.ts
+          grep -q T3CODE_PI_MCP_CONFIG ${piRuntime.passthru.piMcpAdapter}/lib/pi-mcp-adapter/utils.ts
           test -f ${piRuntime.passthru.subagentExtension}/index.ts
           grep -q 'agent.model ??' ${piRuntime.passthru.subagentExtension}/index.ts
           grep -q 'Use "default" unless' ${piRuntime.passthru.subagentExtension}/index.ts

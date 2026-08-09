@@ -20,6 +20,23 @@ buildNpmPackage rec {
   postPatch = ''
     cp ${./npm/pi-mcp-adapter/package.json} package.json
     cp ${./npm/pi-mcp-adapter/package-lock.json} package-lock.json
+
+    substituteInPlace utils.ts \
+      --replace-fail \
+        'export function getConfigPathFromArgv(): string | undefined {
+  const idx = process.argv.indexOf("--mcp-config");
+  if (idx >= 0 && idx + 1 < process.argv.length) {
+    return process.argv[idx + 1];
+  }
+  return undefined;
+}' \
+        'export function getConfigPathFromArgv(): string | undefined {
+  const idx = process.argv.indexOf("--mcp-config");
+  if (idx >= 0 && idx + 1 < process.argv.length) {
+    return process.argv[idx + 1];
+  }
+  return process.env.T3CODE_PI_MCP_CONFIG?.trim() || undefined;
+}'
   '';
 
   installPhase = ''
