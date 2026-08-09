@@ -100,6 +100,7 @@
         '';
         bundled-pi = pkgs.runCommand "t3code-bundled-pi" { } ''
           test -x ${t3code.passthru.pi}/bin/pi
+          grep -q T3CODE_PI_MCP_CONFIG ${t3code.passthru.pi}/bin/pi
           test -f ${piRuntime.passthru.piMcpAdapter}/lib/pi-mcp-adapter/index.ts
           grep -q T3CODE_PI_MCP_CONFIG ${piRuntime.passthru.piMcpAdapter}/lib/pi-mcp-adapter/utils.ts
           test -f ${piRuntime.passthru.subagentExtension}/index.ts

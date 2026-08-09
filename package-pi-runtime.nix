@@ -43,6 +43,7 @@ in
   (writeShellScriptBin "pi" ''
     package_list="$(${pi}/bin/pi list 2>/dev/null || true)"
     extra_args=()
+    has_mcp_adapter=0
 
     agent_dir="''${PI_CODING_AGENT_DIR:-''${HOME}/.pi/agent}"
     has_named_extension() {
@@ -56,9 +57,18 @@ in
       return 1
     }
 
-    if ! ${gnugrep}/bin/grep -qi 'pi-mcp-adapter' <<< "$package_list" \
-      && ! has_named_extension mcp; then
+    if ${gnugrep}/bin/grep -qi 'pi-mcp-adapter' <<< "$package_list"; then
+      has_mcp_adapter=1
+    elif ! has_named_extension mcp; then
       extra_args+=(--extension ${piMcpAdapter}/lib/pi-mcp-adapter/index.ts)
+      has_mcp_adapter=1
+    fi
+
+    # Installed pi-mcp-adapter releases understand --mcp-config even when they
+    # predate T3's environment hook. Add the thread-private config only when
+    # that adapter is active, so other MCP extensions do not see an unknown flag.
+    if [ "$has_mcp_adapter" -eq 1 ] && [ -n "''${T3CODE_PI_MCP_CONFIG:-}" ]; then
+      extra_args+=(--mcp-config "$T3CODE_PI_MCP_CONFIG")
     fi
 
     if ! ${gnugrep}/bin/grep -qi 'subagent' <<< "$package_list" \
