@@ -5,6 +5,7 @@
   writeShellScriptBin,
   pi,
   piMcpAdapter,
+  piSubagents,
 }: let
   subagentExtension = runCommand "t3code-pi-subagent-extension" {} ''
     mkdir -p "$out"
@@ -71,9 +72,11 @@ in
       extra_args+=(--mcp-config "$T3CODE_PI_MCP_CONFIG")
     fi
 
+    # The managed runtime uses the exact tested pi-subagents release unless
+    # the user explicitly supplies a subagent extension or Pi package.
     if ! ${gnugrep}/bin/grep -qi 'subagent' <<< "$package_list" \
       && ! has_named_extension subagent; then
-      extra_args+=(--extension ${subagentExtension}/index.ts)
+      extra_args+=(--extension ${piSubagents}/lib/pi-subagents/src/index.ts)
     fi
 
     exec ${pi}/bin/pi "''${extra_args[@]}" "$@"
@@ -83,7 +86,7 @@ in
     passthru =
       (old.passthru or {})
       // {
-        inherit pi piMcpAdapter subagentExtension;
+        inherit pi piMcpAdapter piSubagents subagentExtension;
       };
     meta =
       (old.meta or {})

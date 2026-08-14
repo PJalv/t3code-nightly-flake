@@ -12,7 +12,7 @@
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
     t3code-source = {
-      url = "github:PJalv/t3code/18f312268df41182a99b065899f19d9556c90880";
+      url = "github:PJalv/t3code/0e08b963365191bb8d339c4a389f35065839aef7";
       flake = false;
     };
   };
@@ -28,9 +28,10 @@
         inherit (source) version;
       };
       piMcpAdapter = pkgs.callPackage ./package-pi-mcp-adapter.nix { };
+      piSubagents = pkgs.callPackage ./package-pi-subagents.nix { };
       piRuntime = pkgs.callPackage ./package-pi-runtime.nix {
         pi = llm-agents.packages.${system}.pi;
-        inherit piMcpAdapter;
+        inherit piMcpAdapter piSubagents;
       };
       t3code = pkgs.callPackage ./package.nix {
         codex = llm-agents.packages.${system}.codex;
@@ -61,6 +62,7 @@
         source-assets = sourceAssets;
         pi = piRuntime;
         pi-mcp-adapter = piMcpAdapter;
+        pi-subagents = piSubagents;
       };
 
       apps.${system} = {
@@ -103,6 +105,10 @@
           grep -q T3CODE_PI_MCP_CONFIG ${t3code.passthru.pi}/bin/pi
           test -f ${piRuntime.passthru.piMcpAdapter}/lib/pi-mcp-adapter/index.ts
           grep -q T3CODE_PI_MCP_CONFIG ${piRuntime.passthru.piMcpAdapter}/lib/pi-mcp-adapter/utils.ts
+          test -f ${piRuntime.passthru.piSubagents}/lib/pi-subagents/src/index.ts
+          grep -q '"version": "0.16.0"' ${piRuntime.passthru.piSubagents}/lib/pi-subagents/package.json
+          grep -q 'subagents:rpc:stop' ${piRuntime.passthru.piSubagents}/lib/pi-subagents/src/cross-extension-rpc.ts
+          grep -q 'pi-subagents-0.16.0' ${t3code.passthru.pi}/bin/pi
           test -f ${piRuntime.passthru.subagentExtension}/index.ts
           grep -q 'agent.model ??' ${piRuntime.passthru.subagentExtension}/index.ts
           grep -q 'Use "default" unless' ${piRuntime.passthru.subagentExtension}/index.ts
@@ -116,6 +122,8 @@
           grep -R -q "Provider-native file changes" ${sourceAssets}/apps/server/dist/client
           grep -a -q get_session_stats ${sourceAssets}/apps/server/dist/bin.mjs
           grep -a -q pi-mcp-adapter ${sourceAssets}/apps/server/dist/bin.mjs
+          grep -a -q t3code.pi-bridge.v1 ${sourceAssets}/apps/server/dist/bin.mjs
+          grep -a -q get_entries ${sourceAssets}/apps/server/dist/bin.mjs
           grep -R -q PiAgentIcon ${sourceAssets}/apps/server/dist/client
           touch "$out"
         '';

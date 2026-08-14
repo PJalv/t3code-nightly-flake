@@ -1,0 +1,10 @@
+{
+  "name": "@tintinweb/pi-subagents-runtime",
+  "version": "0.16.0",
+  "private": true,
+  "dependencies": {
+    "@sinclair/typebox": "0.34.49",
+    "croner": "10.0.1",
+    "nanoid": "5.0.0"
+  }
+}

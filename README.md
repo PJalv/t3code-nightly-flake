@@ -89,14 +89,16 @@ outside its core:
 - `pi-mcp-adapter` provides lazy MCP server discovery, calls, OAuth, and output
   limits. An installed `pi-mcp-adapter` package or an extension whose file name
   contains `mcp` takes precedence over the bundled adapter.
-- Pi's reference `subagent` extension provides single, parallel, and chained
-  child agents. A user package or extension whose name contains `subagent`
-  replaces the bundled extension. The bundled extension provides one neutral
-  `default` agent and also discovers user-defined and project-local agents.
+- `@tintinweb/pi-subagents` is pinned exactly to `0.16.0`. It provides the
+  Claude Code-style `Agent` tool, foreground and background work, durable
+  agent IDs, and RPC v2 targeted Stop. A user package or extension whose name
+  contains `subagent` explicitly replaces the managed default.
 
 Both extensions continue to read normal user and project Pi configuration.
 T3 Code translates their activity into MCP tool rows, the Agents panel, and
-per-agent usage without replacing `~/.pi/agent`.
+per-agent usage without replacing `~/.pi/agent`. T3 also injects its own small
+RPC-only bridge for versioned lifecycle events and targeted subagent control;
+it does not fork or import pi-subagents internals.
 
 The flake follows the `nixpkgs` revision used by `llm-agents.nix` and advertises
 Numtide's binary cache, allowing the agent CLIs to be substituted instead of
