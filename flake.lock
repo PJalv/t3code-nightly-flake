@@ -92,6 +92,29 @@
         "type": "github"
       }
     },
+    "pi-copilot": {
+      "inputs": {
+        "llm-agents_nix": [
+          "llm-agents"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787095060,
+        "narHash": "sha256-YB8Bpss7Yep5qahPaS4vms1lDg5ElPpERm2Y2+VnxwE=",
+        "ref": "refs/heads/main",
+        "rev": "d08c6eadd884f84390de3b7de0a6ed009f4c9571",
+        "revCount": 1,
+        "type": "git",
+        "url": "ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git"
+      }
+    },
     "root": {
       "inputs": {
         "llm-agents": "llm-agents",
@@ -99,6 +122,7 @@
           "llm-agents",
           "nixpkgs"
         ],
+        "pi-copilot": "pi-copilot",
         "t3code-source": "t3code-source"
       }
     },

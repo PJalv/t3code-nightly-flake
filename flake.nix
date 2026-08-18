@@ -11,13 +11,21 @@
   inputs = {
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
+    # pi (from llm-agents.nix) with the opencode-aligned GitHub Copilot port.
+    pi-copilot = {
+      url = "git+ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git";
+      inputs.nixpkgs.follows = "nixpkgs";
+      # Reuse the existing llm-agents input so pi stays on the same llm-agents
+      # revision and nixpkgs as the rest of these packages.
+      inputs.llm-agents_nix.follows = "llm-agents";
+    };
     t3code-source = {
       url = "github:PJalv/t3code/79b5efd68ad668416c20c0731ea32f95ca2a2db1";
       flake = false;
     };
   };
 
-  outputs = { self, nixpkgs, llm-agents, t3code-source }:
+  outputs = { self, nixpkgs, llm-agents, pi-copilot, t3code-source }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
@@ -30,7 +38,8 @@
       piMcpAdapter = pkgs.callPackage ./package-pi-mcp-adapter.nix { };
       piSubagents = pkgs.callPackage ./package-pi-subagents.nix { };
       piRuntime = pkgs.callPackage ./package-pi-runtime.nix {
-        pi = llm-agents.packages.${system}.pi;
+        # pi with the opencode-aligned GitHub Copilot port.
+        pi = pi-copilot.packages.${system}.pi;
         inherit piMcpAdapter piSubagents;
       };
       t3code = pkgs.callPackage ./package.nix {
