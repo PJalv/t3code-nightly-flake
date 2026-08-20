@@ -42,6 +42,15 @@
   '';
 in
   (writeShellScriptBin "pi" ''
+    # Forward pi's management subcommands untouched: injecting the pinned
+    # --extension flags below would move the subcommand out of argv[1] and pi
+    # would then treat e.g. `remove` as a coding prompt instead of a command.
+    case "''${1:-}" in
+      install|remove|uninstall|update|list|config|auth)
+        exec ${pi}/bin/pi "$@"
+        ;;
+    esac
+
     # This is the SINGLE pi used for both the shell and t3code. It always loads
     # the pinned mcp-adapter/subagents below, so no separate user-installed
     # copies are needed (and any must be removed, since pi loads installed
