@@ -42,15 +42,16 @@
   '';
 in
   (writeShellScriptBin "pi" ''
-    # pi loads user-installed extension packages regardless of agent dir, so a
-    # user copy would load alongside the pinned --extension below and conflict.
-    # The managed runtime therefore relies on THIS pinned bundle being the only
-    # mcp-adapter/subagents source: any identical user-installed package must be
-    # removed (`pi remove`), otherwise pi reports a duplicate tool/flag error.
+    # The managed pi runs from a dedicated agent dir (~/.pi-t3code) whose npm
+    # holds NO user-installed extensions, and this export redirects the exec'd
+    # pi to it. The pinned --extension flags below are therefore the only
+    # mcp-adapter/subagents source. Personal pi keeps ~/.pi/agent (where users
+    # install subagents/mcp freely); the two no longer collide.
+    export PI_CODING_AGENT_DIR="''${PI_CODING_AGENT_DIR:-''${HOME}/.pi-t3code}"
     package_list="$(${pi}/bin/pi list 2>/dev/null || true)"
     extra_args=()
     has_mcp_adapter=0
-    agent_dir="''${PI_CODING_AGENT_DIR:-''${HOME}/.pi/agent}"
+    agent_dir="$PI_CODING_AGENT_DIR"
     has_named_extension() {
       local pattern="$1"
       local candidate
