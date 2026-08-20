@@ -42,16 +42,14 @@
   '';
 in
   (writeShellScriptBin "pi" ''
-    # The managed pi runs from a dedicated agent dir (~/.pi-t3code) whose npm
-    # holds NO user-installed extensions, and this export redirects the exec'd
-    # pi to it. The pinned --extension flags below are therefore the only
-    # mcp-adapter/subagents source. Personal pi keeps ~/.pi/agent (where users
-    # install subagents/mcp freely); the two no longer collide.
-    export PI_CODING_AGENT_DIR="''${PI_CODING_AGENT_DIR:-''${HOME}/.pi-t3code}"
+    # This is the SINGLE pi used for both the shell and t3code. It always loads
+    # the pinned mcp-adapter/subagents below, so no separate user-installed
+    # copies are needed (and any must be removed, since pi loads installed
+    # extension packages from ~/.pi/agent regardless of config-dir overrides).
     package_list="$(${pi}/bin/pi list 2>/dev/null || true)"
     extra_args=()
     has_mcp_adapter=0
-    agent_dir="$PI_CODING_AGENT_DIR"
+    agent_dir="''${PI_CODING_AGENT_DIR:-''${HOME}/.pi/agent}"
     has_named_extension() {
       local pattern="$1"
       local candidate
