@@ -42,11 +42,14 @@
   '';
 in
   (writeShellScriptBin "pi" ''
+    # The managed runtime uses a dedicated agent dir (~/.pi-t3code) that does
+    # not contain user-installed extension packages, so the pinned --extension
+    # flags below are the only mcp-adapter/subagents source (no duplicates, no
+    # drift from `pi update --extensions`). Personal pi keeps ~/.pi/agent.
+    export PI_CODING_AGENT_DIR="''${PI_CODING_AGENT_DIR:-''${HOME}/.pi-t3code}"
     package_list="$(${pi}/bin/pi list 2>/dev/null || true)"
     extra_args=()
     has_mcp_adapter=0
-
-    agent_dir="''${PI_CODING_AGENT_DIR:-''${HOME}/.pi/agent}"
     has_named_extension() {
       local pattern="$1"
       local candidate
