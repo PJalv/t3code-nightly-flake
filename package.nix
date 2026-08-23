@@ -106,21 +106,36 @@ runCommand "${pname}-${version}"
     };
   }
   ''
-    mkdir -p "$out/bin" "$out/share"
+    mkdir -p "$out/bin" "$out/share" "$out/share/applications"
 
     if [ -d ${sourceAppimageContents}/usr/share ]; then
       cp -r ${sourceAppimageContents}/usr/share/* "$out/share/"
     fi
 
-    desktop_file="$(find "$out/share" -type f -name '*.desktop' | head -n 1 || true)"
+    # The AppImage ships its .desktop entry at the *root* of the squashfs
+    # (not under usr/share/applications), so desktop-app launchers like Rofi's
+    # drun mode never see it. Install it into the standard location and rewrite
+    # the self-referential AppRun Exec to our wrapped binary.
+    desktop_file=""
+    for candidate in \
+      ${sourceAppimageContents}/t3code.desktop \
+      ${sourceAppimageContents}/usr/share/applications/t3code.desktop
+    do
+      if [ -f "$candidate" ]; then
+        desktop_file="$candidate"
+        break
+      fi
+    done
     if [ -n "$desktop_file" ]; then
       desktop_basename="$(basename "$desktop_file")"
+      desktop_installed="$out/share/applications/$desktop_basename"
+      cp "$desktop_file" "$desktop_installed"
       sed -i \
         -e 's|Exec=AppRun|Exec=${pname}|g' \
         -e 's|Exec=AppRun %U|Exec=${pname} %U|g' \
         -e 's|TryExec=AppRun|TryExec=${pname}|g' \
         -e 's|^StartupWMClass=.*$|StartupWMClass=t3-code-desktop|g' \
-        "$desktop_file"
+        "$desktop_installed"
     fi
 
     makeWrapper ${sourceAppimageContents}/${pname} "$out/bin/${pname}" \
