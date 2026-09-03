@@ -47,6 +47,7 @@ buildNpmPackage {
   };
 
   npmConfigHook = importNpmLock.npmConfigHook;
+  npmFlags = [ "--legacy-peer-deps" ];
   nativeBuildInputs = [ makeWrapper ];
   dontNpmBuild = true;
 
