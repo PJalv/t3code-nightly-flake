@@ -20,7 +20,7 @@
       inputs.llm-agents_nix.follows = "llm-agents";
     };
     t3code-source = {
-      url = "github:PJalv/t3code/bfd752803";
+      url = "github:PJalv/t3code/06336460c9";
       flake = false;
     };
   };
