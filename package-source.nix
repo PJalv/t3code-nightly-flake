@@ -46,6 +46,49 @@ stdenvNoCC.mkDerivation {
   SSL_CERT_FILE = "${cacert}/etc/ssl/certs/ca-bundle.crt";
 
   postPatch = ''
+    node <<'NODE'
+    const fs = require("fs");
+
+    const replace = (file, from, to) => {
+      const source = fs.readFileSync(file, "utf8");
+      if (!source.includes(from)) throw new Error(`missing patch anchor in $file`);
+      fs.writeFileSync(file, source.replace(from, to));
+    };
+
+    const drivers = "apps/server/src/provider/builtInDrivers.ts";
+    replace(
+      drivers,
+      'import { PiDriver, type PiDriverEnv } from "./Drivers/PiDriver.ts";',
+      'import { PiDriver, type PiDriverEnv } from "./Drivers/PiDriver.ts";\n' +
+        'import { AntigravityDriver, type AntigravityDriverEnv } from "./Drivers/AntigravityDriver.ts";',
+    );
+    replace(drivers, "export type BuiltInDriversEnv =\n  | ClaudeDriverEnv", "export type BuiltInDriversEnv =\n  | AntigravityDriverEnv\n  | ClaudeDriverEnv");
+    replace(drivers, "  OpenCodeDriver,\n  PiDriver,", "  OpenCodeDriver,\n  AntigravityDriver,\n  PiDriver,");
+
+    const anchoring = "apps/web/src/components/chat/timelineScrollAnchoring.ts";
+    replace(
+      anchoring,
+      "export function getRowBottom",
+      `export function keepTimelineEndVisibleAfterOverlayGrowth({
+      timeline,
+      previousOverlayHeight,
+      overlayHeight,
+      followingEnd,
+    }: {
+      readonly timeline: { scrollToEnd: (options: { animated: boolean }) => unknown } | null;
+      readonly previousOverlayHeight: number;
+      readonly overlayHeight: number;
+      readonly followingEnd: boolean;
+    }): void {
+      if (timeline && followingEnd && overlayHeight > previousOverlayHeight) {
+        void timeline.scrollToEnd({ animated: false });
+      }
+    }
+
+    export function getRowBottom`,
+    );
+    NODE
+
     for packageJson in \
       apps/server/package.json \
       apps/web/package.json \

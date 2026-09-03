@@ -20,7 +20,7 @@
       inputs.llm-agents_nix.follows = "llm-agents";
     };
     t3code-source = {
-      url = "github:PJalv/t3code/06336460c9";
+      url = "github:PJalv/t3code/c812277fd480c5f475459551f52e8c6e22b33124";
       flake = false;
     };
   };
@@ -126,6 +126,8 @@
           ${t3code.passthru.pi}/bin/pi --version > "$out"
         '';
         source-features = pkgs.runCommand "t3code-source-features" { } ''
+          grep -a -q 'src/provider/Drivers/PiDriver.ts' ${sourceAssets}/apps/server/dist/bin.mjs
+          grep -a -q 'AntigravityDriver' ${sourceAssets}/apps/server/dist/bin.mjs
           grep -a -q providerNativeFileChangesEnabled ${sourceAssets}/apps/server/dist/bin.mjs
           grep -a -q T3_DISABLE_CHECKPOINTS ${sourceAssets}/apps/server/dist/bin.mjs
           grep -R -q "Provider-native file changes" ${sourceAssets}/apps/server/dist/client
