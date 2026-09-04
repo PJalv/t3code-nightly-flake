@@ -42,11 +42,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1788306937,
-        "narHash": "sha256-lbrI1UYVpFgKSsyrU9oeF7FHfnu8nLD9ja0ou9f2rxk=",
+        "lastModified": 1788450739,
+        "narHash": "sha256-glZLQlzIn1fXH6PazR2iUmTo7kzzyYSshrWhLS9TqCU=",
         "owner": "hercules-ci",
         "repo": "flake-parts",
-        "rev": "f16b25b8c3d2809b87925d0b76652d7821a75c68",
+        "rev": "31729ca8cbdb4fa927b34e5f4353e6a83f39e993",
         "type": "github"
       },
       "original": {
@@ -64,11 +64,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1788437273,
-        "narHash": "sha256-dn+N26nSI4WqryWWBUfClz6qSpFHGNGJmc9M46usr70=",
+        "lastModified": 1788560949,
+        "narHash": "sha256-wrTj5CAwq3FOq7aidA7egL55p29YK1MdssvX7Wy8Ws0=",
         "owner": "numtide",
         "repo": "llm-agents.nix",
-        "rev": "c48d91c89868c53dd0b51bf840977cc83f2544fb",
+        "rev": "d43009a66934bd6f57d8f113ba0a67ce296a283f",
         "type": "github"
       },
       "original": {
@@ -145,16 +145,16 @@
     "t3code-source": {
       "flake": false,
       "locked": {
-        "lastModified": 1788468744,
-        "narHash": "sha256-36urAokWnP/O4RwjtY3KrB2sZFP3wdFI+2HMCW38SoY=",
-        "owner": "PJalv",
+        "lastModified": 1788547134,
+        "narHash": "sha256-WG6IOSz/Ms85vVqqe1uiDPl6b/AM2cCn8gR2e/xWMmo=",
+        "owner": "pingdotgg",
         "repo": "t3code",
-        "rev": "791c3f519ea67dc7beabdf219c3bfae9f7944b93",
+        "rev": "d6e29dc9dee943b34d6b0d11441fa944c7bff7c9",
         "type": "github"
       },
       "original": {
-        "owner": "PJalv",
-        "ref": "791c3f519",
+        "owner": "pingdotgg",
+        "ref": "v0.0.39-nightly.20260904.1280",
         "repo": "t3code",
         "type": "github"
       }
