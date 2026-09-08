@@ -9,10 +9,7 @@
   };
 
   inputs = {
-    # Pinned: revisions after d43009a6 bump pi-ai and break the pi-copilot
-    # build (unresolved "@earendil-works/pi-ai/utils/uuid"). Re-evaluate when
-    # pi-copilot is updated for the new pi-ai layout.
-    llm-agents.url = "github:numtide/llm-agents.nix/d43009a66934bd6f57d8f113ba0a67ce296a283f";
+    llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
     # pi (from llm-agents.nix) with the opencode-aligned GitHub Copilot port.
     pi-copilot = {

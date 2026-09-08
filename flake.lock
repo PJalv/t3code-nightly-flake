@@ -64,27 +64,26 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1788560949,
-        "narHash": "sha256-wrTj5CAwq3FOq7aidA7egL55p29YK1MdssvX7Wy8Ws0=",
+        "lastModified": 1788840929,
+        "narHash": "sha256-8wZHO3gePzZR4QpORDB4QpD/8jdNAFel7kHixn1A/gc=",
         "owner": "numtide",
         "repo": "llm-agents.nix",
-        "rev": "d43009a66934bd6f57d8f113ba0a67ce296a283f",
+        "rev": "296b980f3a95823d2b2f9d5822d10eb99ea8443e",
         "type": "github"
       },
       "original": {
         "owner": "numtide",
         "repo": "llm-agents.nix",
-        "rev": "d43009a66934bd6f57d8f113ba0a67ce296a283f",
         "type": "github"
       }
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1788372231,
-        "narHash": "sha256-7aqErvrAEz/5OcPA5p3M+tVOqeYc4oJXkNIPXfCqxAw=",
+        "lastModified": 1788746152,
+        "narHash": "sha256-RaKngusl5I8pNi8RfrVvsHq3NZe7eFWzDlb01+hEVqY=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "9387b3fcc0c23c86661636da63faabad4235a0a6",
+        "rev": "42f17a57f4f6e33b3de3dca0a2a5ea5233169d02",
         "type": "github"
       },
       "original": {
@@ -104,11 +103,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787975527,
-        "narHash": "sha256-zWkisSX4F7fggPzvK3sC1W2n43Qf8TpJMi1Fwy5QOrM=",
+        "lastModified": 1788842412,
+        "narHash": "sha256-N1TQVmkz28RsfOlaOVqoXA2QnwG3hXk08f25i4IDwFI=",
         "ref": "refs/heads/main",
-        "rev": "9d2ec5c8eb1dc23560a4be9d39ce76ef861133b3",
-        "revCount": 4,
+        "rev": "b0b28e7bb13a2132b591bc355d731142b3ff9474",
+        "revCount": 5,
         "type": "git",
         "url": "ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git"
       },
