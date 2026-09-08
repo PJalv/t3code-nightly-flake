@@ -74,6 +74,7 @@
       "original": {
         "owner": "numtide",
         "repo": "llm-agents.nix",
+        "rev": "d43009a66934bd6f57d8f113ba0a67ce296a283f",
         "type": "github"
       }
     },
@@ -103,11 +104,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1787948582,
-        "narHash": "sha256-tXL2vDNlKfIL3MVALDr6YfEezmfkkQFUQax13i75xdc=",
+        "lastModified": 1787975527,
+        "narHash": "sha256-zWkisSX4F7fggPzvK3sC1W2n43Qf8TpJMi1Fwy5QOrM=",
         "ref": "refs/heads/main",
-        "rev": "0f2beec7388655065486bdbfec3d130ae55b0ffd",
-        "revCount": 3,
+        "rev": "9d2ec5c8eb1dc23560a4be9d39ce76ef861133b3",
+        "revCount": 4,
         "type": "git",
         "url": "ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git"
       },
