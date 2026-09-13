@@ -21,13 +21,11 @@ stdenvNoCC.mkDerivation {
   pnpmDeps = fetchPnpmDeps {
     pname = "t3code-source-assets";
     inherit src version;
+    pnpm = pnpm_11;
     fetcherVersion = 4;
-    pnpmWorkspaces = [
-      "."
-      "t3..."
-      "@t3tools/desktop..."
-    ];
-    hash = "sha256-P4IfoKBeW+Gy20QivE5wcoA7sqYBcj4ezXWnIYZzud0=";
+    # Unfiltered: filtered fetches skip packages the sandboxed install
+    # resolves (observed with the Sep 13 lockfile and @effect/platform-bun).
+    hash = "sha256-hN3AybCffjwKszUgDMTTGHzef5vtjpxFborcbs8Lf68=";
   };
 
   pnpmWorkspaces = [

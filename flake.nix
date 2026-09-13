@@ -20,7 +20,7 @@
       inputs.llm-agents_nix.follows = "llm-agents";
     };
     t3code-source = {
-      url = "github:PJalv/t3code/795e6f7cd";
+      url = "github:PJalv/t3code/78dc122ce";
       flake = false;
     };
   };
@@ -31,9 +31,16 @@
       pkgs = import nixpkgs { inherit system; };
       lib = pkgs.lib;
       source = lib.importJSON ./source.json;
+      # The repo pins packageManager pnpm@11.10.0; nixpkgs' pnpm_11 (11.25.0)
+      # fetches the filtered workspace store incompletely.
+      pnpmPinned = pkgs.pnpm_11.override {
+        version = "11.10.0";
+        hash = "sha256-YgtmBepPYvxWptCphzP0eQcdAyHgPkhrUix+mnRhdDE=";
+      };
       sourceAssets = pkgs.callPackage ./package-source.nix {
         src = t3code-source;
         inherit (source) version;
+        pnpm_11 = pnpmPinned;
       };
       piMcpAdapter = pkgs.callPackage ./package-pi-mcp-adapter.nix { };
       piSubagents = pkgs.callPackage ./package-pi-subagents.nix { };
