@@ -103,11 +103,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1788842412,
-        "narHash": "sha256-N1TQVmkz28RsfOlaOVqoXA2QnwG3hXk08f25i4IDwFI=",
+        "lastModified": 1789496008,
+        "narHash": "sha256-HnkCowjjGy+ABO3wm3CtpBd5t7koEI/q0CZ8NH/5fKQ=",
         "ref": "refs/heads/main",
-        "rev": "b0b28e7bb13a2132b591bc355d731142b3ff9474",
-        "revCount": 5,
+        "rev": "7a194825896e45e84fc6e69f9754688fbdb34044",
+        "revCount": 6,
         "type": "git",
         "url": "ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git"
       },
