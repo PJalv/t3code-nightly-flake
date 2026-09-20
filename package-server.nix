@@ -18,7 +18,9 @@ let
   packageJson = lib.importJSON ./npm/package.json;
   packageJsonForNpm = builtins.removeAttrs packageJson [ "overrides" ];
   packageLockJson = lib.importJSON ./npm/package-lock.json;
-  binPath = lib.removePrefix "./" packageJson.bin.t3;
+  # The published package's bin is now a platform launcher. This derivation
+  # replaces dist with our source build, so invoke that bundle directly.
+  binPath = "dist/bin.mjs";
   runtimePath = lib.makeBinPath [ codex pi git openssh lsof ];
   checkpointWrapperArgs = lib.optionalString disableCheckpoints
     "--set T3_DISABLE_CHECKPOINTS 1";
@@ -70,6 +72,16 @@ buildNpmPackage {
 
   installPhase = ''
     runHook preInstall
+
+    # Overlay the source workspace dependencies after npm has finished, since
+    # the source-built bundle externalizes packages absent from the launcher.
+    cp -r ${sourceAssets}/apps/server/node_modules/. ./node_modules/
+    # The published launcher keeps native dependencies under its Linux platform
+    # package. Hoist them for the source-built dist/bin.mjs bundle.
+    if [ -d node_modules/@t3code/t3-linux-x64/node_modules ]; then
+      chmod -R u+w node_modules
+      cp -r node_modules/@t3code/t3-linux-x64/node_modules/. ./node_modules/
+    fi
 
     mkdir -p "$out/lib/node_modules/t3" "$out/bin"
     cp -r . "$out/lib/node_modules/t3"

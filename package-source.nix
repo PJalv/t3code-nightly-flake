@@ -25,13 +25,14 @@ stdenvNoCC.mkDerivation {
     fetcherVersion = 4;
     # Unfiltered: filtered fetches skip packages the sandboxed install
     # resolves (observed with the Sep 13 lockfile and @effect/platform-bun).
-    hash = "sha256-7S1Cg+N7khFWsTGwiv8EqCeKKb67GlltRyTYL69zT6k=";
+    hash = "sha256-1yb+Hmo6K2idJvSYRd6lwUpfChqG6bliC1//6vXDfE0=";
   };
 
   pnpmWorkspaces = [
     "."
     "t3..."
     "@t3tools/desktop..."
+    "scripts..."
   ];
 
   nativeBuildInputs = [
@@ -83,6 +84,10 @@ stdenvNoCC.mkDerivation {
 
     mkdir -p "$out/apps/server" "$out/apps/desktop"
     cp -r apps/server/dist "$out/apps/server/"
+    # The source-built CLI externalizes native/runtime packages such as
+    # @ff-labs/fff-node. Preserve the filtered server workspace dependencies so
+    # package-server.nix can run dist/bin.mjs without the published launcher.
+    cp -rL apps/server/node_modules "$out/apps/server/"
     cp -r apps/desktop/dist-electron "$out/apps/desktop/"
 
     test -f "$out/apps/server/dist/bin.mjs"
