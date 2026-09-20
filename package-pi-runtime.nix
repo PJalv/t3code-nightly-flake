@@ -9,14 +9,14 @@
 }: let
   subagentExtension = runCommand "t3code-pi-subagent-extension" {} ''
     mkdir -p "$out"
-    cp -r ${pi}/libexec/pi/examples/extensions/subagent/. "$out/"
+    cp -r ${pi}/lib/node_modules/@earendil-works/pi-coding-agent/examples/extensions/subagent/. "$out/"
     chmod -R u+w "$out"
 
     # Provide one neutral built-in role instead of Pi's specialized example
     # roles. The child inherits the active parent model and all available tools.
     rm -rf "$out/agents"
     mkdir -p "$out/agents"
-    substitute ${pi}/libexec/pi/examples/extensions/subagent/agents/worker.md "$out/agents/default.md" \
+    substitute ${pi}/lib/node_modules/@earendil-works/pi-coding-agent/examples/extensions/subagent/agents/worker.md "$out/agents/default.md" \
       --replace-fail 'name: worker' 'name: default' \
       --replace-fail 'description: General-purpose subagent with full capabilities, isolated context' 'description: General-purpose subagent with full capabilities and isolated context' \
       --replace-fail 'You are a worker agent with full capabilities.' 'You are the default subagent with full capabilities.'
@@ -42,11 +42,15 @@
   '';
 in
   (writeShellScriptBin "pi" ''
+    # Pi uses this directory to locate bundled themes and other runtime assets.
+    # Never inherit PI_PACKAGE_DIR from a parent Pi agent or an older install.
+    export PI_PACKAGE_DIR=${pi}/lib/node_modules/@earendil-works/pi-coding-agent
+
     # Forward pi's management subcommands untouched: injecting the pinned
     # --extension flags below would move the subcommand out of argv[1] and pi
     # would then treat e.g. `remove` as a coding prompt instead of a command.
     case "''${1:-}" in
-      install|remove|uninstall|update|list|config|auth)
+      --version|-v|install|remove|uninstall|update|list|config|auth)
         exec ${pi}/bin/pi "$@"
         ;;
     esac

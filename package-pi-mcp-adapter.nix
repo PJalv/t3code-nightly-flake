@@ -5,38 +5,21 @@
 }:
 buildNpmPackage rec {
   pname = "pi-mcp-adapter";
-  version = "2.21.1";
+  version = "2.34.0";
 
   src = fetchFromGitHub {
     owner = "nicobailon";
     repo = "pi-mcp-adapter";
     rev = "v${version}";
-    hash = "sha256-voO8gCDjGtXoSiEQM/D4lL4JXrz5be3HZ5ol7KYVCzI=";
+    hash = "sha256-YpiJROIG0/U81wAoImjktbg/d5wGnc6o130IlOrTyEE=";
   };
 
-  npmDepsHash = "sha256-YZbDesWby6kw4sMcTu0gwLj694aX5Ttf0t0KxFRbKkk=";
+  npmDepsHash = "sha256-WC+UDmVqmnKK7Oe9og9oL+kjwK4Uyt1a6NGFFKfhrVs=";
   dontNpmBuild = true;
 
   postPatch = ''
     cp ${./npm/pi-mcp-adapter/package.json} package.json
     cp ${./npm/pi-mcp-adapter/package-lock.json} package-lock.json
-
-    substituteInPlace utils.ts \
-      --replace-fail \
-        'export function getConfigPathFromArgv(): string | undefined {
-  const idx = process.argv.indexOf("--mcp-config");
-  if (idx >= 0 && idx + 1 < process.argv.length) {
-    return process.argv[idx + 1];
-  }
-  return undefined;
-}' \
-        'export function getConfigPathFromArgv(): string | undefined {
-  const idx = process.argv.indexOf("--mcp-config");
-  if (idx >= 0 && idx + 1 < process.argv.length) {
-    return process.argv[idx + 1];
-  }
-  return process.env.T3CODE_PI_MCP_CONFIG?.trim() || undefined;
-}'
   '';
 
   installPhase = ''

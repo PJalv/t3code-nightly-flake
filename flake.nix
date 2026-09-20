@@ -1,5 +1,5 @@
 {
-  description = "Latest T3 Code nightly, bundled with Codex and Pi from llm-agents.nix";
+  description = "Latest T3 Code nightly, bundled with Codex and the T3 Pi Copilot runtime";
 
   nixConfig = {
     extra-substituters = [ "https://cache.numtide.com" ];
@@ -11,13 +11,12 @@
   inputs = {
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
-    # pi (from llm-agents.nix) with the opencode-aligned GitHub Copilot port.
+    # Pi 0.86.1 with the opencode-aligned GitHub Copilot port and T3's
+    # RPC compaction fixes. Pi is packaged directly from its npm release;
+    # llm-agents remains the source of the separately bundled Codex runtime.
     pi-copilot = {
-      url = "git+ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git";
+      url = "git+ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git?ref=pi-0.86.1-copilot";
       inputs.nixpkgs.follows = "nixpkgs";
-      # Reuse the existing llm-agents input so pi stays on the same llm-agents
-      # revision and nixpkgs as the rest of these packages.
-      inputs.llm-agents_nix.follows = "llm-agents";
     };
     t3code-source = {
       url = "github:PJalv/t3code/2ae3e636fd";
@@ -120,7 +119,7 @@
           test -x ${t3code.passthru.pi}/bin/pi
           grep -q T3CODE_PI_MCP_CONFIG ${t3code.passthru.pi}/bin/pi
           test -f ${piRuntime.passthru.piMcpAdapter}/lib/pi-mcp-adapter/index.ts
-          grep -q T3CODE_PI_MCP_CONFIG ${piRuntime.passthru.piMcpAdapter}/lib/pi-mcp-adapter/utils.ts
+          grep -q '"version": "2.34.0"' ${piRuntime.passthru.piMcpAdapter}/lib/pi-mcp-adapter/package.json
           test -f ${piRuntime.passthru.piSubagents}/lib/pi-subagents/src/index.ts
           grep -q '"version": "0.16.0"' ${piRuntime.passthru.piSubagents}/lib/pi-subagents/package.json
           grep -q 'subagents:rpc:stop' ${piRuntime.passthru.piSubagents}/lib/pi-subagents/src/cross-extension-rpc.ts
