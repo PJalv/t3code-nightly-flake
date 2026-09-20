@@ -121,9 +121,10 @@
           test -f ${piRuntime.passthru.piMcpAdapter}/lib/pi-mcp-adapter/index.ts
           grep -q '"version": "2.34.0"' ${piRuntime.passthru.piMcpAdapter}/lib/pi-mcp-adapter/package.json
           test -f ${piRuntime.passthru.piSubagents}/lib/pi-subagents/src/index.ts
-          grep -q '"version": "0.16.0"' ${piRuntime.passthru.piSubagents}/lib/pi-subagents/package.json
+          grep -q '"version": "0.19.0"' ${piRuntime.passthru.piSubagents}/lib/pi-subagents/package.json
           grep -q 'subagents:rpc:stop' ${piRuntime.passthru.piSubagents}/lib/pi-subagents/src/cross-extension-rpc.ts
-          grep -q 'pi-subagents-0.16.0' ${t3code.passthru.pi}/bin/pi
+          grep -q 'pi-subagents-0.19.0' ${t3code.passthru.pi}/bin/pi
+          grep -q 'Type.Union(\[Type.Literal("off"), Type.Literal("worktree")\]' ${piRuntime.passthru.piSubagents}/lib/pi-subagents/src/invocation-config.ts
           test -f ${piRuntime.passthru.subagentExtension}/index.ts
           grep -q 'agent.model ??' ${piRuntime.passthru.subagentExtension}/index.ts
           grep -q 'Use "default" unless' ${piRuntime.passthru.subagentExtension}/index.ts

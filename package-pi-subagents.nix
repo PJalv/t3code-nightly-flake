@@ -5,16 +5,16 @@
 }:
 buildNpmPackage rec {
   pname = "pi-subagents";
-  version = "0.16.0";
+  version = "0.19.0";
 
   src = fetchFromGitHub {
     owner = "tintinweb";
     repo = "pi-subagents";
     rev = "v${version}";
-    hash = "sha256-vkhSHSkOmAAdw/F5sQ4iV/Vls4VZfxedpSsWiTrnXRo=";
+    hash = "sha256-1K6U5+2qLgOV7lUWbvqUne/Pf7oMRDf40GXLl8gv6Bk=";
   };
 
-  npmDepsHash = "sha256-qZo5C8d6ZhX7Zv9i9SxDxaUUwgnrMkJbPpeSF0JtNe4=";
+  npmDepsHash = "sha256-w4ht9Wjb73w13bOSfeEU5a1RXPYARXVO21Vpk/NR1nY=";
   dontNpmBuild = true;
 
   postPatch = ''
@@ -32,6 +32,7 @@ buildNpmPackage rec {
     test -d "$out/lib/pi-subagents/node_modules/@sinclair/typebox"
     test -d "$out/lib/pi-subagents/node_modules/croner"
     test -d "$out/lib/pi-subagents/node_modules/nanoid"
+    test -d "$out/lib/pi-subagents/node_modules/typebox"
 
     runHook postInstall
   '';
