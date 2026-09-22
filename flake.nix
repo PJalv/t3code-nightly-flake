@@ -15,11 +15,11 @@
     # RPC compaction fixes. Pi is packaged directly from its npm release;
     # llm-agents remains the source of the separately bundled Codex runtime.
     pi-copilot = {
-      url = "git+ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git?ref=pi-0.86.1-copilot";
+      url = "git+ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git?ref=pi-0.87.0-copilot";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     t3code-source = {
-      url = "github:PJalv/t3code/a47580a92d";
+      url = "github:PJalv/t3code/f6f3e456a3";
       flake = false;
     };
   };
