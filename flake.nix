@@ -19,7 +19,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     t3code-source = {
-      url = "github:PJalv/t3code/1df5ed066d";
+      url = "github:PJalv/t3code/7fd646ffc1";
       flake = false;
     };
   };
