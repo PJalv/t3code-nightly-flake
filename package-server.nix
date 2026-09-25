@@ -10,6 +10,7 @@
 , codex
 , pi
 , sourceAssets
+, deviceHub
 , androidSdk
 , androidPlatformTools
 , androidEmulator
@@ -39,6 +40,38 @@ let
   ];
   checkpointWrapperArgs = lib.optionalString disableCheckpoints
     "--set T3_DISABLE_CHECKPOINTS 1";
+  # The server npm-installs expo-device-hub into <base-dir>/tools on first
+  # use, which needs the registry and pulls the scrcpy jar from GitHub. Seed
+  # the same layout from the store, sentinel included, so installTool sees a
+  # complete install and skips both. Re-seeded on every start because the
+  # version directory changes when the pinned hub version does.
+  seedDeviceHub = ''
+    seed_device_hub() {
+      local base="''${T3CODE_HOME:-$HOME/.t3}"
+      local dir="$base/tools/expo-device-hub/${deviceHub.hubVersion}"
+      # Re-seed when the sentinel is missing or names another version. Files
+      # copied out of the store are read-only, so clear the write bit before
+      # removing, otherwise a stale tree blocks its own replacement.
+      if [ "$(cat "$dir/.install-complete" 2>/dev/null)" = '${deviceHub.hubVersion}' ]; then
+        return 0
+      fi
+      if [ -d "$dir" ]; then
+        chmod -R u+w "$dir" 2>/dev/null || true
+        rm -rf "$dir"
+      fi
+      mkdir -p "$dir/node_modules"
+      cp -r ${deviceHub}/lib/node_modules/expo-device-hub "$dir/node_modules/"
+      chmod -R u+w "$dir"
+      # Trailing newline without printf escapes: makeWrapper strips
+      # backslashes, so '%s\n' would reach the wrapper as '%sn'.
+      echo '${deviceHub.hubVersion}' > "$dir/.install-complete"
+    }
+    seed_device_hub
+  '';
+  # Seeding is best-effort. Commands like `--help` run in contexts whose home
+  # may not be writable (the build sandbox sets HOME=/homeless-shelter), and a
+  # failed seed must not turn those into failures.
+  seedDeviceHubRun = "( ${seedDeviceHub} ) 2>/dev/null || true";
 in
 buildNpmPackage {
   pname = "t3code-server";
@@ -107,7 +140,8 @@ buildNpmPackage {
       --set ANDROID_HOME "${androidHome}" \
       --set ANDROID_SDK_ROOT "${androidHome}" \
       --set JAVA_HOME "${androidJdk.home}" \
-      --prefix PATH : "${runtimePath}"
+      --prefix PATH : "${runtimePath}" \
+      --run '${seedDeviceHubRun}'
 
     makeWrapper ${nodejs_24}/bin/node "$out/bin/t3code-server" \
       --add-flags "$out/lib/node_modules/t3/${binPath}" \
@@ -116,7 +150,8 @@ buildNpmPackage {
       --set ANDROID_HOME "${androidHome}" \
       --set ANDROID_SDK_ROOT "${androidHome}" \
       --set JAVA_HOME "${androidJdk.home}" \
-      --prefix PATH : "${runtimePath}"
+      --prefix PATH : "${runtimePath}" \
+      --run '${seedDeviceHubRun}'
 
     runHook postInstall
   '';
