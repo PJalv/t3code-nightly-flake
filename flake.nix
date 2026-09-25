@@ -50,6 +50,8 @@
       piSubagents = pkgs.callPackage ./package-pi-subagents.nix { };
       scrcpyServer = pkgs.callPackage ./package-scrcpy-server.nix { };
       deviceHub = pkgs.callPackage ./package-device-hub.nix { inherit scrcpyServer; };
+      seedDeviceHub = pkgs.writeShellScript "t3code-seed-device-hub"
+        (import ./seed-device-hub.nix { inherit deviceHub; });
       piRuntime = pkgs.callPackage ./package-pi-runtime.nix {
         # pi with the opencode-aligned GitHub Copilot port.
         pi = pi-copilot.packages.${system}.pi;
@@ -85,7 +87,7 @@
       t3code = pkgs.callPackage ./package.nix {
         codex = llm-agents.packages.${system}.codex;
         pi = piRuntime;
-        inherit sourceAssets androidSdk androidPlatformTools androidEmulator androidJdk;
+        inherit sourceAssets seedDeviceHub androidSdk androidPlatformTools androidEmulator androidJdk;
       };
       t3codeWithCheckpoints = t3code.override {
         disableCheckpoints = false;
@@ -93,7 +95,7 @@
       server = pkgs.callPackage ./package-server.nix {
         codex = llm-agents.packages.${system}.codex;
         pi = piRuntime;
-        inherit sourceAssets deviceHub androidSdk androidPlatformTools androidEmulator androidJdk;
+        inherit sourceAssets seedDeviceHub androidSdk androidPlatformTools androidEmulator androidJdk;
       };
       serverWithCheckpoints = server.override {
         disableCheckpoints = false;
@@ -199,7 +201,19 @@
           # otherwise downloads from GitHub at runtime.
           test -f ${deviceHub}/lib/node_modules/expo-device-hub/vendor/serve-emu/vendor/scrcpy-server-v${scrcpyServer.version}
           test -f ${deviceHub}/lib/node_modules/expo-device-hub/dist/server/cli.mjs
-          grep -q 'install-complete' ${server}/bin/t3code-server
+          grep -q 't3code-seed-device-hub' ${server}/bin/t3code-server
+          grep -q 't3code-seed-device-hub' ${t3code}/bin/.t3code-wrapped
+          # A version-matched npm install must also be replaced: it has the
+          # sentinel but lacks the bundled scrcpy entry and runtime deps.
+          testHome="$(mktemp -d)"
+          hubDir="$testHome/tools/expo-device-hub/${deviceHub.hubVersion}"
+          mkdir -p "$hubDir"
+          echo '${deviceHub.hubVersion}' > "$hubDir/.install-complete"
+          T3CODE_HOME="$testHome" ${seedDeviceHub}
+          test "$(cat "$hubDir/.t3-bundled-from")" = '${deviceHub}'
+          test -f "$hubDir/node_modules/expo-device-hub/dist/server/cli-real.mjs"
+          test -f "$hubDir/node_modules/expo-device-hub/vendor/serve-emu/vendor/scrcpy-server-v${scrcpyServer.version}"
+          T3CODE_HOME="$testHome" ${seedDeviceHub}
           touch "$out"
         '';
       };
