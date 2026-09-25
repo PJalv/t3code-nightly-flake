@@ -27,7 +27,12 @@
   outputs = { self, nixpkgs, llm-agents, pi-copilot, t3code-source }:
     let
       system = "x86_64-linux";
-      pkgs = import nixpkgs { inherit system; };
+      pkgs = import nixpkgs {
+        inherit system;
+        # Android SDK components use Google's unfree license; the SDK
+        # composition below explicitly accepts that license.
+        config.allowUnfree = true;
+      };
       lib = pkgs.lib;
       source = lib.importJSON ./source.json;
       # The repo pins packageManager pnpm@11.10.0; nixpkgs' pnpm_11 (11.25.0)
@@ -172,11 +177,11 @@
           test -x ${androidPlatformTools}/libexec/android-sdk/platform-tools/adb
           test -x ${androidEmulator}/libexec/android-sdk/emulator/emulator
           find ${androidHome}/cmdline-tools -name avdmanager | grep -q .
-          find ${androidHome}/system-images -name system.img | grep -q .
-          grep -q "ANDROID_HOME" ${server}/bin/t3code-server
-          grep -q "ANDROID_SDK_ROOT" ${server}/bin/t3code-server
-          grep -q "JAVA_HOME" ${server}/bin/t3code-server
-          grep -q "ANDROID_HOME" ${t3code}/bin/t3code
+          find -L ${androidHome}/system-images -name system.img | grep -q .
+          for variable in ANDROID_HOME ANDROID_SDK_ROOT JAVA_HOME; do
+            grep -q "$variable" ${server}/bin/t3code-server
+            grep -q "$variable" ${t3code}/bin/.t3code-wrapped
+          done
           touch "$out"
         '';
       };
