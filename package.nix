@@ -9,6 +9,7 @@
   codex,
   pi,
   sourceAssets,
+  seedDeviceHub,
   androidSdk,
   androidPlatformTools,
   androidEmulator,
@@ -162,7 +163,8 @@ runCommand "${pname}-${version}"
       --set ANDROID_HOME "${androidHome}" \
       --set ANDROID_SDK_ROOT "${androidHome}" \
       --set JAVA_HOME "${androidJdk.home}" \
-      --prefix PATH : "${runtimePath}"
+      --prefix PATH : "${runtimePath}" \
+      --run '${seedDeviceHub}'
 
     if [ -n "$desktop_file" ]; then
       wrapProgram "$out/bin/${pname}" \

@@ -140,7 +140,10 @@ T3 Code's Device panel drives iOS Simulators and Android emulators/phones. The
 wrappers bundle the host-side Android toolchain — `platform-tools` (`adb`), the
 emulator, `cmdline-tools` (`avdmanager`/`sdkmanager`), one `google_apis` API 35
 `x86_64` system image, and a JDK — and export `ANDROID_HOME`, `ANDROID_SDK_ROOT`,
-and `JAVA_HOME` so the panel can find them without a host Android SDK.
+and `JAVA_HOME` so the panel can find them without a host Android SDK. Both
+launchers also seed the pinned device hub and scrcpy server under T3 home before
+the backend starts. Restart the desktop app after updating the flake; pressing
+**Refresh devices** alone does not replace an already-running backend.
 
 An AVD must exist before T3 can start an emulator; create one against the bundled
 image, for example:
