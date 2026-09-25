@@ -19,7 +19,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     t3code-source = {
-      url = "github:PJalv/t3code/7fd646ffc1";
+      url = "github:PJalv/t3code/3533201142";
       flake = false;
     };
   };
@@ -48,10 +48,28 @@
         pi = pi-copilot.packages.${system}.pi;
         inherit piMcpAdapter piSubagents;
       };
+      androidComposition = (pkgs.androidenv.override { licenseAccepted = true; }).composeAndroidPackages {
+        platformVersions = [ "35" ];
+        includeEmulator = "if-supported";
+        # An installed system image is required before `avdmanager create avd`
+        # can build an AVD, and nixpkgs patches the google_apis images so the
+        # emulator and avdmanager recognise their ABI. Pin this to a single
+        # type/ABI: the upstream defaults expand to four types across four ABIs.
+        includeSystemImages = true;
+        systemImageTypes = [ "google_apis" ];
+        abiVersions = [ "x86_64" ];
+        includeSources = false;
+        includeNDK = false;
+      };
+      androidSdk = androidComposition.androidsdk;
+      androidPlatformTools = androidComposition.platform-tools;
+      androidEmulator = androidComposition.emulator;
+      androidJdk = pkgs.jdk;
+      androidHome = "${androidSdk}/libexec/android-sdk";
       t3code = pkgs.callPackage ./package.nix {
         codex = llm-agents.packages.${system}.codex;
         pi = piRuntime;
-        inherit sourceAssets;
+        inherit sourceAssets androidSdk androidPlatformTools androidEmulator androidJdk;
       };
       t3codeWithCheckpoints = t3code.override {
         disableCheckpoints = false;
@@ -59,7 +77,7 @@
       server = pkgs.callPackage ./package-server.nix {
         codex = llm-agents.packages.${system}.codex;
         pi = piRuntime;
-        inherit sourceAssets;
+        inherit sourceAssets androidSdk androidPlatformTools androidEmulator androidJdk;
       };
       serverWithCheckpoints = server.override {
         disableCheckpoints = false;
@@ -147,6 +165,19 @@
         '';
         server-help = pkgs.runCommand "t3code-server-help" { } ''
           ${server}/bin/t3code-server --help > "$out"
+        '';
+        android-tooling = pkgs.runCommand "t3code-android-tooling" { } ''
+          # The Device panel shells out to these; a missing one shows up as an
+          # unusable device panel rather than a build error.
+          test -x ${androidPlatformTools}/libexec/android-sdk/platform-tools/adb
+          test -x ${androidEmulator}/libexec/android-sdk/emulator/emulator
+          find ${androidHome}/cmdline-tools -name avdmanager | grep -q .
+          find ${androidHome}/system-images -name system.img | grep -q .
+          grep -q "ANDROID_HOME" ${server}/bin/t3code-server
+          grep -q "ANDROID_SDK_ROOT" ${server}/bin/t3code-server
+          grep -q "JAVA_HOME" ${server}/bin/t3code-server
+          grep -q "ANDROID_HOME" ${t3code}/bin/t3code
+          touch "$out"
         '';
       };
     };

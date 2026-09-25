@@ -134,6 +134,26 @@ though the bundled CLI is working. Do not use T3 Code's npm update action for
 the Nix-store binary; either wait for the next automated input refresh or turn
 off **provider update checks** in T3 Code's settings.
 
+## Android device control
+
+T3 Code's Device panel drives iOS Simulators and Android emulators/phones. The
+wrappers bundle the host-side Android toolchain — `platform-tools` (`adb`), the
+emulator, `cmdline-tools` (`avdmanager`/`sdkmanager`), one `google_apis` API 35
+`x86_64` system image, and a JDK — and export `ANDROID_HOME`, `ANDROID_SDK_ROOT`,
+and `JAVA_HOME` so the panel can find them without a host Android SDK.
+
+An AVD must exist before T3 can start an emulator; create one against the bundled
+image, for example:
+
+```sh
+avdmanager create avd --name t3-pixel --package 'system-images;android-35;google_apis;x86_64' --device pixel_7
+```
+
+The x86_64 emulator needs KVM (`/dev/kvm`) on the host. A physical phone needs
+USB debugging enabled and the host key authorized; it appears once `adb devices`
+reports it as `device` rather than `unauthorized`. Verify the bundled tooling
+with `nix build .#checks.x86_64-linux.android-tooling`.
+
 ## Platform
 
 Currently packaged for `x86_64-linux`, matching the upstream Linux AppImage.

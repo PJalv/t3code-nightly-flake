@@ -9,6 +9,10 @@
   codex,
   pi,
   sourceAssets,
+  androidSdk,
+  androidPlatformTools,
+  androidEmulator,
+  androidJdk,
   disableCheckpoints ? true,
 }:
 
@@ -16,6 +20,16 @@ let
   source = lib.importJSON ./source.json;
   pname = "t3code";
   inherit (source) version;
+  androidHome = "${androidSdk}/libexec/android-sdk";
+  runtimePath = lib.makeBinPath [
+    codex
+    pi
+    pkgs.lsof
+    androidSdk
+    androidPlatformTools
+    androidEmulator
+    androidJdk
+  ];
 
   src = fetchurl {
     inherit (source) url hash;
@@ -145,7 +159,10 @@ runCommand "${pname}-${version}"
       --set GSETTINGS_SCHEMA_DIR "${sourceAppimageContents}/usr/share/glib-2.0/schemas" \
       --run 'if ! ${pkgs.util-linux}/bin/unshare -Ur true 2>/dev/null; then set -- --no-sandbox "$@"; fi' \
       --prefix XDG_DATA_DIRS : "$out/share" \
-      --prefix PATH : "${lib.makeBinPath [ codex pi pkgs.lsof ]}"
+      --set ANDROID_HOME "${androidHome}" \
+      --set ANDROID_SDK_ROOT "${androidHome}" \
+      --set JAVA_HOME "${androidJdk.home}" \
+      --prefix PATH : "${runtimePath}"
 
     if [ -n "$desktop_file" ]; then
       wrapProgram "$out/bin/${pname}" \

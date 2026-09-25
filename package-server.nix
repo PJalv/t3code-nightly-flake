@@ -10,6 +10,10 @@
 , codex
 , pi
 , sourceAssets
+, androidSdk
+, androidPlatformTools
+, androidEmulator
+, androidJdk
 , disableCheckpoints ? true
 }:
 
@@ -21,7 +25,18 @@ let
   # The published package's bin is now a platform launcher. This derivation
   # replaces dist with our source build, so invoke that bundle directly.
   binPath = "dist/bin.mjs";
-  runtimePath = lib.makeBinPath [ codex pi git openssh lsof ];
+  androidHome = "${androidSdk}/libexec/android-sdk";
+  runtimePath = lib.makeBinPath [
+    codex
+    pi
+    git
+    openssh
+    lsof
+    androidSdk
+    androidPlatformTools
+    androidEmulator
+    androidJdk
+  ];
   checkpointWrapperArgs = lib.optionalString disableCheckpoints
     "--set T3_DISABLE_CHECKPOINTS 1";
 in
@@ -89,12 +104,18 @@ buildNpmPackage {
     makeWrapper ${nodejs_24}/bin/node "$out/bin/t3" \
       --add-flags "$out/lib/node_modules/t3/${binPath}" \
       ${checkpointWrapperArgs} \
+      --set ANDROID_HOME "${androidHome}" \
+      --set ANDROID_SDK_ROOT "${androidHome}" \
+      --set JAVA_HOME "${androidJdk.home}" \
       --prefix PATH : "${runtimePath}"
 
     makeWrapper ${nodejs_24}/bin/node "$out/bin/t3code-server" \
       --add-flags "$out/lib/node_modules/t3/${binPath}" \
       --add-flags "serve" \
       ${checkpointWrapperArgs} \
+      --set ANDROID_HOME "${androidHome}" \
+      --set ANDROID_SDK_ROOT "${androidHome}" \
+      --set JAVA_HOME "${androidJdk.home}" \
       --prefix PATH : "${runtimePath}"
 
     runHook postInstall
