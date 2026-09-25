@@ -27,7 +27,12 @@
   outputs = { self, nixpkgs, llm-agents, pi-copilot, t3code-source }:
     let
       system = "x86_64-linux";
-      pkgs = import nixpkgs { inherit system; };
+      pkgs = import nixpkgs {
+        inherit system;
+        # Android SDK components use Google's unfree license; the SDK
+        # composition below explicitly accepts that license.
+        config.allowUnfree = true;
+      };
       lib = pkgs.lib;
       source = lib.importJSON ./source.json;
       # The repo pins packageManager pnpm@11.10.0; nixpkgs' pnpm_11 (11.25.0)
@@ -43,6 +48,8 @@
       };
       piMcpAdapter = pkgs.callPackage ./package-pi-mcp-adapter.nix { };
       piSubagents = pkgs.callPackage ./package-pi-subagents.nix { };
+      scrcpyServer = pkgs.callPackage ./package-scrcpy-server.nix { };
+      deviceHub = pkgs.callPackage ./package-device-hub.nix { inherit scrcpyServer; };
       piRuntime = pkgs.callPackage ./package-pi-runtime.nix {
         # pi with the opencode-aligned GitHub Copilot port.
         pi = pi-copilot.packages.${system}.pi;
@@ -61,10 +68,19 @@
         includeSources = false;
         includeNDK = false;
       };
-      androidSdk = androidComposition.androidsdk;
+      androidSdkBase = androidComposition.androidsdk;
       androidPlatformTools = androidComposition.platform-tools;
       androidEmulator = androidComposition.emulator;
       androidJdk = pkgs.jdk;
+      # T3 checks cmdline-tools/latest explicitly. nixpkgs installs the tools
+      # under their version number, so expose the conventional alias without
+      # copying the SDK payload.
+      androidSdk = pkgs.runCommand "t3code-android-sdk" { } ''
+        mkdir -p "$out/libexec"
+        cp -rs ${androidSdkBase}/libexec/android-sdk "$out/libexec/android-sdk"
+        chmod u+w "$out/libexec/android-sdk/cmdline-tools"
+        ln -s 22.0 "$out/libexec/android-sdk/cmdline-tools/latest"
+      '';
       androidHome = "${androidSdk}/libexec/android-sdk";
       t3code = pkgs.callPackage ./package.nix {
         codex = llm-agents.packages.${system}.codex;
@@ -77,7 +93,7 @@
       server = pkgs.callPackage ./package-server.nix {
         codex = llm-agents.packages.${system}.codex;
         pi = piRuntime;
-        inherit sourceAssets androidSdk androidPlatformTools androidEmulator androidJdk;
+        inherit sourceAssets deviceHub androidSdk androidPlatformTools androidEmulator androidJdk;
       };
       serverWithCheckpoints = server.override {
         disableCheckpoints = false;
@@ -96,6 +112,8 @@
         pi = piRuntime;
         pi-mcp-adapter = piMcpAdapter;
         pi-subagents = piSubagents;
+        device-hub = deviceHub;
+        scrcpy-server = scrcpyServer;
       };
 
       apps.${system} = {
@@ -171,12 +189,17 @@
           # unusable device panel rather than a build error.
           test -x ${androidPlatformTools}/libexec/android-sdk/platform-tools/adb
           test -x ${androidEmulator}/libexec/android-sdk/emulator/emulator
-          find ${androidHome}/cmdline-tools -name avdmanager | grep -q .
-          find ${androidHome}/system-images -name system.img | grep -q .
-          grep -q "ANDROID_HOME" ${server}/bin/t3code-server
-          grep -q "ANDROID_SDK_ROOT" ${server}/bin/t3code-server
-          grep -q "JAVA_HOME" ${server}/bin/t3code-server
-          grep -q "ANDROID_HOME" ${t3code}/bin/t3code
+          test -x ${androidHome}/cmdline-tools/latest/bin/avdmanager
+          find -L ${androidHome}/system-images -name system.img | grep -q .
+          for variable in ANDROID_HOME ANDROID_SDK_ROOT JAVA_HOME; do
+            grep -q "$variable" ${server}/bin/t3code-server
+            grep -q "$variable" ${t3code}/bin/.t3code-wrapped
+          done
+          # Physical Android devices stream over scrcpy, which serve-emu
+          # otherwise downloads from GitHub at runtime.
+          test -f ${deviceHub}/lib/node_modules/expo-device-hub/vendor/serve-emu/vendor/scrcpy-server-v${scrcpyServer.version}
+          test -f ${deviceHub}/lib/node_modules/expo-device-hub/dist/server/cli.mjs
+          grep -q 'install-complete' ${server}/bin/t3code-server
           touch "$out"
         '';
       };
