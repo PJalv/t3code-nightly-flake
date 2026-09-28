@@ -1,9 +1,9 @@
 {
-  "version": "0.0.43-nightly.20260925.2251",
-  "tag": "v0.0.43-nightly.20260925.2251",
-  "publishedAt": "2026-09-25T11:42:14Z",
-  "url": "https://github.com/pingdotgg/t3code/releases/download/v0.0.43-nightly.20260925.2251/T3-Code-0.0.43-nightly.20260925.2251-x86_64.AppImage",
-  "hash": "sha256-DRsxBRN3mw0nUKw7H8pW7OsbQTk6AOHVMm/N1MIR8jY=",
-  "npmUrl": "https://registry.npmjs.org/t3/-/t3-0.0.43-nightly.20260925.2251.tgz",
-  "npmHash": "sha512-JA3vXljv/YVBkwCPAwtMPDEdUvTiskXThLazvy7cSdnb9on1ObutyYDmnbnhTPQJCrkfPerQZvwAMoCGVWii9w=="
+  "version": "0.0.43-nightly.20260928.2375",
+  "tag": "v0.0.43-nightly.20260928.2375",
+  "publishedAt": "2026-09-28T03:53:56Z",
+  "url": "https://github.com/pingdotgg/t3code/releases/download/v0.0.43-nightly.20260928.2375/T3-Code-0.0.43-nightly.20260928.2375-x86_64.AppImage",
+  "hash": "sha256-h46aMGkFaTd5JPGvRXl8h9x1CWU4P9Btr/cSyJ3hYio=",
+  "npmUrl": "https://registry.npmjs.org/t3/-/t3-0.0.43-nightly.20260928.2375.tgz",
+  "npmHash": "sha512-/udEj+efUR6zZbHDo0nbDcO83sur1ngNhtdZprti47cd/qg1ASrjrcoW5/+kP1w8fjLog5vIGx1sSuaauX0Z2w=="
 }
