@@ -1,7 +1,8 @@
 # t3code-nightly-flake
 
-The latest T3 Code nightly runtime for Nix, bundled with Codex and Pi from
-[`numtide/llm-agents.nix`](https://github.com/numtide/llm-agents.nix).
+The latest T3 Code nightly runtime for Nix, bundled with Codex from
+[`numtide/llm-agents.nix`](https://github.com/numtide/llm-agents.nix) and Pi 0.99.1
+from the `git.pjalv.com/PJalv/pi-copilot` fork.
 
 The web, server, and desktop JavaScript bundles are built from the pinned
 [`PJalv/t3code`](https://github.com/PJalv/t3code) source fork. The upstream
@@ -81,18 +82,22 @@ Use the full upstream CLI with:
 nix run .#t3 -- --help
 ```
 
-The launcher prepends the pinned `llm-agents.nix` Codex and Pi packages to
-`PATH`, so T3 Code consistently sees the bundled CLIs rather than host
-installations. The Pi wrapper supplies two baseline capabilities that Pi keeps
-outside its core:
+The launcher prepends the pinned Codex and Pi packages to `PATH`, so T3 Code
+consistently sees the bundled CLIs rather than host installations. Pi includes
+the fork's OpenCode-aligned Copilot provider and T3 RPC compaction fixes.
+The Pi wrapper loads two pinned extensions:
 
-- `pi-mcp-adapter` provides lazy MCP server discovery, calls, OAuth, and output
-  limits. An installed `pi-mcp-adapter` package or an extension whose file name
-  contains `mcp` takes precedence over the bundled adapter.
-- `@tintinweb/pi-subagents` is pinned exactly to `0.16.0`. It provides the
-  Claude Code-style `Agent` tool, foreground and background work, durable
-  agent IDs, and RPC v2 targeted Stop. A user package or extension whose name
-  contains `subagent` explicitly replaces the managed default.
+- `pi-mcp-adapter` 2.34.0 provides lazy MCP server discovery, calls, OAuth, and
+  output limits. It replaces Pi 0.99.1's built-in MCP extension during sessions
+  to preserve T3's existing MCP configuration and tool presentation.
+- `@tintinweb/pi-subagents` 0.19.0 provides the Claude Code-style `Agent` tool,
+  foreground and background work, durable agent IDs, and RPC v2 targeted Stop.
+
+Remove separately installed copies of these extensions to avoid loading them
+twice. The wrapper warns about detected copies; it does not disable other user
+or project extensions. Management commands, including `pi mcp`, run without
+injecting the bundled extensions. `pi mcp` manages Pi's native configuration,
+not the adapter configuration used by T3 sessions.
 
 Both extensions continue to read normal user and project Pi configuration.
 T3 Code translates their activity into MCP tool rows, the Agents panel, and

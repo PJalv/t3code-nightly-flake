@@ -11,11 +11,11 @@
   inputs = {
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
-    # Pi 0.86.1 with the opencode-aligned GitHub Copilot port and T3's
+    # Pi 0.99.1 with the opencode-aligned GitHub Copilot port and T3's
     # RPC compaction fixes. Pi is packaged directly from its npm release;
     # llm-agents remains the source of the separately bundled Codex runtime.
     pi-copilot = {
-      url = "git+ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git?ref=pi-0.87.0-copilot";
+      url = "git+ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git?ref=pi-0.99.1-copilot";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     t3code-source = {
@@ -169,6 +169,12 @@
           test -f ${piRuntime.passthru.subagentExtension}/agents/default.md
           test "$(find ${piRuntime.passthru.subagentExtension}/agents -maxdepth 1 -name '*.md' | wc -l)" -eq 1
           ${t3code.passthru.pi}/bin/pi --version > "$out"
+          test "$(cat "$out")" = '${piRuntime.version}'
+          # Management commands must precede the wrapper's extension flags.
+          export HOME="$(mktemp -d)"
+          export PI_CODING_AGENT_DIR="$HOME/.pi/agent"
+          ${t3code.passthru.pi}/bin/pi mcp list > mcp-list.txt
+          grep -q 'No MCP servers configured' mcp-list.txt
         '';
         source-features = pkgs.runCommand "t3code-source-features" { } ''
           grep -a -q 'src/provider/Drivers/PiDriver.ts' ${sourceAssets}/apps/server/dist/bin.mjs
