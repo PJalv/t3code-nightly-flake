@@ -19,7 +19,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     t3code-source = {
-      url = "github:PJalv/t3code/3143d9d79ffe6a8929021bffde4d43c50cb8d704";
+      url = "github:PJalv/t3code/32cf1c4a85ca3e56bea0483e4baf8a947002199f";
       flake = false;
     };
   };
@@ -181,6 +181,8 @@
           grep -R -q "Provider-native file changes" ${sourceAssets}/apps/server/dist/client
           grep -a -q get_session_stats ${sourceAssets}/apps/server/dist/bin.mjs
           grep -a -q registerMcpServer ${sourceAssets}/apps/server/dist/bin.mjs
+          grep -a -q 'pi.compaction' ${sourceAssets}/apps/server/dist/bin.mjs
+          grep -R -q 'Compacting context' ${sourceAssets}/apps/server/dist/client
           grep -a -q t3code.pi-bridge.v1 ${sourceAssets}/apps/server/dist/bin.mjs
           grep -a -q get_entries ${sourceAssets}/apps/server/dist/bin.mjs
           grep -R -q PiAgentIcon ${sourceAssets}/apps/server/dist/client
