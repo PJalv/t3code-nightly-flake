@@ -85,25 +85,29 @@ nix run .#t3 -- --help
 The launcher prepends the pinned Codex and Pi packages to `PATH`, so T3 Code
 consistently sees the bundled CLIs rather than host installations. Pi includes
 the fork's OpenCode-aligned Copilot provider and T3 RPC compaction fixes.
-The Pi wrapper loads two pinned extensions:
+MCP uses Pi's built-in support. Configure servers in `~/.pi/agent/mcp.json` or
+in a trusted project's `.pi/mcp.json`, and manage them with `pi mcp` or `/mcp`.
+T3 registers its authenticated `t3-code` server for each session without
+rewriting either config file. Do not add a separate `t3-code` entry unless you
+intend to override T3's session connection; native Pi gives configured servers
+precedence over extension registrations.
 
-- `pi-mcp-adapter` 2.34.0 provides lazy MCP server discovery, calls, OAuth, and
-  output limits. It replaces Pi 0.99.1's built-in MCP extension during sessions
-  to preserve T3's existing MCP configuration and tool presentation.
-- `@tintinweb/pi-subagents` 0.19.0 provides the Claude Code-style `Agent` tool,
-  foreground and background work, durable agent IDs, and RPC v2 targeted Stop.
+The adapter is no longer bundled. If you installed `pi-mcp-adapter` yourself,
+remove it with `pi remove npm:pi-mcp-adapter`; otherwise it disables Pi's native
+MCP extension. The wrapper warns about installed copies but does not edit your
+settings. Existing adapter-only options, such as `directTools` and `lifecycle`,
+are not native MCP settings. Use `exposure: "direct"` for directly declared
+tools; native MCP defaults to calling server tools through codemode.
 
-Remove separately installed copies of these extensions to avoid loading them
-twice. The wrapper warns about detected copies; it does not disable other user
-or project extensions. Management commands, including `pi mcp`, run without
-injecting the bundled extensions. `pi mcp` manages Pi's native configuration,
-not the adapter configuration used by T3 sessions.
+The wrapper still loads `@tintinweb/pi-subagents` 0.19.0 for the `Agent` tool,
+foreground and background work, durable agent IDs, and targeted Stop. Remove
+separately installed copies to avoid loading it twice.
 
-Both extensions continue to read normal user and project Pi configuration.
-T3 Code translates their activity into MCP tool rows, the Agents panel, and
-per-agent usage without replacing `~/.pi/agent`. T3 also injects its own small
-RPC-only bridge for versioned lifecycle events and targeted subagent control;
-it does not fork or import pi-subagents internals.
+T3 Code translates native MCP calls into MCP tool rows and subagent activity
+into the Agents panel and per-agent usage without replacing `~/.pi/agent`.
+Its RPC-only bridge registers the session MCP server and carries versioned
+lifecycle events and targeted subagent control; it does not fork or import
+pi-subagents internals.
 
 The flake follows the `nixpkgs` revision used by `llm-agents.nix` and advertises
 Numtide's binary cache, allowing the agent CLIs to be substituted instead of
