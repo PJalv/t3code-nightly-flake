@@ -11,15 +11,15 @@
   inputs = {
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
-    # Pi 0.86.1 with the opencode-aligned GitHub Copilot port and T3's
+    # Pi 0.99.1 with the opencode-aligned GitHub Copilot port and T3's
     # RPC compaction fixes. Pi is packaged directly from its npm release;
     # llm-agents remains the source of the separately bundled Codex runtime.
     pi-copilot = {
-      url = "git+ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git?ref=pi-0.87.0-copilot";
+      url = "git+ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git?ref=pi-0.99.1-copilot";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     t3code-source = {
-      url = "github:PJalv/t3code/37f616706bbb0b1e0952690ea7bee25654ec03bf";
+      url = "github:PJalv/t3code/3143d9d79ffe6a8929021bffde4d43c50cb8d704";
       flake = false;
     };
   };
@@ -46,7 +46,6 @@
         inherit (source) version;
         pnpm_11 = pnpmPinned;
       };
-      piMcpAdapter = pkgs.callPackage ./package-pi-mcp-adapter.nix { };
       piSubagents = pkgs.callPackage ./package-pi-subagents.nix { };
       scrcpyServer = pkgs.callPackage ./package-scrcpy-server.nix { };
       deviceHub = pkgs.callPackage ./package-device-hub.nix { inherit scrcpyServer; };
@@ -55,7 +54,7 @@
       piRuntime = pkgs.callPackage ./package-pi-runtime.nix {
         # pi with the opencode-aligned GitHub Copilot port.
         pi = pi-copilot.packages.${system}.pi;
-        inherit piMcpAdapter piSubagents;
+        inherit piSubagents;
       };
       androidComposition = (pkgs.androidenv.override { licenseAccepted = true; }).composeAndroidPackages {
         platformVersions = [ "35" ];
@@ -112,7 +111,6 @@
         server-with-checkpoints = serverWithCheckpoints;
         source-assets = sourceAssets;
         pi = piRuntime;
-        pi-mcp-adapter = piMcpAdapter;
         pi-subagents = piSubagents;
         device-hub = deviceHub;
         scrcpy-server = scrcpyServer;
@@ -155,9 +153,8 @@
         '';
         bundled-pi = pkgs.runCommand "t3code-bundled-pi" { } ''
           test -x ${t3code.passthru.pi}/bin/pi
-          grep -q T3CODE_PI_MCP_CONFIG ${t3code.passthru.pi}/bin/pi
-          test -f ${piRuntime.passthru.piMcpAdapter}/lib/pi-mcp-adapter/index.ts
-          grep -q '"version": "2.34.0"' ${piRuntime.passthru.piMcpAdapter}/lib/pi-mcp-adapter/package.json
+          ! grep -q -- '--mcp-config' ${t3code.passthru.pi}/bin/pi
+          test -f ${piRuntime.passthru.pi}/lib/node_modules/@earendil-works/pi-coding-agent/dist/extensions/mcp/index.js
           test -f ${piRuntime.passthru.piSubagents}/lib/pi-subagents/src/index.ts
           grep -q '"version": "0.19.0"' ${piRuntime.passthru.piSubagents}/lib/pi-subagents/package.json
           grep -q 'subagents:rpc:stop' ${piRuntime.passthru.piSubagents}/lib/pi-subagents/src/cross-extension-rpc.ts
@@ -169,6 +166,12 @@
           test -f ${piRuntime.passthru.subagentExtension}/agents/default.md
           test "$(find ${piRuntime.passthru.subagentExtension}/agents -maxdepth 1 -name '*.md' | wc -l)" -eq 1
           ${t3code.passthru.pi}/bin/pi --version > "$out"
+          test "$(cat "$out")" = '${piRuntime.version}'
+          # Management commands must precede the wrapper's extension flags.
+          export HOME="$(mktemp -d)"
+          export PI_CODING_AGENT_DIR="$HOME/.pi/agent"
+          ${t3code.passthru.pi}/bin/pi mcp list > mcp-list.txt
+          grep -q 'No MCP servers configured' mcp-list.txt
         '';
         source-features = pkgs.runCommand "t3code-source-features" { } ''
           grep -a -q 'src/provider/Drivers/PiDriver.ts' ${sourceAssets}/apps/server/dist/bin.mjs
@@ -177,7 +180,7 @@
           grep -a -q T3_DISABLE_CHECKPOINTS ${sourceAssets}/apps/server/dist/bin.mjs
           grep -R -q "Provider-native file changes" ${sourceAssets}/apps/server/dist/client
           grep -a -q get_session_stats ${sourceAssets}/apps/server/dist/bin.mjs
-          grep -a -q pi-mcp-adapter ${sourceAssets}/apps/server/dist/bin.mjs
+          grep -a -q registerMcpServer ${sourceAssets}/apps/server/dist/bin.mjs
           grep -a -q t3code.pi-bridge.v1 ${sourceAssets}/apps/server/dist/bin.mjs
           grep -a -q get_entries ${sourceAssets}/apps/server/dist/bin.mjs
           grep -R -q PiAgentIcon ${sourceAssets}/apps/server/dist/client

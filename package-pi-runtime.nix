@@ -4,7 +4,6 @@
   runCommand,
   writeShellScriptBin,
   pi,
-  piMcpAdapter,
   piSubagents,
 }: let
   subagentExtension = runCommand "t3code-pi-subagent-extension" {} ''
@@ -50,18 +49,14 @@ in
     # --extension flags below would move the subcommand out of argv[1] and pi
     # would then treat e.g. `remove` as a coding prompt instead of a command.
     case "''${1:-}" in
-      --version|-v|install|remove|uninstall|update|list|config|auth)
+      --version|-v|install|remove|uninstall|update|list|config|auth|mcp)
         exec ${pi}/bin/pi "$@"
         ;;
     esac
 
-    # This is the SINGLE pi used for both the shell and t3code. It always loads
-    # the pinned mcp-adapter/subagents below, so no separate user-installed
-    # copies are needed (and any must be removed, since pi loads installed
-    # extension packages from ~/.pi/agent regardless of config-dir overrides).
+    # Shell and T3 sessions share native MCP and the pinned subagent extension.
     package_list="$(${pi}/bin/pi list 2>/dev/null || true)"
     extra_args=()
-    has_mcp_adapter=0
     agent_dir="''${PI_CODING_AGENT_DIR:-''${HOME}/.pi/agent}"
     has_named_extension() {
       local pattern="$1"
@@ -74,20 +69,13 @@ in
       return 1
     }
 
-    # The managed runtime ALWAYS loads the exact tested pi-mcp-adapter and
-    # pi-subagents releases bundled in this flake. User-installed or local
-    # copies are never used, so `pi update --extensions` cannot silently replace
-    # the pinned versions. A warning points at any copy that would otherwise be
-    # loaded twice, so it can be removed with `pi remove`.
-    if ${gnugrep}/bin/grep -qi 'pi-mcp-adapter' <<< "$package_list" || has_named_extension mcp; then
-      printf '%s\n' "t3code-pi: a user pi-mcp-adapter is installed; the pinned flake version is being used. Run \`pi remove npm:pi-mcp-adapter\` to avoid loading two copies." >&2
+    # An installed adapter replaces Pi's native MCP extension. Leave user
+    # configuration untouched and explain how to enable native MCP.
+    if ${gnugrep}/bin/grep -qi 'pi-mcp-adapter' <<< "$package_list"; then
+      printf '%s\n' "t3code-pi: pi-mcp-adapter disables native MCP. Run \`pi remove npm:pi-mcp-adapter\` to use Pi's built-in MCP support." >&2
     fi
     if ${gnugrep}/bin/grep -qi 'subagent' <<< "$package_list" || has_named_extension subagent; then
       printf '%s\n' "t3code-pi: a user pi-subagents is installed; the pinned flake version is being used. Run \`pi remove npm:@tintinweb/pi-subagents\` to avoid loading two copies." >&2
-    fi
-    extra_args+=(--extension ${piMcpAdapter}/lib/pi-mcp-adapter/index.ts)
-    if [ -n "''${T3CODE_PI_MCP_CONFIG:-}" ]; then
-      extra_args+=(--mcp-config "''${T3CODE_PI_MCP_CONFIG}")
     fi
     extra_args+=(--extension ${piSubagents}/lib/pi-subagents/src/index.ts)
 
@@ -98,12 +86,12 @@ in
     passthru =
       (old.passthru or {})
       // {
-        inherit pi piMcpAdapter piSubagents subagentExtension;
+        inherit pi piSubagents subagentExtension;
       };
     meta =
       (old.meta or {})
       // {
-        description = "Pi runtime with T3 Code MCP and subagent defaults";
+        description = "Pi runtime with native MCP and T3 Code subagent defaults";
         license = lib.licenses.mit;
         mainProgram = "pi";
       };

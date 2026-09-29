@@ -186,16 +186,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1790197975,
-        "narHash": "sha256-RwzTQq0KwntGilHGP+8ubHGjsE3NKI4btIU5QvmelIo=",
-        "ref": "pi-0.87.0-copilot",
-        "rev": "a7b1adf35d47b7a7214b373a9985d34ba4d7d22c",
-        "revCount": 15,
+        "lastModified": 1790711969,
+        "narHash": "sha256-Uytfm3rIvw+q6H+BEIXm8OoRKqZVIDy9cQf6yorcap4=",
+        "ref": "pi-0.99.1-copilot",
+        "rev": "d218ce59d9a49dd00c5dfd3a4541a4e370872625",
+        "revCount": 18,
         "type": "git",
         "url": "ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git"
       },
       "original": {
-        "ref": "pi-0.87.0-copilot",
+        "ref": "pi-0.99.1-copilot",
         "type": "git",
         "url": "ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git"
       }
@@ -244,17 +244,17 @@
     "t3code-source": {
       "flake": false,
       "locked": {
-        "lastModified": 1790658021,
-        "narHash": "sha256-LdVswp19qRyA3Dfgo+WSiXQk2kaDsCia7r52SMSLwRA=",
+        "lastModified": 1790712867,
+        "narHash": "sha256-wu5TetHoMIWDjAt/vTDKwU8LVq6IH6h6qUatTu3ydFE=",
         "owner": "PJalv",
         "repo": "t3code",
-        "rev": "37f616706bbb0b1e0952690ea7bee25654ec03bf",
+        "rev": "3143d9d79ffe6a8929021bffde4d43c50cb8d704",
         "type": "github"
       },
       "original": {
         "owner": "PJalv",
         "repo": "t3code",
-        "rev": "37f616706bbb0b1e0952690ea7bee25654ec03bf",
+        "rev": "3143d9d79ffe6a8929021bffde4d43c50cb8d704",
         "type": "github"
       }
     },
