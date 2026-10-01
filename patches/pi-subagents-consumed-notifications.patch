@@ -1,0 +1,579 @@
+diff --git a/docs/rpc.md b/docs/rpc.md
+index cdc1510..3014af7 100644
+--- a/docs/rpc.md
++++ b/docs/rpc.md
+@@ -111,7 +111,7 @@ The same predicate silently scopes the events. **Every lifecycle event is top-le
+ 
+ When a background agent finishes, pi-subagents sends the user a completion notification. If you have already shown the model that result yourself, that notification arrives on top of an answer that was already given, and it costs the parent a turn to dismiss. `subagents:rpc:consume` is how you say you have handled it — the bus-side half of what `get_subagent_result` does when it returns a result.
+ 
+-**When you send it decides whether it works.** The timeline:
++Completion delivery stays cancellable until the parent can use the result. The timeline:
+ 
+ 1. The agent settles and `subagents:completed` is emitted — `src/index.ts:581`.
+ 2. Eleven lines later, at `src/index.ts:592`, the code checks `record.resultConsumed` and decides whether to notify at all.
+@@ -120,8 +120,11 @@ When a background agent finishes, pi-subagents sends the user a completion notif
+ | When you consume | What happens |
+ |---|---|
+ | Synchronously, inside your `subagents:completed` handler | The notification is never scheduled. This is the clean path |
+-| After an `await`, within 200 ms | Still suppressed. The nudge is held for `NUDGE_HOLD_MS` (`src/index.ts:451`), `consume` cancels the pending timer (`:819`), and there is a re-check at send time (`:474`) |
+-| After 200 ms | Too late. The follow-up has fired with `triggerTurn: true` and cost the parent a turn |
++| After an `await`, while the parent is busy | Still suppressed. The extension retains the notification and checks consumption again at `turn_end` or `agent_before_settle`, after tool results are persisted |
++| While the parent is idle, before the 200 ms hold expires | Suppressed. Consume cancels the held notification |
++| After an idle notification has started a model request | Too late to cancel that request. The result is already being delivered |
++
++Unread results enter the parent's context at the next safe turn boundary, rather than waiting until after its final answer. An unread result arriving while the parent is idle still starts a request. After Stop or an error, late results are saved as context without restarting the parent.
+ 
+ Fire-and-forget is the intended use: the reply carries nothing to act on, and the channel sits outside the `subagents:rpc:ping` version handshake on purpose (`src/cross-extension-rpc.ts:190`), so you can send it unconditionally and an older pi-subagents with no handler simply keeps notifying.
+ 
+diff --git a/src/index.ts b/src/index.ts
+index 4989968..8705fe0 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -12,7 +12,7 @@
+ 
+ import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+ import { isAbsolute, join } from "node:path";
+-import { defineTool, type ExtensionAPI, type ExtensionCommandContext, type ExtensionContext, getAgentDir, getSettingsListTheme } from "@earendil-works/pi-coding-agent";
++import { defineTool, type AgentBeforeSettleEvent, type ExtensionAPI, type ExtensionCommandContext, type ExtensionContext, getAgentDir, getSettingsListTheme, type TurnEndEvent } from "@earendil-works/pi-coding-agent";
+ import { Container, Key, matchesKey, type SettingItem, SettingsList, Spacer, Text } from "@earendil-works/pi-tui";
+ import { Type } from "@sinclair/typebox";
+ import { abortable } from "./abortable.js";
+@@ -444,51 +444,100 @@ export default function (pi: ExtensionAPI) {
+   }
+   const pendingUsage = new PendingUsagePool();
+ 
+-  // ---- Cancellable pending notifications ----
+-  // Holds notifications briefly so get_subagent_result can cancel them
+-  // before they reach pi.sendMessage (fire-and-forget).
+-  const pendingNudges = new Map<string, ReturnType<typeof setTimeout>>();
++  // Keep completion notifications cancellable until the parent can use them.
++  // Pi's follow-up queue cannot retract a result consumed later in the same run.
++  type CompletionNotification = {
++    customType: string;
++    content: string;
++    display: boolean;
++    details: NotificationDetails;
++  };
++  const pendingNudges = new Map<string, {
++    timer: ReturnType<typeof setTimeout>;
++    build: () => CompletionNotification | undefined;
++  }>();
++  let notificationWakeupsAllowed = true;
+   const NUDGE_HOLD_MS = 200;
+   // A queued result wait must observe completion before its held notification
+   // can fire, so successful waits can still suppress that redundant nudge.
+   const QUEUE_WAIT_POLL_MS = Math.floor(NUDGE_HOLD_MS / 4);
+ 
+-  function scheduleNudge(key: string, send: () => void, delay = NUDGE_HOLD_MS) {
++  function takeNudges(): CompletionNotification[] {
++    const pending = [...pendingNudges.values()];
++    pendingNudges.clear();
++    return pending.flatMap(({ timer, build }) => {
++      clearTimeout(timer);
++      const notification = build();
++      return notification ? [notification] : [];
++    });
++  }
++
++  function scheduleNudge(key: string, build: () => CompletionNotification | undefined, delay = NUDGE_HOLD_MS) {
+     cancelNudge(key);
+-    pendingNudges.set(key, setTimeout(() => {
+-      pendingNudges.delete(key);
+-      try { send(); } catch { /* ignore stale completion side-effect errors */ }
+-    }, delay));
++    const timer = setTimeout(() => {
++      if (!currentCtx?.isIdle()) return;
++      const notifications = takeNudges();
++      const first = notifications[0];
++      if (!first) return;
++      const details = notifications.flatMap(n => [n.details, ...(n.details.others ?? [])]);
++      pi.sendMessage<NotificationDetails>({
++        ...first,
++        content: notifications.map(n => n.content).join("\n\n"),
++        details: { ...first.details, others: details.slice(1) },
++      }, { triggerTurn: notificationWakeupsAllowed });
++    }, delay);
++    pendingNudges.set(key, { timer, build });
+   }
+ 
+   function cancelNudge(key: string) {
+-    const timer = pendingNudges.get(key);
+-    if (timer != null) {
+-      clearTimeout(timer);
++    const pending = pendingNudges.get(key);
++    if (pending) {
++      clearTimeout(pending.timer);
+       pendingNudges.delete(key);
+     }
+   }
+ 
++  function clearNudges() {
++    for (const { timer } of pendingNudges.values()) clearTimeout(timer);
++    pendingNudges.clear();
++  }
++
++  // Tool results are persisted before these boundaries. A consumed result is
++  // dropped here; unread results enter context before the next model request.
++  const deliverNudgesAtBoundary = (event: AgentBeforeSettleEvent | TurnEndEvent) => {
++    notificationWakeupsAllowed = event.outcome === "completed";
++    const entries = takeNudges().map(notification => ({
++      type: "custom_message" as const,
++      ...notification,
++    }));
++    if (entries.length === 0) return;
++    return { entries, continue: event.context.canContinue };
++  };
++  pi.on("turn_end", deliverNudgesAtBoundary);
++  pi.on("agent_before_settle", deliverNudgesAtBoundary);
++  pi.on("agent_start", () => { notificationWakeupsAllowed = true; });
++
+   // ---- Individual nudge helper (async join mode) ----
+-  function emitIndividualNudge(record: AgentRecord) {
++  function emitIndividualNudge(record: AgentRecord): CompletionNotification | undefined {
+     if (record.resultConsumed) return;  // re-check at send time
+ 
+     const notification = formatTaskNotification(record, 500, showCost);
+     const footer = record.outputFile ? `\nFull transcript available at: ${record.outputFile}` : '';
+ 
+-    pi.sendMessage<NotificationDetails>({
++    return {
+       customType: "subagent-notification",
+       content: notification + footer,
+       display: true,
+       details: buildNotificationDetails(record, 500, agentActivity.get(record.id)),
+-    }, { deliverAs: "followUp", triggerTurn: true });
++    };
+   }
+ 
+   function sendIndividualNudge(record: AgentRecord) {
+     agentActivity.delete(record.id);
+     widget.markFinished(record.id);
+     fleet.onAgentFinished(record.id);
+-    scheduleNudge(record.id, () => emitIndividualNudge(record));
++    const completedRun = record.promise;
++    scheduleNudge(record.id, () => record.promise === completedRun ? emitIndividualNudge(record) : undefined);
+     widget.update();
+   }
+ 
+@@ -498,9 +547,10 @@ export default function (pi: ExtensionAPI) {
+       for (const r of records) { agentActivity.delete(r.id); widget.markFinished(r.id); fleet.onAgentFinished(r.id); }
+ 
+       const groupKey = `group:${records.map(r => r.id).join(",")}`;
++      const completedRuns = new Map(records.map(r => [r.id, r.promise]));
+       scheduleNudge(groupKey, () => {
+-        // Re-check at send time
+-        const unconsumed = records.filter(r => !r.resultConsumed);
++        // A resumed agent reuses its record, but owns a new run and result.
++        const unconsumed = records.filter(r => !r.resultConsumed && r.promise === completedRuns.get(r.id));
+         if (unconsumed.length === 0) { widget.update(); return; }
+ 
+         const notifications = unconsumed.map(r => formatTaskNotification(r, 300, showCost)).join('\n\n');
+@@ -514,12 +564,12 @@ export default function (pi: ExtensionAPI) {
+           details.others = rest.map(r => buildNotificationDetails(r, 300, agentActivity.get(r.id)));
+         }
+ 
+-        pi.sendMessage<NotificationDetails>({
++        return {
+           customType: "subagent-notification",
+           content: `Background agent group completed: ${label}\n\n${notifications}\n\nUse get_subagent_result for full output.`,
+           display: true,
+           details,
+-        }, { deliverAs: "followUp", triggerTurn: true });
++        };
+       });
+       widget.update();
+     },
+@@ -787,6 +837,8 @@ export default function (pi: ExtensionAPI) {
+   // This also wires the RPC handlers and broadcasts readiness — on the first
+   // bound session_start, so a filtered-out activation never advertises (#142).
+   pi.on("session_start", async (_event, ctx) => {
++    clearNudges();
++    notificationWakeupsAllowed = true;
+     currentCtx = ctx;
+     if (ctx.hasUI) {
+       widget.setUICtx(ctx.ui);
+@@ -1088,6 +1140,7 @@ export default function (pi: ExtensionAPI) {
+   });
+ 
+   pi.on("session_before_switch", () => {
++    clearNudges();
+     manager.clearCompleted(true);
+     scheduler.stop();
+   });
+@@ -1112,8 +1165,7 @@ export default function (pi: ExtensionAPI) {
+     for (const task of workflowTasks.values()) task.abortController.abort();
+     workflowTasks.clear();
+     manager.abortAll();
+-    for (const timer of pendingNudges.values()) clearTimeout(timer);
+-    pendingNudges.clear();
++    clearNudges();
+     fleet.dispose();
+     // Awaited: it emits `session_shutdown` into every retained child session so
+     // extensions bound there can release what they armed in `session_start` (#242).
+@@ -2374,15 +2426,15 @@ Terse command-style prompts produce shallow, generic work.
+ 
+   /**
+    * Hand a finished run back to the model through the SAME channel a background
+-   * agent uses — held briefly by `scheduleNudge`, delivered as a follow-up that
+-   * triggers a turn, rendered by the existing `subagent-notification` renderer.
++   * agent uses, at the next safe boundary or by waking an idle parent.
++   * The existing `subagent-notification` renderer displays the result.
+    */
+   function notifyWorkflowFinished(task: WorkflowTask) {
+     widget.update();
+     fleet.update();
+     const result = workflowResultText(task);
+     scheduleNudge(task.id, () => {
+-      pi.sendMessage<NotificationDetails>({
++      return {
+         customType: "subagent-notification",
+         content: formatWorkflowNotification(task),
+         display: true,
+@@ -2398,7 +2450,7 @@ Terse command-style prompts produce shallow, generic work.
+           error: task.error,
+           resultPreview: result.length > 500 ? `${result.slice(0, 500)}…` : result,
+         },
+-      }, { deliverAs: "followUp", triggerTurn: true });
++      };
+     });
+   }
+ 
+@@ -2801,7 +2853,7 @@ Terse command-style prompts produce shallow, generic work.
+       // Mark result as consumed — suppresses the completion notification
+       if (record.status !== "running" && record.status !== "queued") {
+         record.resultConsumed = true;
+-        cancelNudge(params.agent_id);
++        cancelNudge(record.id);
+       }
+ 
+       // Verbose: include full conversation
+diff --git a/test/completion-delivery.test.ts b/test/completion-delivery.test.ts
+new file mode 100644
+index 0000000..859d707
+--- /dev/null
++++ b/test/completion-delivery.test.ts
+@@ -0,0 +1,236 @@
++import type { Context } from "@earendil-works/pi-ai";
++import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai";
++import { afterEach, describe, expect, it, vi } from "vitest";
++import { agentCall, runPrintMode, type ManagerHandle, type PrintModeRun } from "./helpers/print-mode-runner.js";
++
++vi.setConfig({ testTimeout: 30_000 });
++
++function manager() {
++  const value = (globalThis as Record<symbol, unknown>)[Symbol.for("pi-subagents:manager")] as ManagerHandle | undefined;
++  if (!value) throw new Error("Subagent manager was not loaded");
++  return value;
++}
++
++function isParent(context: Context) {
++  return context.messages.some(message => message.role === "system" && message.toolsAdded?.some(tool => tool.name === "Agent"));
++}
++
++function spawnedIds(context: Context) {
++  return context.messages.flatMap(message => {
++    if (message.role !== "toolResult" || message.toolName !== "Agent") return [];
++    const text = message.content.flatMap(part => part.type === "text" ? [part.text] : []).join("\n");
++    const id = /Agent ID: (\S+)/.exec(text)?.[1];
++    return id ? [id] : [];
++  });
++}
++
++function deferred() {
++  let resolve = () => {};
++  const promise = new Promise<void>(done => { resolve = done; });
++  return { promise, resolve };
++}
++
++function assistantTexts(run: PrintModeRun) {
++  return run.parentSession.messages.flatMap(message => message.role === "assistant"
++    ? message.content.flatMap(part => part.type === "text" ? [part.text] : [])
++    : []);
++}
++
++function notifications(run: PrintModeRun) {
++  return run.parentSession.messages.filter(message => message.role === "custom" && message.customType === "subagent-notification");
++}
++
++describe("completion delivery through the real Pi loop", () => {
++  let run: PrintModeRun | undefined;
++
++  afterEach(async () => {
++    await run?.dispose();
++    run = undefined;
++    vi.useRealTimers();
++  });
++
++  it("does not replay a notification after the parent retrieved the completed result", async () => {
++    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
++    let parentCalls = 0;
++    run = await runPrintMode({
++      prompt: "Delegate, read the result, then finish.",
++      live: false,
++      hold: false,
++      respond: async context => {
++        if (!isParent(context)) return "CHILD_RESULT";
++        parentCalls++;
++        const ids = spawnedIds(context);
++        if (ids.length === 0) return agentCall({ prompt: "Review.", description: "review", run_in_background: true });
++        if (!context.messages.some(message => message.role === "toolResult" && message.toolName === "get_subagent_result")) {
++          await manager().waitForAll();
++          // Expire both the 100 ms spawn batch and the 200 ms notification hold
++          // while the parent is still in a model request, before it reads the result.
++          await vi.advanceTimersByTimeAsync(400);
++          return fauxToolCall("get_subagent_result", { agent_id: ids[0], wait: true });
++        }
++        return context.messages.some(message => message.role === "user" && JSON.stringify(message.content).includes("task-notification"))
++          ? "Already accounted for."
++          : "FULL_FINAL_ANSWER";
++      },
++    });
++
++    expect(parentCalls).toBe(3);
++    expect(assistantTexts(run)).toEqual(["FULL_FINAL_ANSWER"]);
++    expect(notifications(run)).toEqual([]);
++  });
++
++  it("delivers an unread result before the next response instead of after the final answer", async () => {
++    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
++    let parentCalls = 0;
++    run = await runPrintMode({
++      prompt: "Delegate and incorporate the result.",
++      live: false,
++      hold: false,
++      respond: async context => {
++        if (!isParent(context)) return "CHILD_RESULT";
++        parentCalls++;
++        const ids = spawnedIds(context);
++        if (ids.length === 0) return agentCall({ prompt: "Review.", description: "review", run_in_background: true });
++        if (parentCalls === 2) {
++          await manager().waitForAll();
++          await vi.advanceTimersByTimeAsync(400);
++          return fauxToolCall("get_subagent_result", { agent_id: "unknown-agent" });
++        }
++        return JSON.stringify(context.messages).includes("CHILD_RESULT") ? "FINAL_WITH_CHILD_RESULT" : "RESULT_MISSING";
++      },
++    });
++
++    expect(parentCalls).toBe(3);
++    expect(assistantTexts(run)).toEqual(["FINAL_WITH_CHILD_RESULT"]);
++    expect(notifications(run)).toHaveLength(1);
++  });
++
++  it.each([false, true])("filters consumed members from a grouped completion, all consumed: %s", async consumeAll => {
++    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
++    let parentCalls = 0;
++    run = await runPrintMode({
++      prompt: "Delegate two reviews and read their results.",
++      live: false,
++      hold: false,
++      respond: async context => {
++        if (!isParent(context)) return "CHILD_RESULT";
++        parentCalls++;
++        const ids = spawnedIds(context);
++        if (ids.length === 0) return [
++          agentCall({ prompt: "Review one.", description: "one", name: "first", run_in_background: true }, { id: "spawn-one" }),
++          agentCall({ prompt: "Review two.", description: "two", name: "second", run_in_background: true }, { id: "spawn-two" }),
++        ];
++        if (parentCalls === 2) {
++          await manager().waitForAll();
++          await vi.advanceTimersByTimeAsync(400);
++          // The handle must consume the same pending notification as the id.
++          return consumeAll
++            ? [fauxToolCall("get_subagent_result", { agent_id: "first" }, { id: "read-one" }),
++                fauxToolCall("get_subagent_result", { agent_id: "second" }, { id: "read-two" })]
++            : fauxToolCall("get_subagent_result", { agent_id: "first" });
++        }
++        return "FULL_FINAL_ANSWER";
++      },
++    });
++
++    expect(parentCalls).toBe(3);
++    expect(assistantTexts(run)).toEqual(["FULL_FINAL_ANSWER"]);
++    const received = notifications(run);
++    expect(received).toHaveLength(consumeAll ? 0 : 1);
++    if (!consumeAll) {
++      expect(JSON.stringify(received[0])).not.toContain('"description":"one"');
++      const details = received[0].role === "custom" ? received[0].details : undefined;
++      expect(details).toMatchObject({ description: "two" });
++    }
++  });
++
++  it("does not deliver an old completion after the same agent is resumed", async () => {
++    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
++    let parentCalls = 0;
++    run = await runPrintMode({
++      prompt: "Run two reviews with the same agent, then read the result.",
++      live: false,
++      hold: false,
++      respond: async context => {
++        if (!isParent(context)) return JSON.stringify(context.messages).includes("Second review.") ? "SECOND_RESULT" : "FIRST_RESULT";
++        parentCalls++;
++        const id = spawnedIds(context)[0];
++        if (!id) return agentCall({ prompt: "First review.", description: "review", run_in_background: true });
++        if (parentCalls === 2) {
++          await manager().waitForAll();
++          await vi.advanceTimersByTimeAsync(400);
++          return agentCall({ prompt: "Second review.", description: "review", resume: id, run_in_background: true });
++        }
++        if (parentCalls === 3) {
++          await manager().waitForAll();
++          await vi.advanceTimersByTimeAsync(400);
++          return fauxToolCall("get_subagent_result", { agent_id: id, wait: true });
++        }
++        return "FULL_FINAL_ANSWER";
++      },
++    });
++
++    expect(parentCalls).toBe(4);
++    expect(assistantTexts(run)).toEqual(["FULL_FINAL_ANSWER"]);
++    expect(notifications(run)).toEqual([]);
++  });
++
++  it("still wakes an idle parent for a genuinely unread result", async () => {
++    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
++    const child = deferred();
++    let parentCalls = 0;
++    run = await runPrintMode({
++      prompt: "Start a background review.",
++      live: false,
++      hold: false,
++      respond: async context => {
++        if (!isParent(context)) { await child.promise; return "CHILD_RESULT"; }
++        parentCalls++;
++        if (spawnedIds(context).length === 0) return agentCall({ prompt: "Review.", description: "review", run_in_background: true });
++        return JSON.stringify(context.messages).includes("CHILD_RESULT") ? "FINAL_WITH_CHILD_RESULT" : "Background work started.";
++      },
++    });
++    expect(parentCalls).toBe(2);
++    const settled = new Promise<void>(resolve => {
++      const unsubscribe = run!.parentSession.subscribe(event => {
++        if (event.type === "agent_settled") { unsubscribe(); resolve(); }
++      });
++    });
++    child.resolve();
++    await manager().waitForAll();
++    await vi.advanceTimersByTimeAsync(400);
++    await settled;
++
++    expect(parentCalls).toBe(3);
++    expect(notifications(run)).toHaveLength(1);
++    expect(assistantTexts(run).at(-1)).toBe("FINAL_WITH_CHILD_RESULT");
++  });
++
++  it.each(["aborted", "error"] as const)("does not restart a %s parent when a child finishes later", async stopReason => {
++    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
++    const child = deferred();
++    let parentCalls = 0;
++    run = await runPrintMode({
++      prompt: "Start a background review.",
++      live: false,
++      hold: false,
++      respond: async context => {
++        if (!isParent(context)) { await child.promise; return "CHILD_RESULT"; }
++        parentCalls++;
++        if (spawnedIds(context).length === 0) return agentCall({ prompt: "Review.", description: "review", run_in_background: true });
++        if (parentCalls === 2) return fauxAssistantMessage("Stopped", { stopReason });
++        return "FINAL_WITH_CHILD_RESULT";
++      },
++    });
++    expect(parentCalls).toBe(2);
++    child.resolve();
++    await manager().waitForAll();
++    await vi.advanceTimersByTimeAsync(400);
++
++    expect(parentCalls).toBe(2);
++    expect(notifications(run)).toHaveLength(1);
++    await run.parentSession.prompt("Continue with the result.");
++    expect(parentCalls).toBe(3);
++    expect(assistantTexts(run).at(-1)).toBe("FINAL_WITH_CHILD_RESULT");
++  });
++});
+diff --git a/test/foreground-result-retrieval.test.ts b/test/foreground-result-retrieval.test.ts
+index 3816a88..e8a34fd 100644
+--- a/test/foreground-result-retrieval.test.ts
++++ b/test/foreground-result-retrieval.test.ts
+@@ -64,6 +64,7 @@ function ctx() {
+     modelRegistry: { find: vi.fn(), getAvailable: vi.fn(() => []) },
+     sessionManager: { getSessionId: vi.fn(() => "s1"), getBranch: vi.fn(() => []) },
+     getSystemPrompt: vi.fn(() => "parent"),
++    isIdle: vi.fn(() => true),
+   } as any;
+ }
+ 
+diff --git a/test/helpers/boot-extension.ts b/test/helpers/boot-extension.ts
+index a4420af..25fed80 100644
+--- a/test/helpers/boot-extension.ts
++++ b/test/helpers/boot-extension.ts
+@@ -89,6 +89,7 @@ export function ctx(overrides: Record<string, unknown> = {}) {
+     modelRegistry: { find: vi.fn(), getAvailable: vi.fn(() => []) },
+     sessionManager: { getSessionId: vi.fn(() => "s1"), getBranch: vi.fn(() => []) },
+     getSystemPrompt: vi.fn(() => "parent"),
++    isIdle: vi.fn(() => true),
+     ...overrides,
+   } as any;
+ }
+diff --git a/test/rpc-result-consumption.test.ts b/test/rpc-result-consumption.test.ts
+index a7691aa..c57a0dc 100644
+--- a/test/rpc-result-consumption.test.ts
++++ b/test/rpc-result-consumption.test.ts
+@@ -72,6 +72,7 @@ function ctx() {
+     modelRegistry: { find: vi.fn(), getAvailable: vi.fn(() => []) },
+     sessionManager: { getSessionId: vi.fn(() => "s1"), getBranch: vi.fn(() => []) },
+     getSystemPrompt: vi.fn(() => "parent"),
++    isIdle: vi.fn(() => true),
+   } as any;
+ }
+ 
+diff --git a/test/wait-queued.test.ts b/test/wait-queued.test.ts
+index c3f89ac..07ca561 100644
+--- a/test/wait-queued.test.ts
++++ b/test/wait-queued.test.ts
+@@ -10,7 +10,8 @@
+  * queues, call the real tool with wait:true, drain the queue, and assert the
+  * call returns the final result.
+  */
+-import { describe, expect, it, vi } from "vitest";
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { hermeticDir, type Hermetic } from "./helpers/boot-extension.js";
+ 
+ vi.mock("../src/agent-runner.js", async () => {
+   const actual = await vi.importActual<typeof import("../src/agent-runner.js")>("../src/agent-runner.js");
+@@ -50,6 +51,7 @@ function ctx() {
+     modelRegistry: { find: vi.fn(), getAvailable: vi.fn(() => []) },
+     sessionManager: { getSessionId: vi.fn(() => "s1"), getBranch: vi.fn(() => []) },
+     getSystemPrompt: vi.fn(() => "parent"),
++    isIdle: vi.fn(() => true),
+   } as any;
+ }
+ 
+@@ -91,9 +93,13 @@ async function spawnBackground(tools: Map<string, any>): Promise<{ id: string; q
+ }
+ 
+ describe("get_subagent_result wait:true on a queued agent", () => {
++  let environment: Hermetic;
++  beforeEach(() => { environment = hermeticDir({ settings: { schedulingEnabled: false } }); });
++  afterEach(() => { environment.restore(); });
+   it("waits through queue start and returns the result (no 'still running')", async () => {
+     const { pi, tools, lifecycle } = makePi();
+     subagentsExtension(pi);
++    await lifecycle.get("session_start")({}, ctx());
+ 
+     const resolvers = deferredRuns();
+ 
+@@ -132,6 +138,7 @@ describe("get_subagent_result wait:true on a queued agent", () => {
+   it("aborts a running result wait without aborting or consuming the child", async () => {
+     const { pi, tools, lifecycle } = makePi();
+     subagentsExtension(pi);
++    await lifecycle.get("session_start")({}, ctx());
+ 
+     let resolveRun: (() => void) | undefined;
+     let childSignal: AbortSignal | undefined;
+@@ -187,6 +194,7 @@ describe("get_subagent_result wait:true on a queued agent", () => {
+   it("aborts a queued result wait before the agent starts", async () => {
+     const { pi, tools, lifecycle } = makePi();
+     subagentsExtension(pi);
++    await lifecycle.get("session_start")({}, ctx());
+ 
+     const resolvers = deferredRuns();
+     let queuedId: string | undefined;

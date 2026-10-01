@@ -17,6 +17,8 @@ buildNpmPackage rec {
   npmDepsHash = "sha256-w4ht9Wjb73w13bOSfeEU5a1RXPYARXVO21Vpk/NR1nY=";
   dontNpmBuild = true;
 
+  patches = [ ./patches/pi-subagents-consumed-notifications.patch ];
+
   postPatch = ''
     cp ${./npm/pi-subagents/package.json} package.json
     cp ${./npm/pi-subagents/package-lock.json} package-lock.json
