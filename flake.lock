@@ -186,16 +186,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1790711969,
-        "narHash": "sha256-Uytfm3rIvw+q6H+BEIXm8OoRKqZVIDy9cQf6yorcap4=",
-        "ref": "pi-0.99.1-copilot",
-        "rev": "d218ce59d9a49dd00c5dfd3a4541a4e370872625",
-        "revCount": 18,
+        "lastModified": 1790886163,
+        "narHash": "sha256-a+6jIFN4+jcwei80b12fsharlYOuc7bqxDtWn3vzoCw=",
+        "ref": "pi-1.0.0-copilot",
+        "rev": "7cdb52f03190b492dc9f7de84e6b2f06a48293bb",
+        "revCount": 20,
         "type": "git",
         "url": "ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git"
       },
       "original": {
-        "ref": "pi-0.99.1-copilot",
+        "ref": "pi-1.0.0-copilot",
         "type": "git",
         "url": "ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git"
       }

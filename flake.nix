@@ -11,11 +11,11 @@
   inputs = {
     llm-agents.url = "github:numtide/llm-agents.nix";
     nixpkgs.follows = "llm-agents/nixpkgs";
-    # Pi 0.99.1 with the opencode-aligned GitHub Copilot port and T3's
+    # Pi 1.0.0 with the opencode-aligned GitHub Copilot port and T3's
     # RPC compaction fixes. Pi is packaged directly from its npm release;
     # llm-agents remains the source of the separately bundled Codex runtime.
     pi-copilot = {
-      url = "git+ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git?ref=pi-0.99.1-copilot";
+      url = "git+ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git?ref=pi-1.0.0-copilot";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     t3code-source = {
