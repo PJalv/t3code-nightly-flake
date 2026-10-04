@@ -15,7 +15,6 @@
 , androidPlatformTools
 , androidEmulator
 , androidJdk
-, disableCheckpoints ? true
 }:
 
 let
@@ -38,9 +37,12 @@ let
     androidEmulator
     androidJdk
   ];
-  checkpointWrapperArgs = lib.optionalString disableCheckpoints
-    "--set T3_DISABLE_CHECKPOINTS 1";
 in
+assert lib.assertMsg (
+  packageJson.version == source.version
+  && packageLockJson.version == source.version
+  && packageLockJson.packages."node_modules/@t3code/t3-linux-x64".version == source.version
+) "Refresh npm/package.json and npm/package-lock.json to match source.json before building the server.";
 buildNpmPackage {
   pname = "t3code-server";
   inherit (source) version;
@@ -104,7 +106,6 @@ buildNpmPackage {
 
     makeWrapper ${nodejs_24}/bin/node "$out/bin/t3" \
       --add-flags "$out/lib/node_modules/t3/${binPath}" \
-      ${checkpointWrapperArgs} \
       --set ANDROID_HOME "${androidHome}" \
       --set ANDROID_SDK_ROOT "${androidHome}" \
       --set JAVA_HOME "${androidJdk.home}" \
@@ -114,7 +115,6 @@ buildNpmPackage {
     makeWrapper ${nodejs_24}/bin/node "$out/bin/t3code-server" \
       --add-flags "$out/lib/node_modules/t3/${binPath}" \
       --add-flags "serve" \
-      ${checkpointWrapperArgs} \
       --set ANDROID_HOME "${androidHome}" \
       --set ANDROID_SDK_ROOT "${androidHome}" \
       --set JAVA_HOME "${androidJdk.home}" \
@@ -125,7 +125,7 @@ buildNpmPackage {
   '';
 
   passthru = {
-    inherit codex pi disableCheckpoints sourceAssets;
+    inherit codex pi sourceAssets;
     release = source;
   };
 
