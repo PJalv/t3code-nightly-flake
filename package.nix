@@ -14,7 +14,6 @@
   androidPlatformTools,
   androidEmulator,
   androidJdk,
-  disableCheckpoints ? true,
 }:
 
 let
@@ -85,7 +84,6 @@ let
           fi
         done
       '';
-  checkpointWrapperArgs = lib.optionalString disableCheckpoints "--set T3_DISABLE_CHECKPOINTS 1";
   runtimeLibraryPath = lib.makeLibraryPath (
     appimageTools.defaultFhsEnvArgs.targetPkgs pkgs
     ++ appimageTools.defaultFhsEnvArgs.multiPkgs pkgs
@@ -100,7 +98,6 @@ runCommand "${pname}-${version}"
       inherit
         codex
         pi
-        disableCheckpoints
         sourceAppimageContents
         sourceAssets
         ;
@@ -155,7 +152,6 @@ runCommand "${pname}-${version}"
 
     makeWrapper ${sourceAppimageContents}/${pname} "$out/bin/${pname}" \
       --add-flags "--ignore-certificate-errors" \
-      ${checkpointWrapperArgs} \
       --set APPDIR "${sourceAppimageContents}" \
       --set GSETTINGS_SCHEMA_DIR "${sourceAppimageContents}/usr/share/glib-2.0/schemas" \
       --run 'if ! ${pkgs.util-linux}/bin/unshare -Ur true 2>/dev/null; then set -- --no-sandbox "$@"; fi' \

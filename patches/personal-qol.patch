@@ -1,0 +1,3268 @@
+diff --git a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
+index 07644a8af47ccba490c2cd6b35b5147cb83eefbd..81a4a7e28da8e9d6414a244724b6d7f859d1491d 100644
+--- a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
++++ b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
+@@ -46,6 +46,7 @@ const serverExposureLayer = Layer.succeed(DesktopServerExposure.DesktopServerExp
+   }),
+   configureFromSettings: () => Effect.die("unexpected configureFromSettings"),
+   setMode: () => Effect.die("unexpected setMode"),
++  setPreferredLanInterfaceName: () => Effect.die("unexpected preferred LAN interface change"),
+   setTailscaleServeEnabled: () => Effect.die("unexpected setTailscaleServeEnabled"),
+   getAdvertisedEndpoints: Effect.succeed([]),
+ } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
+diff --git a/apps/desktop/src/backend/DesktopServerExposure.test.ts b/apps/desktop/src/backend/DesktopServerExposure.test.ts
+index 0914167cffb09079ac6aed6fe74207143d275b85..c36273d3d80a1fdd8a823fa76b8c39de49fa6988 100644
+--- a/apps/desktop/src/backend/DesktopServerExposure.test.ts
++++ b/apps/desktop/src/backend/DesktopServerExposure.test.ts
+@@ -38,6 +38,30 @@ const tailnetNetworkInterfaces: DesktopNetworkInterfaces.NetworkInterfaces = {
+   ],
+ };
+ 
++const multiHomedNetworkInterfaces: DesktopNetworkInterfaces.NetworkInterfaces = {
++  docker0: [
++    {
++      address: "172.17.0.1",
++      family: "IPv4",
++      internal: false,
++    },
++  ],
++  en0: [
++    {
++      address: "192.168.1.20",
++      family: "IPv4",
++      internal: false,
++    },
++  ],
++  en1: [
++    {
++      address: "192.168.1.21",
++      family: "IPv4",
++      internal: false,
++    },
++  ],
++};
++
+ function mockSpawnerLayer(statusJson = "{}") {
+   return Layer.succeed(
+     ChildProcessSpawner.ChildProcessSpawner,
+@@ -195,6 +219,7 @@ describe("DesktopServerExposure", () => {
+           mode: "network-accessible",
+           endpointUrl: "http://192.168.1.20:4173",
+           advertisedHost: "192.168.1.20",
++          preferredLanInterfaceName: null,
+           tailscaleServeEnabled: false,
+           tailscaleServePort: 443,
+         });
+@@ -209,6 +234,159 @@ describe("DesktopServerExposure", () => {
+     ),
+   );
+ 
++  it.effect("advertises one endpoint per physical interface and skips virtual bridges", () =>
++    withHarness(
++      multiHomedNetworkInterfaces,
++      Effect.gen(function* () {
++        const serverExposure = yield* DesktopServerExposure.DesktopServerExposure;
++        const settings = yield* DesktopAppSettings.DesktopAppSettings;
++        yield* settings.setServerExposureMode("network-accessible");
++        yield* serverExposure.configureFromSettings({ port: 4173 });
++
++        const state = yield* serverExposure.getState;
++        assert.equal(state.advertisedHost, "192.168.1.20");
++
++        const endpoints = yield* serverExposure.getAdvertisedEndpoints;
++        assert.deepEqual(
++          endpoints
++            .filter((endpoint) => endpoint.id.startsWith("desktop-lan:"))
++            .map((endpoint) => [endpoint.label, endpoint.httpBaseUrl, endpoint.interfaceName]),
++          [
++            ["Local network", "http://192.168.1.20:4173/", "en0"],
++            ["Local network — en1 (192.168.1.21)", "http://192.168.1.21:4173/", "en1"],
++          ],
++        );
++      }),
++    ),
++  );
++
++  it.effect("treats Windows virtual adapters with parentheses as virtual", () =>
++    withHarness(
++      {
++        "vEthernet (Default Switch)": [{ address: "172.25.32.1", family: "IPv4", internal: false }],
++        ...multiHomedNetworkInterfaces,
++      },
++      Effect.gen(function* () {
++        const serverExposure = yield* DesktopServerExposure.DesktopServerExposure;
++        const settings = yield* DesktopAppSettings.DesktopAppSettings;
++        yield* settings.setServerExposureMode("network-accessible");
++        yield* serverExposure.configureFromSettings({ port: 4173 });
++
++        const endpoints = yield* serverExposure.getAdvertisedEndpoints;
++        assert.isFalse(endpoints.some((endpoint) => endpoint.httpBaseUrl.includes("172.25.32.1")));
++      }),
++    ),
++  );
++
++  it.effect("advertises every physical interface without truncation", () =>
++    withHarness(
++      Object.fromEntries(
++        Array.from({ length: 10 }, (_, index) => [
++          `en${index}`,
++          [{ address: `10.0.0.${index + 2}`, family: "IPv4", internal: false }],
++        ]),
++      ),
++      Effect.gen(function* () {
++        const serverExposure = yield* DesktopServerExposure.DesktopServerExposure;
++        const settings = yield* DesktopAppSettings.DesktopAppSettings;
++        yield* settings.setServerExposureMode("network-accessible");
++        yield* serverExposure.configureFromSettings({ port: 4173 });
++
++        const endpoints = yield* serverExposure.getAdvertisedEndpoints;
++        const lanEndpoints = endpoints.filter((endpoint) => endpoint.id.startsWith("desktop-lan:"));
++        assert.equal(lanEndpoints.length, 10);
++      }),
++    ),
++  );
++
++  it.effect("re-resolves the default endpoint when interfaces change after startup", () => {
++    const interfaces: Record<string, DesktopNetworkInterfaces.NetworkInterfaces[string]> = {
++      ...multiHomedNetworkInterfaces,
++    };
++    return withHarness(
++      interfaces,
++      Effect.gen(function* () {
++        const serverExposure = yield* DesktopServerExposure.DesktopServerExposure;
++        const settings = yield* DesktopAppSettings.DesktopAppSettings;
++        yield* settings.setServerExposureMode("network-accessible");
++        yield* serverExposure.configureFromSettings({ port: 4173 });
++
++        const preferred = yield* serverExposure.setPreferredLanInterfaceName({ name: "en0" });
++        assert.equal(preferred.state.advertisedHost, "192.168.1.20");
++
++        // The harness network service returns the fixture object by
++        // reference, so removing en0 here simulates it disappearing after
++        // the exposure state was resolved at startup.
++        delete interfaces.en0;
++        const endpoints = yield* serverExposure.getAdvertisedEndpoints;
++        const defaultEndpoint = endpoints.find(
++          (endpoint) => endpoint.id.startsWith("desktop-lan:") && endpoint.isDefault === true,
++        );
++        assert.equal(defaultEndpoint?.httpBaseUrl, "http://192.168.1.21:4173/");
++        assert.isFalse(endpoints.some((endpoint) => endpoint.httpBaseUrl.includes("192.168.1.20")));
++        const refreshed = yield* serverExposure.getState;
++        assert.equal(refreshed.advertisedHost, "192.168.1.21");
++      }),
++    );
++  });
++
++  it.effect("downgrades to loopback when only virtual interfaces exist", () =>
++    withHarness(
++      {
++        docker0: [{ address: "172.17.0.1", family: "IPv4", internal: false }],
++      },
++      Effect.gen(function* () {
++        const serverExposure = yield* DesktopServerExposure.DesktopServerExposure;
++        const settings = yield* DesktopAppSettings.DesktopAppSettings;
++        yield* settings.setServerExposureMode("network-accessible");
++        yield* serverExposure.configureFromSettings({ port: 4173 });
++
++        const state = yield* serverExposure.getState;
++        assert.equal(state.mode, "local-only");
++        assert.equal(state.endpointUrl, null);
++      }),
++    ),
++  );
++
++  it.effect("honors a preferred LAN interface", () =>
++    withHarness(
++      multiHomedNetworkInterfaces,
++      Effect.gen(function* () {
++        const serverExposure = yield* DesktopServerExposure.DesktopServerExposure;
++        const settings = yield* DesktopAppSettings.DesktopAppSettings;
++        yield* settings.setServerExposureMode("network-accessible");
++        yield* serverExposure.configureFromSettings({ port: 4173 });
++        const change = yield* serverExposure.setPreferredLanInterfaceName({ name: "en1" });
++
++        assert.equal(change.state.advertisedHost, "192.168.1.21");
++        assert.equal(change.state.preferredLanInterfaceName, "en1");
++        assert.equal(change.requiresRelaunch, false);
++
++        const endpoints = yield* serverExposure.getAdvertisedEndpoints;
++        const defaultEndpoint = endpoints.find(
++          (endpoint) => endpoint.id.startsWith("desktop-lan:") && endpoint.isDefault === true,
++        );
++        assert.equal(defaultEndpoint?.httpBaseUrl, "http://192.168.1.21:4173/");
++      }),
++    ),
++  );
++
++  it.effect("falls back to automatic when the preferred interface disappears", () =>
++    withHarness(
++      multiHomedNetworkInterfaces,
++      Effect.gen(function* () {
++        const serverExposure = yield* DesktopServerExposure.DesktopServerExposure;
++        const settings = yield* DesktopAppSettings.DesktopAppSettings;
++        yield* settings.setServerExposureMode("network-accessible");
++        yield* serverExposure.configureFromSettings({ port: 4173 });
++        const change = yield* serverExposure.setPreferredLanInterfaceName({ name: "en9" });
++
++        assert.equal(change.state.preferredLanInterfaceName, "en9");
++        assert.equal(change.state.advertisedHost, "192.168.1.20");
++      }),
++    ),
++  );
++
+   it.effect("persists tailscale serve preferences atomically and reports no-op updates", () =>
+     withHarness(
+       emptyNetworkInterfaces,
+@@ -252,6 +430,7 @@ describe("DesktopServerExposure", () => {
+       load: Effect.succeed(DesktopAppSettings.DEFAULT_DESKTOP_SETTINGS),
+       setMainWindowBounds: () => Effect.die("unexpected main window bounds update"),
+       setServerExposureMode: () => Effect.fail(settingsFailure),
++      setPreferredLanInterfaceName: () => Effect.fail(settingsFailure),
+       setTailscaleServe: () => Effect.fail(settingsFailure),
+       setUpdateChannel: () => Effect.die("unexpected update channel change"),
+       setWslBackendEnabled: () => Effect.die("unexpected WSL backend toggle"),
+@@ -426,6 +605,7 @@ describe("DesktopServerExposure", () => {
+           {
+             id: "desktop-lan:http://192.168.1.20:3773",
+             label: "Local network",
++            interfaceName: "en0",
+             provider: {
+               id: "desktop-core",
+               label: "Desktop",
+diff --git a/apps/desktop/src/backend/DesktopServerExposure.ts b/apps/desktop/src/backend/DesktopServerExposure.ts
+index a04f4ecbc10066fcffc716a491c81530d1b557a6..265e1d232057c5ff2580dc2da1bc2228efbd92fb 100644
+--- a/apps/desktop/src/backend/DesktopServerExposure.ts
++++ b/apps/desktop/src/backend/DesktopServerExposure.ts
+@@ -43,6 +43,9 @@ interface DesktopAdvertisedEndpointInput {
+   readonly port: number;
+   readonly exposure: ResolvedDesktopServerExposure;
+   readonly customHttpsEndpointUrls?: readonly string[];
++  readonly networkInterfaces?: DesktopNetworkInterfaces.NetworkInterfaces;
++  /** An explicit host override pins the advertisement; alternatives are then noise. */
++  readonly advertisedHostOverride?: string | null;
+ }
+ 
+ const DESKTOP_CORE_ENDPOINT_PROVIDER: AdvertisedEndpointProvider = {
+@@ -69,6 +72,43 @@ const isUsableLanIpv4Address = (address: string): boolean =>
+   !address.startsWith("169.254.") &&
+   !isTailscaleIpv4Address(address);
+ 
++/** Interface name patterns for virtual adapters that should not be selected automatically. */
++const VIRTUAL_INTERFACE_NAME_PATTERN =
++  /^(?:docker\d*|br-[0-9a-f]+|virbr\d*|veth\w*|vmnet\d*|vEthernet[\s\w()]*|wg\d*|utun\d*|tun\d+|lo)$/iu;
++
++export const isVirtualLanInterfaceName = (name: string): boolean =>
++  VIRTUAL_INTERFACE_NAME_PATTERN.test(name);
++
++export interface LanInterfaceCandidate {
++  readonly name: string;
++  readonly address: string;
++  readonly virtual: boolean;
++}
++
++/** Returns one usable IPv4 address per interface, with physical adapters first. */
++export const enumerateLanInterfaces = (
++  networkInterfaces: DesktopNetworkInterfaces.NetworkInterfaces,
++): ReadonlyArray<LanInterfaceCandidate> => {
++  const physical: LanInterfaceCandidate[] = [];
++  const virtual: LanInterfaceCandidate[] = [];
++  for (const [name, interfaceAddresses] of Object.entries(networkInterfaces)) {
++    if (!interfaceAddresses) continue;
++    for (const address of interfaceAddresses) {
++      if (!address || address.internal) continue;
++      if (address.family !== "IPv4") continue;
++      if (!isUsableLanIpv4Address(address.address)) continue;
++      const candidate = {
++        name,
++        address: address.address,
++        virtual: isVirtualLanInterfaceName(name),
++      };
++      (candidate.virtual ? virtual : physical).push(candidate);
++      break;
++    }
++  }
++  return [...physical, ...virtual];
++};
++
+ const isHttpsEndpointUrl = (value: string): boolean => {
+   try {
+     return new URL(value).protocol === "https:";
+@@ -80,24 +120,31 @@ const isHttpsEndpointUrl = (value: string): boolean => {
+ const resolveLanAdvertisedHost = (
+   networkInterfaces: DesktopNetworkInterfaces.NetworkInterfaces,
+   explicitHost: string | undefined,
++  preferredInterfaceName: string | null | undefined,
+ ): string | null => {
+   const normalizedExplicitHost = normalizeOptionalHost(explicitHost);
+   if (normalizedExplicitHost) {
+     return normalizedExplicitHost;
+   }
+ 
+-  for (const interfaceAddresses of Object.values(networkInterfaces)) {
+-    if (!interfaceAddresses) continue;
++  const candidates = enumerateLanInterfaces(networkInterfaces);
++  if (candidates.length === 0) return null;
+ 
+-    for (const address of interfaceAddresses) {
+-      if (address.internal) continue;
+-      if (address.family !== "IPv4") continue;
+-      if (!isUsableLanIpv4Address(address.address)) continue;
+-      return address.address;
++  if (preferredInterfaceName) {
++    const preferred = candidates.find((candidate) => candidate.name === preferredInterfaceName);
++    // A stored preference whose interface no longer exists (or lost its
++    // address) falls through to automatic selection instead of advertising a
++    // dead host.
++    if (preferred) {
++      return preferred.address;
+     }
+   }
+ 
+-  return null;
++  const fallback = candidates.find((candidate) => !candidate.virtual);
++  // A machine whose only usable addresses sit on container/VM bridges has no
++  // reachable LAN host; returning null downgrades to loopback instead of
++  // advertising an address no other device can reach.
++  return fallback ? fallback.address : null;
+ };
+ 
+ const resolveDesktopServerExposure = (input: {
+@@ -105,6 +152,7 @@ const resolveDesktopServerExposure = (input: {
+   readonly port: number;
+   readonly networkInterfaces: DesktopNetworkInterfaces.NetworkInterfaces;
+   readonly advertisedHostOverride?: string;
++  readonly preferredLanInterfaceName?: string | null;
+ }): ResolvedDesktopServerExposure => {
+   const localHttpUrl = `http://${DESKTOP_LOOPBACK_HOST}:${input.port}`;
+   const localWsUrl = `ws://${DESKTOP_LOOPBACK_HOST}:${input.port}`;
+@@ -123,6 +171,7 @@ const resolveDesktopServerExposure = (input: {
+   const advertisedHost = resolveLanAdvertisedHost(
+     input.networkInterfaces,
+     input.advertisedHostOverride,
++    input.preferredLanInterfaceName,
+   );
+ 
+   return {
+@@ -168,6 +217,19 @@ const resolveDesktopCoreAdvertisedEndpoints = (
+   ];
+ 
+   if (input.exposure.endpointUrl) {
++    const lanCandidates = enumerateLanInterfaces(input.networkInterfaces ?? {}).filter(
++      (candidate) => !candidate.virtual,
++    );
++    const advertisedHost = input.exposure.advertisedHost;
++    const advertisedInterfaceName =
++      lanCandidates.find((candidate) => candidate.address === advertisedHost)?.name ?? null;
++    const alternativeInterfaces = input.advertisedHostOverride
++      ? []
++      : lanCandidates.filter((candidate) => candidate.address !== advertisedHost);
++    // The resolved (preferred or automatic) host keeps the classic single
++    // "Local network" endpoint and stays the default. On multi-homed machines
++    // each other physical interface gets its own endpoint so the pairing
++    // picker can pick the right one.
+     endpoints.push(
+       createDesktopEndpoint({
+         id: `desktop-lan:${input.exposure.endpointUrl}`,
+@@ -176,9 +238,24 @@ const resolveDesktopCoreAdvertisedEndpoints = (
+         reachability: "lan",
+         status: "available",
+         isDefault: true,
++        ...(advertisedInterfaceName ? { interfaceName: advertisedInterfaceName } : {}),
+         description: "Reachable from devices on the same network.",
+       }),
+     );
++    for (const candidate of alternativeInterfaces) {
++      const url = `http://${candidate.address}:${input.port}`;
++      endpoints.push(
++        createDesktopEndpoint({
++          id: `desktop-lan:${candidate.name}:${url}`,
++          label: `Local network — ${candidate.name} (${candidate.address})`,
++          httpBaseUrl: url,
++          reachability: "lan",
++          status: "available",
++          interfaceName: candidate.name,
++          description: "Alternative network interface on this machine.",
++        }),
++      );
++    }
+   }
+ 
+   for (const customEndpointUrl of input.customHttpsEndpointUrls ?? []) {
+@@ -247,10 +324,22 @@ export const DesktopServerExposureSetModeError = Schema.Union([
+ ]);
+ export type DesktopServerExposureSetModeError = typeof DesktopServerExposureSetModeError.Type;
+ 
++export class DesktopServerExposurePreferencePersistenceError extends Schema.TaggedError<DesktopServerExposurePreferencePersistenceError>()(
++  "DesktopServerExposurePreferencePersistenceError",
++  {
++    cause: Schema.instanceOf(DesktopAppSettings.DesktopSettingsWriteError),
++  },
++) {
++  override get message(): string {
++    return "Failed to persist the preferred LAN interface.";
++  }
++}
++
+ export const DesktopServerExposureError = Schema.Union([
+   DesktopServerExposureNoNetworkAddressError,
+   DesktopServerExposureModePersistenceError,
+   DesktopTailscaleServePersistenceError,
++  DesktopServerExposurePreferencePersistenceError,
+ ]);
+ export type DesktopServerExposureError = typeof DesktopServerExposureError.Type;
+ 
+@@ -278,6 +367,12 @@ export class DesktopServerExposure extends Context.Service<
+     readonly setMode: (
+       mode: DesktopServerExposureMode,
+     ) => Effect.Effect<DesktopServerExposureChange, DesktopServerExposureSetModeError>;
++    readonly setPreferredLanInterfaceName: (input: {
++      readonly name: string | null;
++    }) => Effect.Effect<
++      DesktopServerExposureChange,
++      DesktopServerExposurePreferencePersistenceError
++    >;
+     readonly setTailscaleServeEnabled: (input: {
+       readonly enabled: boolean;
+       readonly port?: number;
+@@ -296,6 +391,7 @@ interface RuntimeState {
+   readonly httpBaseUrl: URL;
+   readonly endpointUrl: Option.Option<string>;
+   readonly advertisedHost: Option.Option<string>;
++  readonly preferredLanInterfaceName: string | null;
+   readonly tailscaleServeEnabled: boolean;
+   readonly tailscaleServePort: number;
+ }
+@@ -321,6 +417,7 @@ const toContractState = (state: RuntimeState): DesktopServerExposureState => ({
+   mode: state.mode,
+   endpointUrl: Option.getOrNull(state.endpointUrl),
+   advertisedHost: Option.getOrNull(state.advertisedHost),
++  preferredLanInterfaceName: state.preferredLanInterfaceName,
+   tailscaleServeEnabled: state.tailscaleServeEnabled,
+   tailscaleServePort: state.tailscaleServePort,
+ });
+@@ -358,6 +455,7 @@ function runtimeStateFromResolvedExposure(input: {
+     httpBaseUrl: new URL(input.exposure.localHttpUrl),
+     endpointUrl: Option.fromNullishOr(input.exposure.endpointUrl),
+     advertisedHost: Option.fromNullishOr(input.exposure.advertisedHost),
++    preferredLanInterfaceName: input.settings.preferredLanInterfaceName,
+     tailscaleServeEnabled: input.settings.tailscaleServeEnabled,
+     tailscaleServePort: input.settings.tailscaleServePort,
+   };
+@@ -376,6 +474,7 @@ function resolveRuntimeState(input: {
+     port: input.port,
+     networkInterfaces: input.networkInterfaces,
+     ...(advertisedHostOverride ? { advertisedHostOverride } : {}),
++    preferredLanInterfaceName: input.settings.preferredLanInterfaceName,
+   });
+   const unavailable =
+     input.requestedMode === "network-accessible" &&
+@@ -529,13 +628,68 @@ export const make = Effect.gen(function* () {
+     },
+   );
+ 
++  const setPreferredLanInterfaceName = Effect.fn(
++    "desktop.serverExposure.setPreferredLanInterfaceName",
++  )(function* (input: { readonly name: string | null }) {
++    yield* Effect.annotateCurrentSpan({ name: input.name });
++    const previous = yield* Ref.get(stateRef);
++    const result = yield* desktopSettings
++      .setPreferredLanInterfaceName(input.name)
++      .pipe(
++        Effect.mapError((cause) => new DesktopServerExposurePreferencePersistenceError({ cause })),
++      );
++    // Re-resolve against live interfaces: a preference for an interface that
++    // no longer exists falls back to automatic instead of advertising a dead
++    // host. The bind host and port are unchanged, so no relaunch is needed.
++    const currentNetworkInterfaces = yield* readNetworkInterfaces;
++    const resolved = resolveRuntimeState({
++      requestedMode: previous.requestedMode,
++      settings: result.settings,
++      port: previous.port,
++      networkInterfaces: currentNetworkInterfaces,
++      advertisedHostOverride: config.desktopLanHostOverride,
++    });
++    yield* Ref.set(stateRef, resolved.state);
++    return {
++      state: toContractState(resolved.state),
++      requiresRelaunch: requiresBackendRelaunch(previous, resolved.state),
++    };
++  });
++
+   const getAdvertisedEndpoints = Effect.gen(function* () {
+     const state = yield* Ref.get(stateRef);
+     const currentNetworkInterfaces = yield* readNetworkInterfaces;
++    // Re-resolve the LAN host against live interfaces: the persisted state
++    // was resolved at bootstrap (or at the last settings change), so a
++    // preferred interface that vanished or changed address afterwards must
++    // not keep advertising a dead pairing URL.
++    const advertisedHostOverride = Option.getOrUndefined(config.desktopLanHostOverride);
++    const exposure =
++      state.mode === "network-accessible"
++        ? resolveDesktopServerExposure({
++            mode: state.mode,
++            port: state.port,
++            networkInterfaces: currentNetworkInterfaces,
++            ...(advertisedHostOverride ? { advertisedHostOverride } : {}),
++            preferredLanInterfaceName: (yield* desktopSettings.get).preferredLanInterfaceName,
++          })
++        : toResolvedExposure(state);
++    if (
++      exposure.endpointUrl !== Option.getOrNull(state.endpointUrl) ||
++      exposure.advertisedHost !== Option.getOrNull(state.advertisedHost)
++    ) {
++      yield* Ref.set(stateRef, {
++        ...state,
++        endpointUrl: Option.fromNullishOr(exposure.endpointUrl),
++        advertisedHost: Option.fromNullishOr(exposure.advertisedHost),
++      });
++    }
+     const coreEndpoints = resolveDesktopCoreAdvertisedEndpoints({
+       port: state.port,
+-      exposure: toResolvedExposure(state),
++      exposure,
+       customHttpsEndpointUrls: config.desktopHttpsEndpointUrls,
++      networkInterfaces: currentNetworkInterfaces,
++      advertisedHostOverride: Option.getOrNull(config.desktopLanHostOverride),
+     });
+ 
+     // Don't spawn the Tailscale CLI when the user hasn't opted into any
+@@ -563,6 +717,7 @@ export const make = Effect.gen(function* () {
+     backendConfig,
+     configureFromSettings,
+     setMode,
++    setPreferredLanInterfaceName,
+     setTailscaleServeEnabled,
+     getAdvertisedEndpoints,
+   });
+diff --git a/apps/desktop/src/ipc/DesktopIpcHandlers.ts b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
+index 4b43cd0eee966ef0dda5db66025e234c43f1090c..d3a337fdef0ae0fc6c7cc00ddcecdeec310aa3ed 100644
+--- a/apps/desktop/src/ipc/DesktopIpcHandlers.ts
++++ b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
+@@ -16,6 +16,7 @@ import {
+ import {
+   getAdvertisedEndpoints,
+   getServerExposureState,
++  setPreferredLanInterfaceName,
+   setServerExposureMode,
+   setTailscaleServeEnabled,
+ } from "./methods/serverExposure.ts";
+@@ -118,6 +119,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
+ 
+   yield* ipc.handle(getServerExposureState);
+   yield* ipc.handle(setServerExposureMode);
++  yield* ipc.handle(setPreferredLanInterfaceName);
+   yield* ipc.handle(setTailscaleServeEnabled);
+   yield* ipc.handle(getAdvertisedEndpoints);
+ 
+diff --git a/apps/desktop/src/ipc/channels.ts b/apps/desktop/src/ipc/channels.ts
+index 151cd633d04ed05900e9a8c438b7d01612fb3537..c5e4a02c3ca2d2e3f3b99b7aab4a54ab76ada9f3 100644
+--- a/apps/desktop/src/ipc/channels.ts
++++ b/apps/desktop/src/ipc/channels.ts
+@@ -60,6 +60,7 @@ export const ISSUE_SSH_WEBSOCKET_TOKEN_CHANNEL = "desktop:issue-ssh-websocket-to
+ export const SSH_PASSWORD_PROMPT_CHANNEL = "desktop:ssh-password-prompt";
+ export const RESOLVE_SSH_PASSWORD_PROMPT_CHANNEL = "desktop:resolve-ssh-password-prompt";
+ export const GET_SERVER_EXPOSURE_STATE_CHANNEL = "desktop:get-server-exposure-state";
++export const SET_PREFERRED_LAN_INTERFACE_NAME_CHANNEL = "desktop:set-preferred-lan-interface-name";
+ export const SET_SERVER_EXPOSURE_MODE_CHANNEL = "desktop:set-server-exposure-mode";
+ export const SET_TAILSCALE_SERVE_ENABLED_CHANNEL = "desktop:set-tailscale-serve-enabled";
+ export const GET_ADVERTISED_ENDPOINTS_CHANNEL = "desktop:get-advertised-endpoints";
+diff --git a/apps/desktop/src/ipc/methods/serverExposure.ts b/apps/desktop/src/ipc/methods/serverExposure.ts
+index 9a9ce768973b363c69e4aa8cbdeec77f5d953ad7..b69c1e76ca68179b878f7ba732d47b21d2b5006f 100644
+--- a/apps/desktop/src/ipc/methods/serverExposure.ts
++++ b/apps/desktop/src/ipc/methods/serverExposure.ts
+@@ -41,6 +41,19 @@ export const setServerExposureMode = DesktopIpc.makeIpcMethod({
+   }),
+ });
+ 
++export const setPreferredLanInterfaceName = DesktopIpc.makeIpcMethod({
++  channel: IpcChannels.SET_PREFERRED_LAN_INTERFACE_NAME_CHANNEL,
++  payload: Schema.NullOr(Schema.String),
++  result: DesktopServerExposureStateSchema,
++  handler: Effect.fn("desktop.ipc.serverExposure.setPreferredLanInterfaceName")(function* (name) {
++    const serverExposure = yield* DesktopServerExposure.DesktopServerExposure;
++    const change = yield* serverExposure.setPreferredLanInterfaceName({ name });
++    // The bind host and port are unchanged, so no relaunch: only the
++    // advertised URL and endpoint list move.
++    return change.state;
++  }),
++});
++
+ export const setTailscaleServeEnabled = DesktopIpc.makeIpcMethod({
+   channel: IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL,
+   payload: SetTailscaleServeEnabledInput,
+diff --git a/apps/desktop/src/preload.ts b/apps/desktop/src/preload.ts
+index e84a5821e9ff95165913bdefea7e3c7849316d3e..99d7dd297932457be1d29dd651fc2d89ad0d9baa 100644
+--- a/apps/desktop/src/preload.ts
++++ b/apps/desktop/src/preload.ts
+@@ -164,6 +164,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
+   getServerExposureState: () => ipcRenderer.invoke(IpcChannels.GET_SERVER_EXPOSURE_STATE_CHANNEL),
+   setServerExposureMode: (mode) =>
+     ipcRenderer.invoke(IpcChannels.SET_SERVER_EXPOSURE_MODE_CHANNEL, mode),
++  setPreferredLanInterfaceName: (name) =>
++    ipcRenderer.invoke(IpcChannels.SET_PREFERRED_LAN_INTERFACE_NAME_CHANNEL, name),
+   setTailscaleServeEnabled: (input) =>
+     ipcRenderer.invoke(IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL, input),
+   getAdvertisedEndpoints: () => ipcRenderer.invoke(IpcChannels.GET_ADVERTISED_ENDPOINTS_CHANNEL),
+diff --git a/apps/desktop/src/settings/DesktopAppSettings.test.ts b/apps/desktop/src/settings/DesktopAppSettings.test.ts
+index 18813eb9025aede411a6ca367ca71d433ca04089..2531079a7fd88ef94eaf776632088ac20d8f807b 100644
+--- a/apps/desktop/src/settings/DesktopAppSettings.test.ts
++++ b/apps/desktop/src/settings/DesktopAppSettings.test.ts
+@@ -26,6 +26,7 @@ const DesktopSettingsPatch = Schema.Struct({
+   ),
+   mainWindowMaximized: Schema.optionalKey(Schema.Boolean),
+   serverExposureMode: Schema.optionalKey(Schema.Literals(["local-only", "network-accessible"])),
++  preferredLanInterfaceName: Schema.optionalKey(Schema.NullOr(Schema.String)),
+   tailscaleServeEnabled: Schema.optionalKey(Schema.Boolean),
+   tailscaleServePort: Schema.optionalKey(Schema.Number),
+   updateChannel: Schema.optionalKey(Schema.Literals(["latest", "nightly"])),
+@@ -128,6 +129,7 @@ describe("DesktopSettings", () => {
+         mainWindowBounds: null,
+         mainWindowMaximized: false,
+         serverExposureMode: "local-only",
++        preferredLanInterfaceName: null,
+         tailscaleServeEnabled: false,
+         tailscaleServePort: 443,
+         updateChannel: "nightly",
+@@ -146,6 +148,7 @@ describe("DesktopSettings", () => {
+         yield* writeSettingsPatch({
+           linuxPasswordStore: "gnome-libsecret",
+           serverExposureMode: "network-accessible",
++          preferredLanInterfaceName: null,
+           tailscaleServeEnabled: true,
+           tailscaleServePort: 8443,
+           updateChannel: "latest",
+@@ -158,6 +161,7 @@ describe("DesktopSettings", () => {
+           mainWindowBounds: null,
+           mainWindowMaximized: false,
+           serverExposureMode: "network-accessible",
++          preferredLanInterfaceName: null,
+           tailscaleServeEnabled: true,
+           tailscaleServePort: 8443,
+           updateChannel: "latest",
+@@ -186,6 +190,23 @@ describe("DesktopSettings", () => {
+     ),
+   );
+ 
++  it.effect("persists the LAN interface preference and survives unrelated settings saves", () =>
++    withSettings(
++      Effect.gen(function* () {
++        const settings = yield* DesktopAppSettings.DesktopAppSettings;
++
++        yield* settings.setPreferredLanInterfaceName("en1");
++        yield* settings.setServerExposureMode("network-accessible");
++
++        // `load` re-reads the settings file from disk, so both values must
++        // survive the second write's document serialization.
++        const reloaded = yield* settings.load;
++        assert.equal(reloaded.preferredLanInterfaceName, "en1");
++        assert.equal(reloaded.serverExposureMode, "network-accessible");
++      }),
++    ),
++  );
++
+   it.effect("reports the failed desktop settings write operation and path", () =>
+     withSettings(
+       Effect.gen(function* () {
+@@ -266,6 +287,7 @@ describe("DesktopSettings", () => {
+           mainWindowBounds: { x: 120, y: 80, width: 1280, height: 900 },
+           mainWindowMaximized: false,
+           serverExposureMode: "network-accessible",
++          preferredLanInterfaceName: null,
+           tailscaleServeEnabled: true,
+           tailscaleServePort: 8443,
+           updateChannel: "latest",
+@@ -286,6 +308,7 @@ describe("DesktopSettings", () => {
+           mainWindowBounds: { x: 10.5, y: 20, width: 839, height: 620 },
+           mainWindowMaximized: true,
+           serverExposureMode: "network-accessible",
++          preferredLanInterfaceName: null,
+         });
+ 
+         const loaded = yield* settings.load;
+@@ -323,6 +346,7 @@ describe("DesktopSettings", () => {
+             mainWindowBounds: null,
+             mainWindowMaximized: false,
+             serverExposureMode: "network-accessible",
++            preferredLanInterfaceName: null,
+             tailscaleServeEnabled: true,
+             tailscaleServePort: 8443,
+             updateChannel: "nightly",
+@@ -391,6 +415,7 @@ describe("DesktopSettings", () => {
+         const settings = yield* DesktopAppSettings.DesktopAppSettings;
+         yield* writeSettingsPatch({
+           serverExposureMode: "local-only",
++          preferredLanInterfaceName: null,
+           updateChannel: "latest",
+         });
+ 
+@@ -400,6 +425,7 @@ describe("DesktopSettings", () => {
+           mainWindowBounds: null,
+           mainWindowMaximized: false,
+           serverExposureMode: "local-only",
++          preferredLanInterfaceName: null,
+           tailscaleServeEnabled: false,
+           tailscaleServePort: 443,
+           updateChannel: "nightly",
+@@ -419,6 +445,7 @@ describe("DesktopSettings", () => {
+         const settings = yield* DesktopAppSettings.DesktopAppSettings;
+         yield* writeSettingsPatch({
+           serverExposureMode: "local-only",
++          preferredLanInterfaceName: null,
+           updateChannel: "latest",
+           updateChannelConfiguredByUser: true,
+         });
+@@ -429,6 +456,7 @@ describe("DesktopSettings", () => {
+           mainWindowBounds: null,
+           mainWindowMaximized: false,
+           serverExposureMode: "local-only",
++          preferredLanInterfaceName: null,
+           tailscaleServeEnabled: false,
+           tailscaleServePort: 443,
+           updateChannel: "latest",
+@@ -457,6 +485,7 @@ describe("DesktopSettings", () => {
+           mainWindowBounds: null,
+           mainWindowMaximized: false,
+           serverExposureMode: "local-only",
++          preferredLanInterfaceName: null,
+           tailscaleServeEnabled: true,
+           tailscaleServePort: 443,
+           updateChannel: "latest",
+diff --git a/apps/desktop/src/settings/DesktopAppSettings.ts b/apps/desktop/src/settings/DesktopAppSettings.ts
+index efd9fbfbfd3bd72b4e4d8af05dc9fc9f31457917..dc8dd8f8ccbe9d958d19fa35fce31a6210687065 100644
+--- a/apps/desktop/src/settings/DesktopAppSettings.ts
++++ b/apps/desktop/src/settings/DesktopAppSettings.ts
+@@ -31,6 +31,13 @@ export interface DesktopSettings {
+   readonly mainWindowBounds: DesktopWindowBounds | null;
+   readonly mainWindowMaximized: boolean;
+   readonly serverExposureMode: DesktopServerExposureMode;
++  /**
++   * Network interface whose IPv4 address is advertised as the "Local
++   * network" endpoint. `null` means automatic selection: the first usable
++   * non-virtual interface in enumeration order. Persisted as a name so a
++   * DHCP address change keeps working without rewriting the setting.
++   */
++  readonly preferredLanInterfaceName: string | null;
+   readonly tailscaleServeEnabled: boolean;
+   readonly tailscaleServePort: number;
+   readonly updateChannel: DesktopUpdateChannel;
+@@ -80,6 +87,7 @@ export const DEFAULT_DESKTOP_SETTINGS: DesktopSettings = {
+   mainWindowBounds: null,
+   mainWindowMaximized: false,
+   serverExposureMode: "local-only",
++  preferredLanInterfaceName: null,
+   tailscaleServeEnabled: false,
+   tailscaleServePort: DEFAULT_TAILSCALE_SERVE_PORT,
+   updateChannel: "latest",
+@@ -102,6 +110,7 @@ const DesktopSettingsDocument = Schema.Struct({
+   mainWindowBounds: Schema.optionalKey(Schema.NullOr(DesktopWindowBoundsDocument)),
+   mainWindowMaximized: Schema.optionalKey(Schema.Boolean),
+   serverExposureMode: Schema.optionalKey(DesktopServerExposureModeSchema),
++  preferredLanInterfaceName: Schema.optionalKey(Schema.NullOr(Schema.String)),
+   tailscaleServeEnabled: Schema.optionalKey(Schema.Boolean),
+   tailscaleServePort: Schema.optionalKey(Schema.Number),
+   updateChannel: Schema.optionalKey(DesktopUpdateChannelSchema),
+@@ -167,6 +176,9 @@ export class DesktopAppSettings extends Context.Service<
+     readonly setServerExposureMode: (
+       mode: DesktopServerExposureMode,
+     ) => Effect.Effect<DesktopSettingsChange, DesktopSettingsWriteError>;
++    readonly setPreferredLanInterfaceName: (
++      name: string | null,
++    ) => Effect.Effect<DesktopSettingsChange, DesktopSettingsWriteError>;
+     readonly setTailscaleServe: (input: {
+       readonly enabled: boolean;
+       readonly port: Option.Option<number>;
+@@ -238,6 +250,11 @@ function normalizeDesktopSettingsDocument(
+     mainWindowMaximized: mainWindowBounds !== null && parsed.mainWindowMaximized === true,
+     serverExposureMode:
+       parsed.serverExposureMode === "network-accessible" ? "network-accessible" : "local-only",
++    preferredLanInterfaceName:
++      typeof parsed.preferredLanInterfaceName === "string" &&
++      parsed.preferredLanInterfaceName.length > 0
++        ? parsed.preferredLanInterfaceName
++        : null,
+     tailscaleServeEnabled: parsed.tailscaleServeEnabled === true,
+     tailscaleServePort: normalizeTailscaleServePort(parsed.tailscaleServePort),
+     updateChannel: updateChannelConfiguredByUser
+@@ -269,6 +286,9 @@ function toDesktopSettingsDocument(
+   if (settings.mainWindowMaximized) {
+     document.mainWindowMaximized = true;
+   }
++  if (settings.preferredLanInterfaceName !== defaults.preferredLanInterfaceName) {
++    document.preferredLanInterfaceName = settings.preferredLanInterfaceName;
++  }
+   if (settings.serverExposureMode !== defaults.serverExposureMode) {
+     document.serverExposureMode = settings.serverExposureMode;
+   }
+@@ -309,6 +329,18 @@ function setServerExposureMode(
+       };
+ }
+ 
++function setPreferredLanInterfaceName(
++  settings: DesktopSettings,
++  name: string | null,
++): DesktopSettings {
++  return settings.preferredLanInterfaceName === name
++    ? settings
++    : {
++        ...settings,
++        preferredLanInterfaceName: name,
++      };
++}
++
+ function setMainWindowBounds(
+   settings: DesktopSettings,
+   bounds: DesktopWindowBounds,
+@@ -554,6 +586,10 @@ export const make = Effect.gen(function* () {
+       persist((settings) => setServerExposureMode(settings, mode)).pipe(
+         Effect.withSpan("desktop.settings.setServerExposureMode", { attributes: { mode } }),
+       ),
++    setPreferredLanInterfaceName: (name) =>
++      persist((settings) => setPreferredLanInterfaceName(settings, name)).pipe(
++        Effect.withSpan("desktop.settings.setPreferredLanInterfaceName", { attributes: { name } }),
++      ),
+     setTailscaleServe: (input) =>
+       persist((settings) => setTailscaleServe(settings, input)).pipe(
+         Effect.withSpan("desktop.settings.setTailscaleServe", { attributes: input }),
+@@ -615,6 +651,8 @@ export const layerTest = (initialSettings: DesktopSettings = DEFAULT_DESKTOP_SET
+           update((settings) => setMainWindowBounds(settings, bounds, isMaximized)),
+         setServerExposureMode: (mode) =>
+           update((settings) => setServerExposureMode(settings, mode)),
++        setPreferredLanInterfaceName: (name) =>
++          update((settings) => setPreferredLanInterfaceName(settings, name)),
+         setTailscaleServe: (input) => update((settings) => setTailscaleServe(settings, input)),
+         setUpdateChannel: (channel) => update((settings) => setUpdateChannel(settings, channel)),
+         setWslBackendEnabled: (enabled) =>
+diff --git a/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts b/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
+index a8c0e0f79ac4f78b373685646a908e0ec5e1ea87..f45c0244b11bbd9e08619453bb975aa7ce970c9c 100644
+--- a/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
++++ b/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
+@@ -6,6 +6,7 @@ import { SNAP_SHOT_MODIFIERS, type SnapShotModifier } from "@t3tools/contracts";
+ 
+ import { loadWindowsForegroundApi } from "../electron/WindowsForeground.ts";
+ import { WINDOWS_MODIFIER_PAIR_VIRTUAL_KEYS } from "./snapShot.ts";
++import { sendWorkerMessage } from "./WorkerIpc.ts";
+ 
+ const POLL_INTERVAL_MS = 50;
+ 
+@@ -18,13 +19,11 @@ const [left, right] = WINDOWS_MODIFIER_PAIR_VIRTUAL_KEYS[requested as SnapShotMo
+ async function poll() {
+   const api = await loadWindowsForegroundApi();
+   let active = false;
+-  process.send?.("ready");
++  sendWorkerMessage("ready");
+   const timer = setInterval(() => {
+     const pressed = api.isKeyDown(left) && api.isKeyDown(right);
+     if (pressed && !active) {
+-      try {
+-        process.send?.("trigger");
+-      } catch {}
++      sendWorkerMessage("trigger");
+     }
+     active = pressed;
+   }, POLL_INTERVAL_MS);
+diff --git a/apps/desktop/src/snapShot/RegionSnapShotWorker.ts b/apps/desktop/src/snapShot/RegionSnapShotWorker.ts
+index fcc7b56259a7a3f5d495ee64a6a75ed20b982d0f..24df9695f7f2a9e902f395e230e2c70e8ca46298 100644
+--- a/apps/desktop/src/snapShot/RegionSnapShotWorker.ts
++++ b/apps/desktop/src/snapShot/RegionSnapShotWorker.ts
+@@ -1,13 +1,14 @@
+ // Windows region capture. Runs in a forked Node-mode child so the native
+ // screenshot call cannot crash or stall the main process. One request per child.
+ import type { RegionSnapShotRequest, RegionSnapShotResult } from "./RegionSnapShot.ts";
++import { sendWorkerMessage } from "./WorkerIpc.ts";
+ 
+ process.once("disconnect", () => process.exit(0));
+ 
+ async function capture() {
+   const imported = await import("@crowecawcaw/xa11y");
+   const xa11y = (imported as unknown as { readonly default?: typeof imported }).default ?? imported;
+-  process.send?.("ready");
++  sendWorkerMessage("ready");
+   const request = await new Promise<RegionSnapShotRequest>((resolve) => {
+     process.once("message", resolve);
+   });
+@@ -18,11 +19,11 @@ async function capture() {
+     height: shot.height,
+     png: shot.toPng().toString("base64"),
+   };
+-  process.send?.(result);
++  sendWorkerMessage(result);
+ }
+ 
+ void capture().catch((error: unknown) =>
+-  process.send?.({
++  sendWorkerMessage({
+     type: "error",
+     message: error instanceof Error ? error.message : "Windows window capture failed.",
+   } satisfies RegionSnapShotResult),
+diff --git a/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts b/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts
+index 41c344bc2f555a9549deff860acbec8b728e0cd0..a3cab095c609f899130bf10b554138e89194664e 100644
+--- a/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts
++++ b/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts
+@@ -2,12 +2,13 @@ import {
+   readAccessibleWindowContextWithApp,
+   type SnapShotAccessibilityRequest,
+ } from "./SnapShotAccessibility.ts";
++import { sendWorkerMessage } from "./WorkerIpc.ts";
+ 
+ process.once("disconnect", () => process.exit(0));
+ 
+ async function readAccessibility() {
+   const { App } = await import("@crowecawcaw/xa11y");
+-  process.send?.("ready");
++  sendWorkerMessage("ready");
+   const request = await new Promise<SnapShotAccessibilityRequest>((resolve) => {
+     process.once("message", resolve);
+   });
+@@ -15,15 +16,15 @@ async function readAccessibility() {
+   const markStarted = () => {
+     if (started) return;
+     started = true;
+-    process.send?.("started");
++    sendWorkerMessage("started");
+   };
+   const context = await readAccessibleWindowContextWithApp(App, request, markStarted).catch(
+     () => undefined,
+   );
+   markStarted();
+-  process.send?.({ type: "result", context });
++  sendWorkerMessage({ type: "result", context });
+ }
+ 
+ if (process.argv[2] === "read") {
+-  void readAccessibility().catch(() => process.send?.({ type: "result" }));
++  void readAccessibility().catch(() => sendWorkerMessage({ type: "result" }));
+ }
+diff --git a/apps/desktop/src/snapShot/WorkerIpc.test.ts b/apps/desktop/src/snapShot/WorkerIpc.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..3d186d9ec00fb22c12229f3a437cf53a9fb017f0
+--- /dev/null
++++ b/apps/desktop/src/snapShot/WorkerIpc.test.ts
+@@ -0,0 +1,63 @@
++import { describe, expect, it, vi } from "vite-plus/test";
++
++import { sendWorkerMessage } from "./WorkerIpc.ts";
++
++const closedError = (code: string) => Object.assign(new Error("IPC closed"), { code });
++
++describe("snapshot worker IPC teardown", () => {
++  it("exits cleanly when the parent has already disconnected", () => {
++    const worker = { connected: false, send: vi.fn(), exit: vi.fn() };
++    sendWorkerMessage("ready", worker);
++    expect(worker.send).not.toHaveBeenCalled();
++    expect(worker.exit).toHaveBeenCalledWith(0);
++  });
++
++  it.each(["EPIPE", "ECONNRESET", "ERR_IPC_CHANNEL_CLOSED"])(
++    "handles asynchronous %s while a capture result is in flight",
++    (code) => {
++      const exit = vi.fn();
++      let complete: ((error: Error | null) => void) | undefined;
++      sendWorkerMessage(
++        { type: "result", png: "capture" },
++        {
++          connected: true,
++          send: (_message, callback) => {
++            complete = callback;
++            return true;
++          },
++          exit,
++        },
++      );
++      expect(exit).not.toHaveBeenCalled();
++      complete?.(closedError(code));
++      expect(exit).toHaveBeenCalledWith(0);
++    },
++  );
++
++  it("handles a synchronous closed-channel error", () => {
++    const exit = vi.fn();
++    sendWorkerMessage("ready", {
++      connected: true,
++      send: () => {
++        throw closedError("ERR_IPC_CHANNEL_CLOSED");
++      },
++      exit,
++    });
++    expect(exit).toHaveBeenCalledWith(0);
++  });
++
++  it("does not suppress a serialization or programming error", () => {
++    const error = new TypeError("Cannot serialize result");
++    const exit = vi.fn();
++    expect(() =>
++      sendWorkerMessage("ready", {
++        connected: true,
++        send: () => {
++          throw error;
++        },
++        exit,
++      }),
++    ).toThrow(error);
++    expect(exit).not.toHaveBeenCalled();
++  });
++});
+diff --git a/apps/desktop/src/snapShot/WorkerIpc.ts b/apps/desktop/src/snapShot/WorkerIpc.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..f6309dcb8c9b94bf376e3426479c6b6317745f6f
+--- /dev/null
++++ b/apps/desktop/src/snapShot/WorkerIpc.ts
+@@ -0,0 +1,47 @@
++// @effect-diagnostics nodeBuiltinImport:off -- These forked Node workers do not run an Effect runtime.
++import type * as NodeChildProcess from "node:child_process";
++
++type WorkerProcess = {
++  readonly connected?: boolean;
++  readonly send?: (
++    message: NodeChildProcess.Serializable,
++    callback: (error: Error | null) => void,
++  ) => boolean;
++  readonly exit: (code: number) => void;
++};
++
++function isClosedChannelError(error: unknown): boolean {
++  return (
++    error instanceof Error &&
++    "code" in error &&
++    (error.code === "EPIPE" ||
++      error.code === "ECONNRESET" ||
++      error.code === "ERR_IPC_CHANNEL_CLOSED")
++  );
++}
++
++// A parent timeout can close IPC while native capture is still running.
++// A callback handles asynchronous send errors without hiding unrelated failures.
++export function sendWorkerMessage(
++  message: NodeChildProcess.Serializable,
++  worker: WorkerProcess = process,
++): void {
++  if (!worker.send || !worker.connected) {
++    worker.exit(0);
++    return;
++  }
++  const handleError = (error: unknown) => {
++    if (isClosedChannelError(error)) {
++      worker.exit(0);
++      return;
++    }
++    throw error;
++  };
++  try {
++    worker.send(message, (error) => {
++      if (error) handleError(error);
++    });
++  } catch (error) {
++    handleError(error);
++  }
++}
+diff --git a/apps/desktop/src/updates/updatesTestHarness.ts b/apps/desktop/src/updates/updatesTestHarness.ts
+index 5455f1602855069bf9e4a1f7320454289254b7be..03f1908b38e72ad6d88fb48c56c07ce161ff9cf9 100644
+--- a/apps/desktop/src/updates/updatesTestHarness.ts
++++ b/apps/desktop/src/updates/updatesTestHarness.ts
+@@ -182,6 +182,8 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
+           load: Effect.sync(() => testSettings),
+           setMainWindowBounds: () => Effect.die("unexpected main window bounds update"),
+           setServerExposureMode: () => Effect.die("unexpected server exposure update"),
++          setPreferredLanInterfaceName: () =>
++            Effect.die("unexpected preferred LAN interface update"),
+           setTailscaleServe: () => Effect.die("unexpected Tailscale Serve update"),
+           setUpdateChannel: (channel) =>
+             setUpdateChannelError
+diff --git a/apps/desktop/src/window/DesktopWindow.test.ts b/apps/desktop/src/window/DesktopWindow.test.ts
+index 1345c37bf687935f25c1d9d51b701a066577d1f0..726789d76671bd66edf368b1bc586ba56c530c91 100644
+--- a/apps/desktop/src/window/DesktopWindow.test.ts
++++ b/apps/desktop/src/window/DesktopWindow.test.ts
+@@ -178,6 +178,7 @@ const desktopServerExposureLayer = Layer.succeed(DesktopServerExposure.DesktopSe
+   }),
+   configureFromSettings: () => Effect.die("unexpected configureFromSettings"),
+   setMode: () => Effect.die("unexpected setMode"),
++  setPreferredLanInterfaceName: () => Effect.die("unexpected preferred LAN interface change"),
+   setTailscaleServeEnabled: () => Effect.die("unexpected setTailscaleServeEnabled"),
+   getAdvertisedEndpoints: Effect.die("unexpected getAdvertisedEndpoints"),
+ } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
+@@ -252,6 +253,7 @@ function makeTestLayer(input: {
+         return { settings: desktopSettings, changed };
+       }),
+     setServerExposureMode: () => Effect.die("unexpected server exposure update"),
++    setPreferredLanInterfaceName: () => Effect.die("unexpected preferred LAN interface update"),
+     setTailscaleServe: () => Effect.die("unexpected Tailscale Serve update"),
+     setUpdateChannel: () => Effect.die("unexpected update channel change"),
+     setWslBackendEnabled: () => Effect.die("unexpected WSL backend toggle"),
+diff --git a/apps/desktop/src/wsl/DesktopWslBackend.test.ts b/apps/desktop/src/wsl/DesktopWslBackend.test.ts
+index c2daf352837f50bfd1de12243054ba245b741539..aa86bbd529f752d40c795650073a9b4724f1a9c6 100644
+--- a/apps/desktop/src/wsl/DesktopWslBackend.test.ts
++++ b/apps/desktop/src/wsl/DesktopWslBackend.test.ts
+@@ -61,6 +61,7 @@ const serverExposureLayer = Layer.succeed(DesktopServerExposure.DesktopServerExp
+   }),
+   configureFromSettings: () => Effect.die("unexpected configureFromSettings"),
+   setMode: () => Effect.die("unexpected setMode"),
++  setPreferredLanInterfaceName: () => Effect.die("unexpected preferred LAN interface change"),
+   setTailscaleServeEnabled: () => Effect.die("unexpected setTailscaleServeEnabled"),
+   getAdvertisedEndpoints: Effect.succeed([]),
+ } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
+diff --git a/apps/mobile/src/features/agent-awareness/localNotifications.test.ts b/apps/mobile/src/features/agent-awareness/localNotifications.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..3d1995e38baf99babd38b80faa3f4b016e887310
+--- /dev/null
++++ b/apps/mobile/src/features/agent-awareness/localNotifications.test.ts
+@@ -0,0 +1,94 @@
++import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
++
++const mocks = vi.hoisted(() => ({
++  os: "android",
++  preferences: { localNotificationsEnabled: false, localNotificationsOngoing: false } as Record<
++    string,
++    unknown
++  >,
++  deviceId: "device-1",
++  configure: vi.fn(),
++  clear: vi.fn(),
++  save: vi.fn(),
++  pushToken: vi.fn(),
++}));
++
++vi.mock("react-native", () => ({
++  Platform: {
++    get OS() {
++      return mocks.os;
++    },
++  },
++}));
++vi.mock("expo-notifications", () => ({
++  getDevicePushTokenAsync: mocks.pushToken,
++}));
++vi.mock("../../persistence/imperative", () => ({
++  loadOrCreateAgentAwarenessDeviceId: vi.fn(async () => mocks.deviceId),
++  loadPreferences: vi.fn(async () => mocks.preferences),
++  savePreferencesPatch: mocks.save,
++}));
++vi.mock("./androidNotifications", () => ({
++  configureAndroidAgentNotifications: mocks.configure,
++  clearAndroidAgentNotifications: mocks.clear,
++}));
++
++beforeEach(() => {
++  vi.resetModules();
++  mocks.os = "android";
++  mocks.preferences = { localNotificationsEnabled: false, localNotificationsOngoing: false };
++  mocks.configure.mockReset();
++  mocks.clear.mockReset();
++  mocks.save.mockReset().mockResolvedValue(undefined);
++  mocks.pushToken.mockReset().mockResolvedValue({ data: "token-secret" });
++});
++
++describe("local agent notifications", () => {
++  it("persists explicit opt-in and returns setup identity without logging its token", async () => {
++    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
++    const { enableLocalAgentNotifications } = await import("./localNotifications");
++    await expect(enableLocalAgentNotifications(true)).resolves.toEqual({
++      deviceId: "device-1",
++      userId: "local:device-1",
++      pushToken: "token-secret",
++    });
++    expect(mocks.save).toHaveBeenCalledWith({
++      localNotificationsEnabled: true,
++      localNotificationsOngoing: true,
++    });
++    expect(mocks.configure).toHaveBeenCalledWith("device-1", "local:device-1", true);
++    expect(warn).not.toHaveBeenCalled();
++    warn.mockRestore();
++  });
++
++  it("does not restore based on OS permission alone when local opt-in is false", async () => {
++    const { restoreLocalAgentNotifications } = await import("./localNotifications");
++    await restoreLocalAgentNotifications();
++    expect(mocks.configure).not.toHaveBeenCalled();
++  });
++
++  it("does not turn notifications back on when disabling ongoing while local alerts are off", async () => {
++    const { setLocalAgentOngoing } = await import("./localNotifications");
++    await setLocalAgentOngoing(false);
++    expect(mocks.configure).not.toHaveBeenCalled();
++    expect(mocks.save).toHaveBeenCalledWith({ localNotificationsOngoing: false });
++  });
++
++  it("clears both opt-ins when local notifications are disabled", async () => {
++    const { disableLocalAgentNotifications } = await import("./localNotifications");
++    await disableLocalAgentNotifications();
++    expect(mocks.clear).toHaveBeenCalledOnce();
++    expect(mocks.save).toHaveBeenCalledWith({
++      localNotificationsEnabled: false,
++      localNotificationsOngoing: false,
++    });
++  });
++
++  it("restores only a persisted local opt-in", async () => {
++    mocks.preferences.localNotificationsEnabled = true;
++    mocks.preferences.localNotificationsOngoing = true;
++    const { restoreLocalAgentNotifications } = await import("./localNotifications");
++    await restoreLocalAgentNotifications();
++    expect(mocks.configure).toHaveBeenCalledWith("device-1", "local:device-1", true);
++  });
++});
+diff --git a/apps/mobile/src/features/agent-awareness/localNotifications.ts b/apps/mobile/src/features/agent-awareness/localNotifications.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..be0b724849d996b05a5f6f184c47a3db06de0384
+--- /dev/null
++++ b/apps/mobile/src/features/agent-awareness/localNotifications.ts
+@@ -0,0 +1,87 @@
++import * as Notifications from "expo-notifications";
++import { Platform } from "react-native";
++
++import {
++  loadOrCreateAgentAwarenessDeviceId,
++  loadPreferences,
++  savePreferencesPatch,
++} from "../../persistence/imperative";
++import {
++  clearAndroidAgentNotifications,
++  configureAndroidAgentNotifications,
++} from "./androidNotifications";
++
++export interface LocalAgentNotificationIdentity {
++  readonly deviceId: string;
++  readonly userId: string;
++  readonly pushToken: string | null;
++}
++
++function localUserId(deviceId: string): string {
++  return `local:${deviceId}`;
++}
++
++// Notifications normally require T3 Connect so the hosted relay can deliver to
++// this device. Local mode skips the relay: the app configures the native
++// Android handler with a device-local identity. A separately configured sender
++// delivers through the same Firebase project.
++//
++// The choice is persisted because the cloud sign-out path clears the native
++// handler on every launch while signed out; `restoreLocalAgentNotifications`
++// re-applies it.
++export async function enableLocalAgentNotifications(
++  ongoingEnabled: boolean,
++): Promise<LocalAgentNotificationIdentity | null> {
++  if (Platform.OS !== "android") return null;
++  const deviceId = await loadOrCreateAgentAwarenessDeviceId();
++  const userId = localUserId(deviceId);
++  configureAndroidAgentNotifications(deviceId, userId, ongoingEnabled);
++  await savePreferencesPatch({
++    localNotificationsEnabled: true,
++    localNotificationsOngoing: ongoingEnabled,
++  });
++  let pushToken: string | null = null;
++  try {
++    pushToken = (await Notifications.getDevicePushTokenAsync()).data;
++  } catch {
++    pushToken = null;
++  }
++  // Identity is returned only to the explicit setup action; never log credentials.
++  return { deviceId, userId, pushToken };
++}
++
++export async function disableLocalAgentNotifications(): Promise<void> {
++  clearAndroidAgentNotifications();
++  await savePreferencesPatch({
++    localNotificationsEnabled: false,
++    localNotificationsOngoing: false,
++  });
++}
++
++export async function setLocalAgentOngoing(enabled: boolean): Promise<void> {
++  const preferences = await loadPreferences();
++  if (preferences.localNotificationsEnabled !== true) {
++    await savePreferencesPatch({ localNotificationsOngoing: false });
++    return;
++  }
++  const deviceId = await loadOrCreateAgentAwarenessDeviceId();
++  configureAndroidAgentNotifications(deviceId, localUserId(deviceId), enabled);
++  await savePreferencesPatch({ localNotificationsOngoing: enabled });
++}
++
++// Re-applies the native handler after the cloud sign-out path clears it. Safe
++// to call on every launch and whenever the relay provider is unset.
++//
++// The persisted setting is explicit opt-in. OS permission alone must not
++// silently re-enable a local notification setting the user deliberately disabled.
++export async function restoreLocalAgentNotifications(): Promise<void> {
++  if (Platform.OS !== "android") return;
++  const preferences = await loadPreferences();
++  if (preferences.localNotificationsEnabled !== true) return;
++  const deviceId = await loadOrCreateAgentAwarenessDeviceId();
++  configureAndroidAgentNotifications(
++    deviceId,
++    localUserId(deviceId),
++    preferences.localNotificationsOngoing === true,
++  );
++}
+diff --git a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
+index 7ed7ddc8bae1b9e21cd4b55f332f4184da7e72f5..a7fdd88151ee8899909ef5b15c73fd9f3d695daa 100644
+--- a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
++++ b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
+@@ -3,6 +3,7 @@ import {
+   configureAndroidAgentNotifications,
+   clearAndroidAgentNotifications,
+ } from "./androidNotifications";
++import { restoreLocalAgentNotifications } from "./localNotifications";
+ import Constants from "expo-constants";
+ import * as Notifications from "expo-notifications";
+ import * as Effect from "effect/Effect";
+@@ -198,6 +199,7 @@ export function setAgentAwarenessRelayTokenProvider(
+   relayTokenProviderIdentity = provider ? (identity ?? null) : null;
+   if (!provider) {
+     clearAndroidAgentNotifications();
++    void restoreLocalAgentNotifications().catch(() => {});
+     pushTokenSubscription?.remove();
+     pushTokenSubscription = null;
+     appStateSubscription?.remove();
+diff --git a/apps/mobile/src/features/devices/device-stream.browser.test.ts b/apps/mobile/src/features/devices/device-stream.browser.test.ts
+index 5aeefdac0203248974195f2356cdc673930a9ddb..135912b6150dac8e260e5c369a97839e847d241c 100644
+--- a/apps/mobile/src/features/devices/device-stream.browser.test.ts
++++ b/apps/mobile/src/features/devices/device-stream.browser.test.ts
+@@ -11,15 +11,22 @@ class Element extends EventTarget {
+     super();
+     this.tag = tag;
+   }
+-  setAttribute() {}
++  readonly attributes = new Map<string, string>();
++  setAttribute(name: string, value: string) {
++    this.attributes.set(name, value);
++  }
+   removeAttribute(name: string) {
+     if (name === "src") this.src = "";
+   }
+   append() {}
+ }
+ 
+-async function setup() {
++async function setup(platform: "ios" | "android" = "ios") {
+   vi.useFakeTimers();
++  if (platform === "android") {
++    vi.stubGlobal("VideoDecoder", vi.fn());
++    vi.stubGlobal("EncodedVideoChunk", vi.fn());
++  }
+   const elements: Element[] = [];
+   vi.stubGlobal("document", {
+     documentElement: { style: {} },
+@@ -46,7 +53,7 @@ async function setup() {
+   }
+   vi.stubGlobal("WebSocket", Socket);
+   const configuration = {
+-    platform: "ios" as const,
++    platform,
+     deviceId: "fixture-device",
+     access: {
+       httpBase: "https://device.test",
+@@ -82,6 +89,30 @@ afterEach(() => {
+   vi.unstubAllGlobals();
+ });
+ 
++it("forwards Android editing shortcuts and browser clipboard text through the native WebView", async () => {
++  const { elements, sockets } = await setup("android");
++  const frame = elements.find((element) => element.attributes.get("role") === "application")!;
++  const key = (value: string) =>
++    Object.assign(new Event("keydown", { cancelable: true }), { key: value, ctrlKey: true });
++  const selectAll = key("a");
++  frame.dispatchEvent(selectAll);
++  expect(selectAll.defaultPrevented).toBe(true);
++  const paste = key("v");
++  frame.dispatchEvent(paste);
++  expect(paste.defaultPrevented).toBe(false);
++  frame.dispatchEvent(
++    Object.assign(new Event("paste", { cancelable: true }), {
++      clipboardData: { getData: () => "Clipboard text" },
++    }),
++  );
++  expect(
++    sockets[0]!.send.mock.calls.map(([message]) => JSON.parse(message as string) as unknown),
++  ).toEqual([
++    { type: "key", keycode: 29, metaState: 0x1000 },
++    { type: "text", text: "Clipboard text" },
++  ]);
++});
++
+ it("bridges shared first-frame readiness, image failure, and a successful fresh attempt to native", async () => {
+   const { elements, messages, sockets, configuration } = await setup();
+   sockets[0]!.onopen?.();
+diff --git a/apps/mobile/src/features/devices/device-stream.browser.ts b/apps/mobile/src/features/devices/device-stream.browser.ts
+index 0b9e98a51b9fb2393fa29e5d2999d7bfd58fddef..95d0c9642defe0a6e5431191faafac6dac395a4a 100644
+--- a/apps/mobile/src/features/devices/device-stream.browser.ts
++++ b/apps/mobile/src/features/devices/device-stream.browser.ts
+@@ -179,9 +179,22 @@ export function start(configuration: DeviceStreamConfiguration) {
+   frame.addEventListener("pointercancel", endTouch);
+   frame.addEventListener("lostpointercapture", endTouch);
+   frame.addEventListener("keydown", (event) => {
++    if (
++      configuration.platform === "android" &&
++      (event.ctrlKey || event.metaKey) &&
++      !event.altKey &&
++      event.key.toLowerCase() === "v"
++    ) {
++      return;
++    }
+     event.preventDefault();
+     client.sendKey(event, "down");
+   });
++  frame.addEventListener("paste", (event) => {
++    if (configuration.platform !== "android") return;
++    event.preventDefault();
++    client.sendText(event.clipboardData?.getData("text/plain") ?? "");
++  });
+   frame.addEventListener("keyup", (event) => client.sendKey(event, "up"));
+   window.addEventListener("pagehide", stop, { once: true });
+   post({ type: "input", connected: false });
+diff --git a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
+index 8809c429c824bcd6003170a42fd7a3991b0284f2..6b36ea1c2884b1ca4a256edb914948ea39062fc1 100644
+--- a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
++++ b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
+@@ -10,6 +10,7 @@ import { Alert, AppState, Linking, Platform } from "react-native";
+ import { useSafeAreaInsets } from "react-native-safe-area-context";
+ 
+ import { AppText as Text } from "../../components/AppText";
++import { tryCopyTextWithHaptic } from "../../lib/copyTextWithHaptic";
+ import {
+   isAtomCommandInterrupted,
+   reportAtomCommandResult,
+@@ -23,6 +24,12 @@ import {
+   supportsAndroidLiveUpdateSettings,
+ } from "../agent-awareness/androidNotifications";
+ import { setLiveActivityUpdatesEnabled } from "../agent-awareness/liveActivityPreferences";
++import {
++  enableLocalAgentNotifications,
++  disableLocalAgentNotifications,
++  setLocalAgentOngoing,
++} from "../agent-awareness/localNotifications";
++import { loadOrCreateAgentAwarenessDeviceId, loadPreferences } from "../../persistence/imperative";
+ import { requestAgentNotificationPermission } from "../agent-awareness/notificationPermissions";
+ import {
+   getAgentAwarenessRegistrationStatus,
+@@ -58,6 +65,7 @@ function useDeviceRegistered(): boolean {
+ 
+ export function SettingsNotificationsRouteScreen() {
+   if (!hasCloudPublicConfig()) {
++    if (Platform.OS === "android") return <LocalAndroidNotificationsSettings />;
+     return (
+       <SettingsScreen title="Notifications">
+         <ScrollView
+@@ -75,6 +83,106 @@ export function SettingsNotificationsRouteScreen() {
+   return <ConfiguredSettingsNotificationsRouteScreen />;
+ }
+ 
++function LocalSenderConfigurationRow({ enabled }: { readonly enabled: boolean }) {
++  return (
++    <SettingsRow
++      icon="doc.on.doc"
++      label="Copy local sender configuration"
++      disabled={!enabled}
++      onPress={() => {
++        void (async () => {
++          const deviceId = await loadOrCreateAgentAwarenessDeviceId();
++          const token = (await Notifications.getDevicePushTokenAsync()).data;
++          const copied = await tryCopyTextWithHaptic(
++            JSON.stringify({ token, deviceId, userId: `local:${deviceId}` }, null, 2),
++          );
++          if (!copied) Alert.alert("Could not copy", "Try again.");
++          else Alert.alert("Copied", "Sender configuration copied. Keep the push token private.");
++        })().catch(() =>
++          Alert.alert("Could not get push token", "Enable notifications and try again."),
++        );
++      }}
++    />
++  );
++}
++
++function LocalAndroidNotificationsSettings() {
++  const [enabled, setEnabled] = useState(false);
++  const [ongoing, setOngoing] = useState(false);
++  const [busy, setBusy] = useState(false);
++  const refresh = useCallback(async () => {
++    const preferences = await loadPreferences();
++    setEnabled(preferences.localNotificationsEnabled === true);
++    setOngoing(preferences.localNotificationsOngoing === true);
++  }, []);
++  useEffect(() => {
++    void refresh().catch(() => {});
++  }, [refresh]);
++
++  const enable = useCallback(async (withOngoing = false) => {
++    setBusy(true);
++    try {
++      const permission = await runtime.runPromiseExit(requestAgentNotificationPermission);
++      if (permission._tag !== "Success" || permission.value.type !== "granted") {
++        Alert.alert("Notifications unavailable", "Notification permission is required.");
++        return;
++      }
++      await enableLocalAgentNotifications(withOngoing);
++      setEnabled(true);
++      setOngoing(withOngoing);
++    } catch {
++      Alert.alert("Notifications unavailable", "Could not enable local notifications.");
++    } finally {
++      setBusy(false);
++    }
++  }, []);
++
++  return (
++    <SettingsScreen title="Notifications">
++      <ScrollView contentContainerClassName="gap-6 px-5 pt-4">
++        <SettingsSection title="Device-local Android notifications">
++          <SettingsSwitchRow
++            icon="bell.badge"
++            label="Device Notifications"
++            value={enabled}
++            disabled={busy}
++            onValueChange={(value) => {
++              if (value) void enable(ongoing);
++              else
++                void disableLocalAgentNotifications()
++                  .then(() => {
++                    setEnabled(false);
++                    setOngoing(false);
++                  })
++                  .catch(() =>
++                    Alert.alert("Notifications unavailable", "Could not save the setting."),
++                  );
++            }}
++          />
++          <SettingsSwitchRow
++            icon="bolt.circle"
++            label="Ongoing Agent Activity"
++            value={ongoing}
++            disabled={!enabled || busy}
++            onValueChange={(value) => {
++              void setLocalAgentOngoing(value)
++                .then(() => setOngoing(value))
++                .catch(() =>
++                  Alert.alert("Notifications unavailable", "Could not update ongoing activity."),
++                );
++            }}
++          />
++          <Text className="text-base text-foreground-muted">
++            No T3 Connect account or relay is used. Delivery requires a separate sender configured
++            with this app's Firebase project.
++          </Text>
++          <LocalSenderConfigurationRow enabled={enabled} />
++        </SettingsSection>
++      </ScrollView>
++    </SettingsScreen>
++  );
++}
++
+ function ConfiguredSettingsNotificationsRouteScreen() {
+   const preferencesResult = useAtomValue(mobilePreferencesAtom);
+   const savePreferences = useAtomSet(updateMobilePreferencesAtom);
+@@ -90,6 +198,8 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+   const { savedConnectionsById } = useSavedRemoteConnections();
+   const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>("checking");
+   const [liveActivityStatus, setLiveActivityStatus] = useState<LiveActivityStatus>("checking");
++  const [localNotificationsEnabled, setLocalNotificationsEnabled] = useState(false);
++  const [localOngoingEnabled, setLocalOngoingEnabled] = useState(false);
+   const liveActivityWriteInFlight = useRef(false);
+   const deviceRegistered = useDeviceRegistered();
+   const liveActivitiesPreferenceEnabled = AsyncResult.isSuccess(preferencesResult)
+@@ -116,6 +226,20 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+     setNotificationStatus(result.value.granted ? "enabled" : "disabled");
+   }, []);
+ 
++  useEffect(() => {
++    if (Platform.OS === "android" && !isSignedIn) {
++      void loadPreferences()
++        .then((preferences) => {
++          setLocalNotificationsEnabled(preferences.localNotificationsEnabled === true);
++          setLocalOngoingEnabled(preferences.localNotificationsOngoing === true);
++        })
++        .catch(() => setLocalNotificationsEnabled(false));
++    } else {
++      setLocalNotificationsEnabled(false);
++      setLocalOngoingEnabled(false);
++    }
++  }, [isSignedIn]);
++
+   useEffect(() => {
+     void refreshNotifications();
+     const subscription = AppState.addEventListener("change", (state) => {
+@@ -130,7 +254,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+       return;
+     }
+     if (!isSignedIn) {
+-      setLiveActivityStatus("signed-out");
++      setLiveActivityStatus(localOngoingEnabled ? "enabled" : "signed-out");
+       return;
+     }
+     if (!AsyncResult.isSuccess(preferencesResult)) {
+@@ -145,7 +269,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+     setLiveActivityStatus(
+       preferencesResult.value.liveActivitiesEnabled === false ? "disabled" : "enabled",
+     );
+-  }, [isLoaded, isSignedIn, preferencesResult]);
++  }, [isLoaded, isSignedIn, localOngoingEnabled, preferencesResult]);
+ 
+   const requestNotifications = useCallback(async () => {
+     const result = await settleAsyncResult(() =>
+@@ -324,6 +448,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+   const handleDeviceNotificationsChange = useCallback(
+     (enabled: boolean) => {
+       if (enabled) {
++        if (!isSignedIn && Platform.OS === "android") {
++          void (async () => {
++            const permission = await settleAsyncResult(() =>
++              runtime.runPromiseExit(requestAgentNotificationPermission),
++            );
++            if (permission._tag !== "Success" || permission.value.type !== "granted") {
++              Alert.alert("Notifications unavailable", "Notification permission is required.");
++              return;
++            }
++            await enableLocalAgentNotifications(false);
++            setLocalNotificationsEnabled(true);
++            setNotificationStatus("enabled");
++            Alert.alert(
++              "Notifications enabled",
++              "Local notifications are enabled. A local Firebase sender is required for delivery.",
++            );
++          })().catch(() =>
++            Alert.alert("Notifications unavailable", "Could not enable local notifications."),
++          );
++          return;
++        }
+         if (!isSignedIn) {
+           promptSignIn();
+           return;
+@@ -332,6 +477,14 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+         return;
+       }
+ 
++      if (!isSignedIn && Platform.OS === "android") {
++        void disableLocalAgentNotifications().catch(() => {
++          Alert.alert("Notifications unavailable", "Could not save the notification setting.");
++        });
++        setLocalNotificationsEnabled(false);
++        setLocalOngoingEnabled(false);
++        return;
++      }
+       Alert.alert(
+         "Disable notifications",
+         "Open system Settings to disable notifications for T3 Code.",
+@@ -347,6 +500,24 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+   const handleLiveActivitiesChange = useCallback(
+     (enabled: boolean) => {
+       if (liveActivityWriteInFlight.current) return;
++      if (!isSignedIn && Platform.OS === "android") {
++        if (!localNotificationsEnabled && enabled) {
++          Alert.alert(
++            "Enable notifications first",
++            "Turn on Device Notifications before enabling ongoing activity.",
++          );
++          return;
++        }
++        void setLocalAgentOngoing(enabled)
++          .then(() => {
++            setLocalOngoingEnabled(enabled);
++            setLiveActivityStatus(enabled ? "enabled" : "disabled");
++          })
++          .catch(() =>
++            Alert.alert("Ongoing activity unavailable", "Could not update local ongoing activity."),
++          );
++        return;
++      }
+       if (!enabled) {
+         liveActivityWriteInFlight.current = true;
+         setLiveActivityStatus("linking");
+@@ -408,6 +579,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+       connections,
+       getToken,
+       isSignedIn,
++      localNotificationsEnabled,
+       linkEnvironments,
+       liveActivitiesPreferenceEnabled,
+       promptSignIn,
+@@ -441,7 +613,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+             // relay; otherwise notifications cannot be delivered regardless of
+             // the local iOS permission.
+             value={
+-              agentAwarenessPushAvailable && notificationStatus === "enabled" && deviceRegistered
++              agentAwarenessPushAvailable &&
++              notificationStatus === "enabled" &&
++              (deviceRegistered || localNotificationsEnabled)
+             }
+             onValueChange={handleDeviceNotificationsChange}
+           />
+@@ -467,7 +641,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+             value={
+               agentAwarenessPushAvailable &&
+               (liveActivityStatus === "enabled" || liveActivityStatus === "linking") &&
+-              deviceRegistered
++              (deviceRegistered || localOngoingEnabled)
+             }
+             onValueChange={handleLiveActivitiesChange}
+           />
+@@ -478,6 +652,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+               onPress={() => handleLiveActivitiesChange(false)}
+             />
+           ) : null}
++          {!isSignedIn && Platform.OS === "android" ? (
++            <LocalSenderConfigurationRow enabled={localNotificationsEnabled} />
++          ) : null}
+           {supportsAndroidLiveUpdateSettings() ? (
+             <SettingsRow
+               icon="bolt.circle"
+diff --git a/apps/mobile/src/persistence/mobile-preferences.ts b/apps/mobile/src/persistence/mobile-preferences.ts
+index ee96bce2d5cec0ffae8d7db83ceaab88ec93a436..08e3d0cf7a802bde0c4b3f74f4eba4fd82ac9b6c 100644
+--- a/apps/mobile/src/persistence/mobile-preferences.ts
++++ b/apps/mobile/src/persistence/mobile-preferences.ts
+@@ -18,6 +18,9 @@ const PREFERENCES_FALLBACK_KEY = "t3code.preferences.fallback";
+ 
+ export interface Preferences {
+   readonly liveActivitiesEnabled?: boolean;
++  /** Explicit device-local Android agent notification opt-in. */
++  readonly localNotificationsEnabled?: boolean;
++  readonly localNotificationsOngoing?: boolean;
+   readonly themeId?: MobileThemeId;
+   readonly lightThemeId?: MobileThemeId;
+   readonly darkThemeId?: MobileThemeId;
+@@ -94,6 +97,8 @@ export class MobilePreferencesStore extends Context.Service<
+ function sanitizePreferences(parsed: Preferences): Preferences {
+   const preferences: {
+     liveActivitiesEnabled?: boolean;
++    localNotificationsEnabled?: boolean;
++    localNotificationsOngoing?: boolean;
+     themeId?: MobileThemeId;
+     lightThemeId?: MobileThemeId;
+     darkThemeId?: MobileThemeId;
+@@ -120,6 +125,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
+   if (typeof parsed.liveActivitiesEnabled === "boolean") {
+     preferences.liveActivitiesEnabled = parsed.liveActivitiesEnabled;
+   }
++  if (typeof parsed.localNotificationsEnabled === "boolean") {
++    preferences.localNotificationsEnabled = parsed.localNotificationsEnabled;
++  }
++  if (typeof parsed.localNotificationsOngoing === "boolean") {
++    preferences.localNotificationsOngoing = parsed.localNotificationsOngoing;
++  }
+   if (
+     typeof parsed.themeId === "string" &&
+     (MOBILE_THEME_IDS as readonly string[]).includes(parsed.themeId)
+diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
+index 26b97c24719dd6dca4359f8441794f568cbfcb67..18156b15f5a8247a9c7ce651018fa14ef3544bb8 100644
+--- a/apps/web/src/components/ChatMarkdown.tsx
++++ b/apps/web/src/components/ChatMarkdown.tsx
+@@ -176,6 +176,10 @@ import { previewEnvironment } from "../state/preview";
+ import { useAtomCommand } from "../state/use-atom-command";
+ import { useAtomQueryRunner } from "../state/use-atom-query-runner";
+ import { projectEnvironment } from "../state/projects";
++import {
++  cachedWorkspaceBasenameLookup,
++  collectWorkspaceBasenameCandidates,
++} from "../workspaceBasenameResolution";
+ import {
+   claimWorkspaceBasenameLookup,
+   needsWorkspaceBasenameLookup,
+@@ -2454,6 +2458,14 @@ function useChatMarkdownState({
+   const searchProjectEntries = useAtomQueryRunner(projectEnvironment.searchEntries, {
+     reportFailure: false,
+   });
++  const [workspaceBasenamePaths, setWorkspaceBasenamePaths] = useState<{
++    scope: string;
++    paths: Map<string, string>;
++  }>(() => ({ scope: "", paths: new Map() }));
++  const workspaceBasenameLookupCache = useRef<{
++    scope: string;
++    entries: Map<string, Promise<string | null>>;
++  }>({ scope: "", entries: new Map() });
+   const openPreview = useAtomCommand(previewEnvironment.open, {
+     reportFailure: false,
+   });
+@@ -2710,6 +2722,77 @@ function useChatMarkdownState({
+     },
+     [cwd, environmentId, searchProjectEntries],
+   );
++  // Resolve references ahead of rendering, deduplicating per basename and cancelling
++  // stale cwd/text lookups. Only bare names need project-index searches.
++  useEffect(() => {
++    const scope = `${environmentId}:${cwd}`;
++    if (workspaceBasenameLookupCache.current.scope !== scope)
++      workspaceBasenameLookupCache.current = { scope, entries: new Map() };
++    if (!cwd || environmentId === null) return;
++    const imagePaths = [...text.matchAll(/!\[[^\]]*\]\(\s*(?:<([^>\n]+)>|([^\s)]+))/g)].map(
++      (match) => match[1] ?? match[2] ?? "",
++    );
++    const candidates = collectWorkspaceBasenameCandidates([
++      ...[...markdownFileLinkMetaByHref.values(), ...inlineCodeFileLinkMetaByText.values()].flatMap(
++        (meta) => (meta.workspaceRelativePath ? [meta.workspaceRelativePath] : []),
++      ),
++      ...imagePaths,
++    ]);
++    let cancelled = false;
++    void Promise.all(
++      [...candidates].map(
++        async (name) =>
++          [
++            name,
++            await cachedWorkspaceBasenameLookup(
++              workspaceBasenameLookupCache.current.entries,
++              name,
++              findWorkspaceBasenameMatch,
++            ),
++          ] as const,
++      ),
++    ).then((matches) => {
++      if (cancelled) return;
++      const next = new Map(
++        matches.filter((entry): entry is readonly [string, string] => entry[1] !== null),
++      );
++      setWorkspaceBasenamePaths((previous) =>
++        previous.scope === scope &&
++        previous.paths.size === next.size &&
++        [...next].every(([key, value]) => previous.paths.get(key) === value)
++          ? previous
++          : { scope, paths: next },
++      );
++    });
++    return () => {
++      cancelled = true;
++    };
++  }, [
++    cwd,
++    environmentId,
++    findWorkspaceBasenameMatch,
++    inlineCodeFileLinkMetaByText,
++    markdownFileLinkMetaByHref,
++    text,
++  ]);
++  const currentBasenamePaths =
++    cwd && environmentId !== null && workspaceBasenamePaths.scope === `${environmentId}:${cwd}`
++      ? workspaceBasenamePaths.paths
++      : EMPTY_WORKSPACE_BASENAME_PATHS;
++  const resolveWorkspaceBasename = useCallback(
++    (path: string) =>
++      cwd && needsWorkspaceBasenameLookup(path) ? (currentBasenamePaths.get(path) ?? path) : path,
++    [cwd, currentBasenamePaths],
++  );
++  const resolvedFileLinkMeta = useCallback(
++    (meta: MarkdownFileLinkMeta) => {
++      const resolved = meta.workspaceRelativePath
++        ? currentBasenamePaths.get(meta.workspaceRelativePath)
++        : undefined;
++      return resolved && cwd ? (resolveMarkdownFileLinkMeta(resolved, cwd) ?? meta) : meta;
++    },
++    [cwd, currentBasenamePaths],
++  );
+   // A bare filename resolves to the workspace root, which is rarely where the
+   // file is, so ask the index before opening. Absolute host paths open as-is.
+   const openFileInPanel = useCallback(
+@@ -2745,6 +2828,7 @@ function useChatMarkdownState({
+   );
+   const fileLinkChip = useCallback(
+     (fileLinkMeta: MarkdownFileLinkMeta, copyMarkdown: string, mediaSource?: string) => {
++      fileLinkMeta = resolvedFileLinkMeta(fileLinkMeta);
+       const parentSuffix = fileLinkParentSuffixByPath.get(
+         fileLinkMeta.filePath.replaceAll("\\", "/"),
+       );
+@@ -2816,6 +2900,7 @@ function useChatMarkdownState({
+       revealInFileManagerLabel,
+       revealMarkdownFileInFileManager,
+       threadRef,
++      resolvedFileLinkMeta,
+     ],
+   );
+ 
+@@ -2850,6 +2935,7 @@ function useChatMarkdownState({
+       text,
+       threadRef,
+       updateThreadPullRequestLink,
++      resolveWorkspaceBasename,
+     }),
+     [
+       cwd,
+@@ -2881,6 +2967,7 @@ function useChatMarkdownState({
+       text,
+       threadRef,
+       updateThreadPullRequestLink,
++      resolveWorkspaceBasename,
+     ],
+   );
+   return {
+@@ -2917,6 +3004,8 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
+ }
+ 
+ // Keep component types stable when streaming changes the message state.
++const EMPTY_WORKSPACE_BASENAME_PATHS = new Map<string, string>();
++
+ const CHAT_MARKDOWN_COMPONENTS = {
+   h1: markdownHeadingRenderer(1),
+   h2: markdownHeadingRenderer(2),
+@@ -3284,6 +3373,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
+       imageBaseDir,
+       threadRef,
+       renderContextReference,
++      resolveWorkspaceBasename,
+     } = use(ChatMarkdownRendererContext);
+     const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
+     const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
+@@ -3308,7 +3398,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+     const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
+     const { className, style: _style, width, height, ...imageProps } = props;
+     const authoredSizeStyle = authoredImageSizeStyle(width, height);
+-    const imageSource = classifyMarkdownImageSource(classifiedSrc, imageBaseDir ?? cwd);
++    const resolvedSrc =
++      cwd && needsWorkspaceBasenameLookup(classifiedSrc)
++        ? resolveWorkspaceBasename(classifiedSrc)
++        : classifiedSrc;
++    const imageSource = classifyMarkdownImageSource(resolvedSrc, imageBaseDir ?? cwd);
+     const kind = mediaKindFromPath(classifiedSrc) ?? "image";
+     const directUri = imageSource._tag === "Direct" ? imageSource.uri : null;
+     const githubMediaUrl =
+diff --git a/apps/web/src/components/ChatView.logic.test.ts b/apps/web/src/components/ChatView.logic.test.ts
+index 9e6b96b21018fa726ed6ec07f1abaa9b6dc3842a..8cdccbfeac980df2301c2ce2e08acba3da915a90 100644
+--- a/apps/web/src/components/ChatView.logic.test.ts
++++ b/apps/web/src/components/ChatView.logic.test.ts
+@@ -1828,6 +1828,12 @@ describe("shouldRefocusComposerOnWindowFocus", () => {
+     ).toBe(false);
+   });
+ 
++  it("leaves a focused device screen alone", () => {
++    expect(
++      shouldRefocusComposerOnWindowFocus(element("DIV", { within: 'role="application"' })),
++    ).toBe(false);
++  });
++
+   it("leaves focus inside a dialog or popup alone", () => {
+     expect(shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "dialog" }))).toBe(false);
+     expect(shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "-popup" }))).toBe(false);
+diff --git a/apps/web/src/components/ChatView.logic.ts b/apps/web/src/components/ChatView.logic.ts
+index 3323a8f3e0b986de1e59f86a23caa410d931ee70..a4a7c10c22bd9420926c3fe6d26231a0cae0147f 100644
+--- a/apps/web/src/components/ChatView.logic.ts
++++ b/apps/web/src/components/ChatView.logic.ts
+@@ -1292,10 +1292,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
+   );
+ }
+ 
+-// Returning to the window should land the caret in the composer, so the reader can type right
+-// away. The exceptions are places where focus is deliberate: another text field, a terminal in
+-// the drawer or the right panel, or an open dialog or popup. A focused button outside those is
+-// not one of them, so it yields to the composer.
++// Returning to the window should focus the composer unless a text field, terminal, device
++// screen, dialog, or popup owns focus. A plain button outside those yields to the composer.
+ export function shouldRefocusComposerOnWindowFocus(
+   activeElement:
+     | (Pick<Element, "tagName" | "closest" | "getAttribute"> & { isContentEditable?: boolean })
+@@ -1315,7 +1313,7 @@ export function shouldRefocusComposerOnWindowFocus(
+   }
+   return (
+     activeElement.closest(
+-      '[role="dialog"], [role="alertdialog"], [data-slot$="-popup"], [data-terminal-owner]',
++      '[role="dialog"], [role="alertdialog"], [role="application"], [data-slot$="-popup"], [data-terminal-owner]',
+     ) === null
+   );
+ }
+diff --git a/apps/web/src/components/ChatView.tsx b/apps/web/src/components/ChatView.tsx
+index 78c5f113162e6c4ad10b516841db9a34041666fc..2ef9fd185229d8d86256cc0953ddb038557f06f6 100644
+--- a/apps/web/src/components/ChatView.tsx
++++ b/apps/web/src/components/ChatView.tsx
+@@ -86,6 +86,14 @@ import {
+ } from "@t3tools/client-runtime/errors";
+ import { readPastedComposerContext } from "./composerInlineTokenPaste";
+ import { isPasteAsTextShortcut } from "@t3tools/client-runtime/text-paste";
++import {
++  eventPathContainsSelector,
++  pasteTextToFocusComposer,
++  shouldRedirectInputToComposer,
++  shouldTypeToFocusComposer,
++  TYPE_TO_FOCUS_EDITABLE_SELECTOR,
++  TYPE_TO_FOCUS_FLOATING_LAYER_SELECTOR,
++} from "~/lib/composerInputFocus";
+ import { effectiveSnoozed, threadWokeAt } from "@t3tools/client-runtime/state/thread-settled";
+ import { useAcknowledgeThreadWoke, useThreadActions } from "../hooks/useThreadActions";
+ import {
+@@ -688,89 +696,12 @@ const DevicePanel = lazy(() =>
+ );
+ const FilePreviewPanel = lazy(() => import("./files/FilePreviewPanel"));
+ const EMPTY_PENDING_FILE_SURFACE_IDS: ReadonlySet<string> = new Set();
+-const TYPE_TO_FOCUS_EDITABLE_SELECTOR = [
+-  "input",
+-  "textarea",
+-  "select",
+-  '[contenteditable="true"]',
+-  '[contenteditable="plaintext-only"]',
+-  '[role="textbox"]',
+-].join(",");
+-const TYPE_TO_FOCUS_INTERACTIVE_SELECTOR = [
+-  "button",
+-  "a[href]",
+-  "summary",
+-  '[role="button"]',
+-  '[role="checkbox"]',
+-  '[role="menuitem"]',
+-  '[role="option"]',
+-  '[role="radio"]',
+-  '[role="switch"]',
+-  '[role="tab"]',
+-].join(",");
+-// Popups match only while open or closing: some stay mounted when closed,
+-// such as the chat header actions menu.
+-const TYPE_TO_FOCUS_FLOATING_LAYER_SELECTOR = [
+-  '[role="dialog"][aria-modal="true"]',
+-  '[data-slot="alert-dialog-popup"]:is([data-open],[data-ending-style])',
+-  '[data-slot="command-dialog-popup"]:is([data-open],[data-ending-style])',
+-  '[data-slot="dialog-popup"]:is([data-open],[data-ending-style])',
+-  '[data-slot="sheet-popup"]:is([data-open],[data-ending-style])',
+-  '[data-slot="sidebar"][data-mobile="true"]:is([data-open],[data-ending-style])',
+-  '[data-slot="menu-popup"]:is([data-open],[data-ending-style])',
+-  '[data-slot="select-popup"]:is([data-open],[data-ending-style])',
+-  '[data-slot="popover-popup"]:is([data-open],[data-ending-style])',
+-  '[data-slot="combobox-popup"]:is([data-open],[data-ending-style])',
+-  '[data-slot="autocomplete-popup"]:is([data-open],[data-ending-style])',
+-].join(",");
+-
+ type EnvironmentUnavailableState = {
+   readonly environmentId: EnvironmentId;
+   readonly label: string;
+   readonly connection: EnvironmentConnectionPresentation;
+ };
+ 
+-function eventPathContainsSelector(event: Event, selector: string): boolean {
+-  const path = event.composedPath();
+-  if (path.length === 0 && event.target) {
+-    path.push(event.target);
+-  }
+-  return path.some((target) => target instanceof Element && target.closest(selector));
+-}
+-
+-/**
+- * Whether input that landed outside any editable or interactive element
+- * should be redirected into the composer. Shared by type-to-focus and
+- * paste-to-focus so both honour the same surfaces.
+- */
+-function shouldRedirectInputToComposer(event: Event): boolean {
+-  if (event.defaultPrevented) return false;
+-  if (eventPathContainsSelector(event, TYPE_TO_FOCUS_EDITABLE_SELECTOR)) return false;
+-  if (eventPathContainsSelector(event, TYPE_TO_FOCUS_INTERACTIVE_SELECTOR)) return false;
+-  if (document.querySelector(TYPE_TO_FOCUS_FLOATING_LAYER_SELECTOR)) return false;
+-  return true;
+-}
+-
+-function shouldTypeToFocusComposer(event: KeyboardEvent): boolean {
+-  if (event.isComposing) return false;
+-  if (event.metaKey || event.ctrlKey || event.altKey) return false;
+-  if (event.key.length !== 1) return false;
+-  if (!shouldRedirectInputToComposer(event)) return false;
+-
+-  return true;
+-}
+-
+-/**
+- * Plain text pasted with nothing editable focused, such as after the resting
+- * composer blurred. Files are left to the composer's own paste handler.
+- */
+-function pasteTextToFocusComposer(event: ClipboardEvent): string | null {
+-  if (!event.clipboardData || event.clipboardData.files.length > 0) return null;
+-  if (!shouldRedirectInputToComposer(event)) return null;
+-  const text = event.clipboardData.getData("text/plain");
+-  return text.length > 0 ? text : null;
+-}
+-
+ const draftFanoutStateAtom = Atom.family((_routeKey: string) =>
+   Atom.make({
+     selections: null as ReadonlyArray<ModelSelection> | null,
+@@ -7594,6 +7525,7 @@ export default function ChatView(props: ChatViewProps) {
+       if (!activeThreadId || isCommandPaletteOpen()) {
+         return;
+       }
++      if (eventPathContainsSelector(event, '[role="application"]')) return;
+       const terminalFocusOwner = getTerminalFocusOwner();
+       if (event.defaultPrevented && terminalFocusOwner === null) {
+         return;
+diff --git a/apps/web/src/components/chat/V2FileChangeDiffView.tsx b/apps/web/src/components/chat/V2FileChangeDiffView.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..63745660f3d132256decf35235e989bbd3fd4a9d
+--- /dev/null
++++ b/apps/web/src/components/chat/V2FileChangeDiffView.tsx
+@@ -0,0 +1,43 @@
++import type { CodeViewDiffItem } from "@pierre/diffs/react";
++import { useMemo } from "react";
++import type { V2FileChangeDiffInput } from "./v2FileChangeDiff";
++import { v2FileChangePatch } from "./v2FileChangeDiff";
++import { getRenderablePatch } from "../../lib/diffRendering";
++import { StyledDiffCodeView } from "../diffs/StyledDiffCodeView";
++
++export function V2FileChangeDiffView({
++  item,
++  cacheKey,
++}: {
++  readonly item: V2FileChangeDiffInput & { readonly id: string };
++  readonly cacheKey: string;
++}) {
++  const { diffStr, fileName, newStr, oldStr } = item;
++  const patch = useMemo(
++    () => v2FileChangePatch({ diffStr, fileName, newStr, oldStr }),
++    [diffStr, fileName, newStr, oldStr],
++  );
++  const items = useMemo(() => {
++    if (!patch) return [];
++    const parsed = getRenderablePatch(patch, cacheKey);
++    return parsed?.kind === "files"
++      ? (parsed.files.map((file, index) => ({
++          id: `${cacheKey}:${index}`,
++          type: "diff" as const,
++          fileDiff: file,
++        })) satisfies CodeViewDiffItem[])
++      : [];
++  }, [cacheKey, patch]);
++  if (!patch) return null;
++  if (!items.length)
++    return (
++      <pre className="max-h-80 overflow-auto whitespace-pre-wrap font-mono text-2xs">{patch}</pre>
++    );
++  return (
++    <StyledDiffCodeView
++      className="max-h-96 overflow-auto rounded border border-border/50"
++      items={items}
++      options={{ diffStyle: "unified" }}
++    />
++  );
++}
+diff --git a/apps/web/src/components/chat/V2ItemInspector.tsx b/apps/web/src/components/chat/V2ItemInspector.tsx
+index 0b8275065549a4c18ac080300e6a718d190e0a4f..76ee99880be1562a485e6b0913801676fc4bbf77 100644
+--- a/apps/web/src/components/chat/V2ItemInspector.tsx
++++ b/apps/web/src/components/chat/V2ItemInspector.tsx
+@@ -11,7 +11,7 @@ import {
+   turnItemOutputText,
+ } from "@t3tools/client-runtime/work-log/item-detail";
+ import { ExternalLinkIcon, GitBranchIcon, RotateCcwIcon } from "lucide-react";
+-import { memo, Suspense, use, useMemo } from "react";
++import { lazy, memo, Suspense, use, useMemo, useState } from "react";
+ 
+ import { useTheme } from "../../hooks/useTheme";
+ import { cn } from "../../lib/utils";
+@@ -25,6 +25,78 @@ import ChatMarkdown from "../ChatMarkdown";
+ import { RenderErrorBoundary } from "../RenderErrorBoundary";
+ import { resolveExternalWebLinkHref } from "./externalLinkContextMenu";
+ 
++const V2FileChangeDiffView = lazy(() =>
++  import("./V2FileChangeDiffView").then((module) => ({ default: module.V2FileChangeDiffView })),
++);
++
++function FileChangeInspector({
++  item,
++  workspaceRoot,
++  onOpenTurnDiff,
++}: {
++  readonly item: Extract<OrchestrationV2ProjectedTurnItem["item"], { type: "file_change" }>;
++  readonly workspaceRoot?: string | undefined;
++  readonly onOpenTurnDiff: V2ItemInspectorProps["onOpenTurnDiff"];
++}) {
++  const [expanded, setExpanded] = useState(false);
++  const hasDiff = Boolean(item.diffStr?.trim()) || item.newStr !== undefined;
++  return (
++    <div className="space-y-2">
++      <div className="flex flex-wrap items-center gap-2">
++        <span className="font-mono text-muted-foreground">
++          {formatWorkspaceRelativePath(item.fileName, workspaceRoot)}
++        </span>
++        {item.additions !== undefined || item.deletions !== undefined ? (
++          <span>
++            <span className="text-success">+{item.additions ?? 0}</span>{" "}
++            <span className="text-destructive">-{item.deletions ?? 0}</span>
++          </span>
++        ) : null}
++        {hasDiff ? (
++          <Button
++            size="xs"
++            variant="outline"
++            aria-expanded={expanded}
++            onClick={() => setExpanded((value) => !value)}
++          >
++            {expanded ? "Hide diff" : "Show diff"}
++          </Button>
++        ) : null}
++        {item.runId !== null ? (
++          <Button
++            size="xs"
++            variant="outline"
++            onClick={() => onOpenTurnDiff(item.runId!, item.fileName)}
++          >
++            Open diff
++          </Button>
++        ) : null}
++      </div>
++      {item.status === "failed" && item.diffStr?.trim() ? (
++        <StructuredValue value={item.diffStr} />
++      ) : null}
++      {expanded && hasDiff ? (
++        <Suspense fallback={<div className="text-muted-foreground">Loading diff…</div>}>
++          <V2FileChangeDiffView item={item} cacheKey={`v2:${item.id}:${item.fileName}`} />
++        </Suspense>
++      ) : null}
++      {item.changes?.length ? (
++        <ul className="space-y-1 font-mono text-muted-foreground">
++          {item.changes.map((change, index) => (
++            <li key={`${change.operation}:${change.path}:${index}`}>
++              {change.operation} {change.oldPath ? `${change.oldPath} → ` : ""}
++              {formatWorkspaceRelativePath(change.path, workspaceRoot)}
++              {change.fileType || change.mimeType
++                ? ` (${[change.fileType, change.mimeType].filter(Boolean).join(", ")})`
++                : ""}
++            </li>
++          ))}
++        </ul>
++      ) : null}
++    </div>
++  );
++}
++
+ interface V2ItemInspectorProps {
+   readonly projectedItem: OrchestrationV2ProjectedTurnItem;
+   readonly environmentId: EnvironmentId;
+@@ -223,44 +295,12 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
+       ) : null}
+ 
+       {item.type === "file_change" ? (
+-        <div className="space-y-2">
+-          <div className="flex flex-wrap items-center gap-2">
+-            <span className="font-mono text-muted-foreground">
+-              {formatWorkspaceRelativePath(item.fileName, props.workspaceRoot)}
+-            </span>
+-            {item.additions !== undefined || item.deletions !== undefined ? (
+-              <span>
+-                <span className="text-success">+{item.additions ?? 0}</span>{" "}
+-                <span className="text-destructive">-{item.deletions ?? 0}</span>
+-              </span>
+-            ) : null}
+-            {item.runId !== null ? (
+-              <Button
+-                size="xs"
+-                variant="outline"
+-                onClick={() => props.onOpenTurnDiff(item.runId!, item.fileName)}
+-              >
+-                Open diff
+-              </Button>
+-            ) : null}
+-          </div>
+-          {item.status === "failed" && item.diffStr?.trim() ? (
+-            <StructuredValue value={item.diffStr} />
+-          ) : null}
+-          {item.changes !== undefined && item.changes.length > 0 ? (
+-            <ul className="space-y-1 font-mono text-muted-foreground">
+-              {item.changes.map((change, index) => (
+-                <li key={`${change.operation}:${change.path}:${index}`}>
+-                  {change.operation} {change.oldPath ? `${change.oldPath} → ` : ""}
+-                  {formatWorkspaceRelativePath(change.path, props.workspaceRoot)}
+-                  {change.fileType || change.mimeType
+-                    ? ` (${[change.fileType, change.mimeType].filter(Boolean).join(", ")})`
+-                    : ""}
+-                </li>
+-              ))}
+-            </ul>
+-          ) : null}
+-        </div>
++        <FileChangeInspector
++          key={item.id}
++          item={item}
++          workspaceRoot={props.workspaceRoot}
++          onOpenTurnDiff={props.onOpenTurnDiff}
++        />
+       ) : null}
+ 
+       {item.type === "file_search" && item.pattern?.trim() ? (
+diff --git a/apps/web/src/components/chat/v2FileChangeDiff.test.ts b/apps/web/src/components/chat/v2FileChangeDiff.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..f5e096a5c44647aa7f9a0c532ff832519f9e7199
+--- /dev/null
++++ b/apps/web/src/components/chat/v2FileChangeDiff.test.ts
+@@ -0,0 +1,36 @@
++import { describe, expect, it } from "vite-plus/test";
++import { v2FileChangePatch } from "./v2FileChangeDiff";
++
++describe("v2FileChangePatch", () => {
++  it("prefers the original provider patch", () => {
++    expect(v2FileChangePatch({ fileName: "src/a.ts", diffStr: "patch", newStr: "new" })).toBe(
++      "patch",
++    );
++  });
++  it("builds a unified patch from persisted old/new snapshots", () => {
++    expect(v2FileChangePatch({ fileName: "src/a.ts", oldStr: "old\n", newStr: "new\n" })).toContain(
++      "-old\n+new",
++    );
++  });
++  it("preserves missing final newlines on both snapshots", () => {
++    const patch = v2FileChangePatch({ fileName: "src/a.ts", oldStr: "old", newStr: "new" });
++    expect(patch).toContain(
++      "-old\n\\ No newline at end of file\n+new\n\\ No newline at end of file",
++    );
++  });
++  it("uses zero-line ranges for empty-file creation and truncation", () => {
++    expect(v2FileChangePatch({ fileName: "empty.txt", newStr: "" })).toContain("@@ -0,0 +0,0 @@");
++    expect(v2FileChangePatch({ fileName: "empty.txt", oldStr: "old\n", newStr: "" })).toContain(
++      "@@ -1,1 +0,0 @@",
++    );
++  });
++  it("preserves a file containing one blank line", () => {
++    expect(v2FileChangePatch({ fileName: "blank.txt", newStr: "\n" })).toContain(
++      "@@ -0,0 +1,1 @@\n+",
++    );
++  });
++  it("does not infer deletion from a missing new snapshot", () => {
++    expect(v2FileChangePatch({ fileName: "src/a.ts", oldStr: "unchanged\n" })).toBeNull();
++    expect(v2FileChangePatch({ fileName: "src/a.ts" })).toBeNull();
++  });
++});
+diff --git a/apps/web/src/components/chat/v2FileChangeDiff.ts b/apps/web/src/components/chat/v2FileChangeDiff.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..5f2284e73de274f297e984277d443edb2a7541ae
+--- /dev/null
++++ b/apps/web/src/components/chat/v2FileChangeDiff.ts
+@@ -0,0 +1,42 @@
++export interface V2FileChangeDiffInput {
++  readonly fileName: string;
++  readonly diffStr?: string | undefined;
++  readonly oldStr?: string | undefined;
++  readonly newStr?: string | undefined;
++}
++
++function snapshotLines(text: string): { lines: string[]; hasTrailingNewline: boolean } {
++  const hasTrailingNewline = text.endsWith("\n");
++  const content = hasTrailingNewline ? text.slice(0, -1) : text;
++  return { lines: text === "" ? [] : content.split("\n"), hasTrailingNewline };
++}
++
++/** Prefer the provider patch; otherwise encode both persisted snapshots losslessly. */
++export function v2FileChangePatch(input: V2FileChangeDiffInput): string | null {
++  if (input.diffStr?.trim()) return input.diffStr;
++  if (input.newStr === undefined) return null;
++  const path = input.fileName.replaceAll("\\", "/").replace(/^\/+/, "");
++  const oldExists = input.oldStr !== undefined;
++  const old = snapshotLines(input.oldStr ?? "");
++  const next = snapshotLines(input.newStr ?? "");
++  const range = (start: number, count: number) => `${count ? start : 0},${count}`;
++  const body = [
++    `@@ -${range(1, oldExists ? old.lines.length : 0)} +${range(1, next.lines.length)} @@`,
++    ...(oldExists
++      ? old.lines.flatMap((line, index) => [
++          `-${line}`,
++          ...(index === old.lines.length - 1 && !old.hasTrailingNewline
++            ? ["\\ No newline at end of file"]
++            : []),
++        ])
++      : []),
++    ...next.lines.flatMap((line, index) => [
++      `+${line}`,
++      ...(index === next.lines.length - 1 && !next.hasTrailingNewline
++        ? ["\\ No newline at end of file"]
++        : []),
++    ]),
++  ];
++  const header = oldExists ? `--- a/${path}\n+++ b/${path}` : `--- /dev/null\n+++ b/${path}`;
++  return `${header}\n${body.join("\n")}`;
++}
+diff --git a/apps/web/src/components/device/DeviceStreamView.test.tsx b/apps/web/src/components/device/DeviceStreamView.test.tsx
+index 7e03923401290d2393dd2555be172eb060233a96..7c57904c43631bcd96eaf921e298252096265c11 100644
+--- a/apps/web/src/components/device/DeviceStreamView.test.tsx
++++ b/apps/web/src/components/device/DeviceStreamView.test.tsx
+@@ -42,8 +42,13 @@ afterEach(async () => {
+   vi.unstubAllGlobals();
+ });
+ 
+-async function setup() {
++async function setup(platform: "ios" | "android" = "ios") {
+   vi.useFakeTimers();
++  if (platform === "android") {
++    vi.stubGlobal("VideoDecoder", vi.fn());
++    vi.stubGlobal("EncodedVideoChunk", vi.fn());
++  }
++  const messages: Array<string | Uint8Array> = [];
+   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+   vi.stubGlobal("fetch", () => {
+     primes++;
+@@ -54,7 +59,9 @@ async function setup() {
+     class {
+       static OPEN = 1;
+       readyState = 1;
+-      send() {}
++      send(message: string | Uint8Array) {
++        messages.push(message);
++      }
+       close() {}
+     },
+   );
+@@ -71,7 +78,7 @@ async function setup() {
+       hostId="local"
+       environmentId={EnvironmentId.make("test")}
+       deviceId="test"
+-      platform="ios"
++      platform={platform}
+       visible={visible}
+     />
+   );
+@@ -90,7 +97,7 @@ async function setup() {
+       },
+     });
+   });
+-  return { images, view };
++  return { images, view, messages };
+ }
+ 
+ it("removes MJPEG requests while hidden and reconnects when shown", async () => {
+@@ -126,6 +133,42 @@ it("offers Reconnect after the shared timeout and receives a frame after retry w
+   expect(vi.getTimerCount()).toBe(0);
+ });
+ 
++it("sends Ctrl shortcuts to Android and lets a browser paste insert clipboard text once", async () => {
++  const { messages } = await setup("android");
++  const screen = renderer!.root.findByProps({ role: "application" });
++  const target = {};
++  const key = (value: string) => {
++    const preventDefault = vi.fn();
++    const stopPropagation = vi.fn();
++    const nativeEvent = { key: value, ctrlKey: true } as KeyboardEvent;
++    screen.props.onKeyDown({
++      target,
++      currentTarget: target,
++      key: value,
++      ctrlKey: true,
++      nativeEvent,
++      preventDefault,
++      stopPropagation,
++    });
++    return preventDefault;
++  };
++  expect(key("a")).toHaveBeenCalledOnce();
++  expect(key("c")).toHaveBeenCalledOnce();
++  expect(key("v")).not.toHaveBeenCalled();
++  screen.props.onPaste({
++    target,
++    currentTarget: target,
++    clipboardData: { getData: () => "Pasted from the computer" },
++    preventDefault: vi.fn(),
++    stopPropagation: vi.fn(),
++  });
++  expect(messages.map((message) => JSON.parse(message as string) as unknown)).toEqual([
++    { type: "key", keycode: 29, metaState: 0x1000 },
++    { type: "key", keycode: 31, metaState: 0x1000 },
++    { type: "text", text: "Pasted from the computer" },
++  ]);
++});
++
+ it("starts exactly one new stream per Reconnect press", async () => {
+   await setup();
+   await act(async () => {
+diff --git a/apps/web/src/components/device/DeviceStreamView.tsx b/apps/web/src/components/device/DeviceStreamView.tsx
+index 25c4c39dae2f3904ff7fe7f25586b09060836877..4b0effd28b3f9c4265b3d8fbbbdbb715229fff20 100644
+--- a/apps/web/src/components/device/DeviceStreamView.tsx
++++ b/apps/web/src/components/device/DeviceStreamView.tsx
+@@ -395,13 +395,30 @@ export function DeviceStreamView(props: {
+         )}
+         tabIndex={0}
+         role="application"
++        data-keybinding-capture=""
+         aria-label={`${props.platform === "ios" ? "iOS Simulator" : "Android Emulator"} screen`}
+         onKeyDown={(event) => {
+           if (event.target !== event.currentTarget) return;
++          if (
++            props.platform === "android" &&
++            (event.ctrlKey || event.metaKey) &&
++            !event.altKey &&
++            event.key.toLowerCase() === "v"
++          ) {
++            // Let the browser deliver clipboard text through onPaste.
++            event.stopPropagation();
++            return;
++          }
+           if (event.metaKey && !["r", "R"].includes(event.key)) return;
+           event.preventDefault();
+           clientRef.current?.sendKey(event.nativeEvent, "down");
+         }}
++        onPaste={(event) => {
++          if (props.platform !== "android" || event.target !== event.currentTarget) return;
++          event.preventDefault();
++          event.stopPropagation();
++          clientRef.current?.sendText(event.clipboardData.getData("text/plain"));
++        }}
+         onKeyUp={(event) => {
+           if (event.target !== event.currentTarget) return;
+           clientRef.current?.sendKey(event.nativeEvent, "up");
+diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
+index 4a50af16cef52e813d3d58a23e0c67f41692a746..267169b4e5ed54f7d33fc97471c053989248e503 100644
+--- a/apps/web/src/components/settings/ConnectionsSettings.tsx
++++ b/apps/web/src/components/settings/ConnectionsSettings.tsx
+@@ -1989,6 +1989,7 @@ export function ConnectionsSettings() {
+     useState<EnvironmentId | null>(null);
+   const [isUpdatingDesktopServerExposure, setIsUpdatingDesktopServerExposure] = useState(false);
+   const [isDesktopServerExposureDialogOpen, setIsDesktopServerExposureDialogOpen] = useState(false);
++  const [isUpdatingLanInterface, setIsUpdatingLanInterface] = useState(false);
+   const [isUpdatingTailscaleServe, setIsUpdatingTailscaleServe] = useState(false);
+   const [isUpdatingWslBackend, setIsUpdatingWslBackend] = useState(false);
+   const [desktopWslMutationError, setDesktopWslMutationError] = useState<string | null>(null);
+@@ -2620,6 +2621,48 @@ export function ConnectionsSettings() {
+     },
+     [setDefaultAdvertisedEndpointKey],
+   );
++  const desktopLanInterfaces = useMemo(
++    () =>
++      desktopAdvertisedEndpoints.flatMap((endpoint) =>
++        endpoint.interfaceName !== undefined
++          ? [
++              {
++                name: endpoint.interfaceName,
++                label: endpoint.label,
++                address: new URL(endpoint.httpBaseUrl).hostname,
++              },
++            ]
++          : [],
++      ),
++    [desktopAdvertisedEndpoints],
++  );
++  const preferredLanInterfaceName = desktopServerExposureState?.preferredLanInterfaceName ?? null;
++  const isPreferredLanInterfaceMissing =
++    preferredLanInterfaceName !== null &&
++    !desktopLanInterfaces.some((candidate) => candidate.name === preferredLanInterfaceName);
++  const handlePreferredLanInterfaceChange = useCallback(
++    async (value: string) => {
++      if (!desktopBridge) return;
++      setIsUpdatingLanInterface(true);
++      try {
++        await desktopBridge.setPreferredLanInterfaceName(value === "auto" ? null : value);
++        refreshDesktopNetworkAccessState();
++      } catch (error) {
++        const message =
++          error instanceof Error ? error.message : "Failed to update the network interface.";
++        toastManager.add(
++          stackedThreadToast({
++            type: "error",
++            title: "Could not set the network interface",
++            description: message,
++          }),
++        );
++      } finally {
++        setIsUpdatingLanInterface(false);
++      }
++    },
++    [desktopBridge],
++  );
+   const handleSavedBackendHostChange = useCallback((value: string) => {
+     const parsedPairingUrl = parsePairingUrlFields(value);
+     if (parsedPairingUrl) {
+@@ -3266,6 +3309,67 @@ export function ConnectionsSettings() {
+       control={renderNetworkAccessToggle()}
+     />
+   );
++  const renderPreferredLanInterfaceRow = () => {
++    if (!desktopBridge || (desktopLanInterfaces.length < 2 && preferredLanInterfaceName === null)) {
++      // With a single interface and no preference there is nothing to pick,
++      // but a stored preference whose interface disappeared must stay
++      // visible so it can be cleared.
++      return null;
++    }
++    const selectValue = preferredLanInterfaceName ?? "auto";
++    const automaticCandidate = desktopLanInterfaces.find(
++      (candidate) => candidate.address === desktopServerExposureState?.advertisedHost,
++    );
++    const automaticLabel =
++      desktopServerExposureState?.advertisedHost === null || automaticCandidate === undefined
++        ? "Automatic"
++        : `Automatic (${automaticCandidate.name})`;
++    return (
++      <SettingsRow
++        title={searchableSetting("lan-interface").title}
++        description={
++          isPreferredLanInterfaceMissing ? (
++            <span className="block">
++              <span className="text-warning">
++                Interface {preferredLanInterfaceName} is no longer detected. Using automatic
++                selection until it comes back.
++              </span>
++            </span>
++          ) : (
++            "Choose which network pairing links use when several interfaces are available."
++          )
++        }
++        control={
++          <Select
++            value={selectValue}
++            onValueChange={(value) => {
++              if (typeof value !== "string") return;
++              void handlePreferredLanInterfaceChange(value);
++            }}
++          >
++            <SelectTrigger
++              size="sm"
++              className="w-full sm:w-64"
++              aria-label="Local network interface"
++              disabled={isUpdatingLanInterface}
++            >
++              <SelectValue>{selectValue === "auto" ? automaticLabel : selectValue}</SelectValue>
++            </SelectTrigger>
++            <SelectPopup align="end" alignItemWithTrigger={false}>
++              <SelectItem hideIndicator value="auto">
++                {automaticLabel}
++              </SelectItem>
++              {desktopLanInterfaces.map((candidate) => (
++                <SelectItem hideIndicator key={candidate.name} value={candidate.name}>
++                  {candidate.name} — {candidate.address}
++                </SelectItem>
++              ))}
++            </SelectPopup>
++          </Select>
++        }
++      />
++    );
++  };
+   const renderDisabledNetworkAccessRow = () => (
+     <SettingsRow
+       title={searchableSetting("network-access").title}
+@@ -3391,6 +3495,7 @@ export function ConnectionsSettings() {
+             {canManageLocalBackend && desktopBridge ? (
+               <>
+                 {renderNetworkAccessRow()}
++                {renderPreferredLanInterfaceRow()}
+                 {renderEndpointRows("endpoint-rail")}
+                 {renderTailscaleRow()}
+                 {renderWslRow()}
+diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
+index ae55a327d1631e7405c4bd3f750325728bd499a7..78deb3d0e96d9bc2b2e832520caf6d510fc24d67 100644
+--- a/apps/web/src/components/settings/settingsSearch.ts
++++ b/apps/web/src/components/settings/settingsSearch.ts
+@@ -798,6 +798,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+     searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
+     localBackendManagementOnly: true,
+   },
++  {
++    id: "lan-interface",
++    title: "LAN interface",
++    to: "/settings/connections",
++    targetId: "connections-environment",
++    searchTerms: ["network interface lan ip address qr code pairing wifi ethernet multi homed"],
++    localBackendManagementOnly: true,
++  },
+   {
+     id: "tailscale-https",
+     title: "Tailscale HTTPS",
+diff --git a/apps/web/src/lib/composerInputFocus.test.ts b/apps/web/src/lib/composerInputFocus.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..eaff6c14934e65f06e873b47779704f3b7c92717
+--- /dev/null
++++ b/apps/web/src/lib/composerInputFocus.test.ts
+@@ -0,0 +1,92 @@
++import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
++
++import { pasteTextToFocusComposer, shouldTypeToFocusComposer } from "./composerInputFocus";
++
++class FakeElement extends EventTarget {
++  constructor(
++    private readonly selector: string,
++    private readonly parent?: FakeElement,
++  ) {
++    super();
++  }
++
++  closest(selectors: string): FakeElement | null {
++    return selectors.split(",").includes(this.selector)
++      ? this
++      : (this.parent?.closest(selectors) ?? null);
++  }
++}
++
++function keyEvent(target: FakeElement, key = "a") {
++  return Object.assign(new Event("keydown", { cancelable: true }), {
++    key,
++    metaKey: false,
++    ctrlKey: false,
++    altKey: false,
++    isComposing: false,
++    composedPath: () => [target],
++  }) as unknown as KeyboardEvent;
++}
++
++function pasteEvent(target: FakeElement, text = "hello") {
++  return Object.assign(new Event("paste", { cancelable: true }), {
++    clipboardData: { files: [], getData: () => text },
++    composedPath: () => [target],
++  }) as unknown as ClipboardEvent;
++}
++
++beforeEach(() => {
++  vi.stubGlobal("Element", FakeElement);
++  vi.stubGlobal("document", { querySelector: () => null });
++});
++afterEach(() => vi.unstubAllGlobals());
++
++describe("composer input focus", () => {
++  it("redirects typing and plain-text paste from empty space to the composer", () => {
++    const body = new FakeElement("body");
++    expect(shouldTypeToFocusComposer(keyEvent(body))).toBe(true);
++    expect(pasteTextToFocusComposer(pasteEvent(body))).toBe("hello");
++  });
++
++  it("leaves typing and paste on the focused device screen", () => {
++    const screen = new FakeElement('[role="application"]');
++    expect(shouldTypeToFocusComposer(keyEvent(screen))).toBe(false);
++    expect(pasteTextToFocusComposer(pasteEvent(screen))).toBeNull();
++  });
++
++  it("leaves input from device screen descendants on the device", () => {
++    const canvas = new FakeElement("canvas", new FakeElement('[role="application"]'));
++    expect(shouldTypeToFocusComposer(keyEvent(canvas))).toBe(false);
++    expect(pasteTextToFocusComposer(pasteEvent(canvas))).toBeNull();
++  });
++
++  it.each(["input", "textarea", "button", '[role="textbox"]'])(
++    "leaves input in %s alone",
++    (selector) => {
++      const target = new FakeElement(selector);
++      expect(shouldTypeToFocusComposer(keyEvent(target))).toBe(false);
++      expect(pasteTextToFocusComposer(pasteEvent(target))).toBeNull();
++    },
++  );
++
++  it("does not redirect handled keys, shortcuts, or composition", () => {
++    const target = new FakeElement("body");
++    const handled = keyEvent(target);
++    handled.preventDefault();
++    expect(shouldTypeToFocusComposer(handled)).toBe(false);
++    expect(shouldTypeToFocusComposer(keyEvent(target, "Enter"))).toBe(false);
++    expect(shouldTypeToFocusComposer(Object.assign(keyEvent(target), { ctrlKey: true }))).toBe(
++      false,
++    );
++    expect(shouldTypeToFocusComposer(Object.assign(keyEvent(target), { isComposing: true }))).toBe(
++      false,
++    );
++  });
++
++  it("keeps input out of the composer while a floating layer is open", () => {
++    vi.stubGlobal("document", { querySelector: () => new FakeElement('[role="dialog"]') });
++    const target = new FakeElement("body");
++    expect(shouldTypeToFocusComposer(keyEvent(target))).toBe(false);
++    expect(pasteTextToFocusComposer(pasteEvent(target))).toBeNull();
++  });
++});
+diff --git a/apps/web/src/lib/composerInputFocus.ts b/apps/web/src/lib/composerInputFocus.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..42376299c4c83a404a2b6194dcf56394f39fabe5
+--- /dev/null
++++ b/apps/web/src/lib/composerInputFocus.ts
+@@ -0,0 +1,83 @@
++export const TYPE_TO_FOCUS_EDITABLE_SELECTOR = [
++  "input",
++  "textarea",
++  "select",
++  '[contenteditable="true"]',
++  '[contenteditable="plaintext-only"]',
++  '[role="textbox"]',
++].join(",");
++const TYPE_TO_FOCUS_INTERACTIVE_SELECTOR = [
++  "button",
++  "a[href]",
++  "summary",
++  '[role="button"]',
++  '[role="checkbox"]',
++  '[role="menuitem"]',
++  '[role="option"]',
++  '[role="radio"]',
++  '[role="switch"]',
++  '[role="tab"]',
++  '[role="application"]',
++].join(",");
++export const TYPE_TO_FOCUS_FLOATING_LAYER_SELECTOR = [
++  '[role="dialog"][aria-modal="true"]',
++  '[data-slot="alert-dialog-popup"]:is([data-open],[data-ending-style])',
++  '[data-slot="command-dialog-popup"]:is([data-open],[data-ending-style])',
++  '[data-slot="dialog-popup"]:is([data-open],[data-ending-style])',
++  '[data-slot="sheet-popup"]:is([data-open],[data-ending-style])',
++  '[data-slot="sidebar"][data-mobile="true"]:is([data-open],[data-ending-style])',
++  '[data-slot="menu-popup"]',
++  '[data-slot="select-popup"]',
++  '[data-slot="popover-popup"]',
++  '[data-slot="combobox-popup"]',
++  '[data-slot="autocomplete-popup"]',
++].join(",");
++
++export function eventPathContainsSelector(event: Event, selector: string): boolean {
++  const path = event.composedPath();
++  if (path.length === 0 && event.target) {
++    path.push(event.target);
++  }
++  return path.some((target) => target instanceof Element && target.closest(selector));
++}
++
++/**
++ * Whether input that landed outside any editable or interactive element
++ * should be redirected into the composer. Shared by type-to-focus and
++ * paste-to-focus so both honour the same surfaces.
++ */
++export function shouldRedirectInputToComposer(event: Event): boolean {
++  if (event.defaultPrevented) return false;
++  if (eventPathContainsSelector(event, TYPE_TO_FOCUS_EDITABLE_SELECTOR)) return false;
++  if (eventPathContainsSelector(event, TYPE_TO_FOCUS_INTERACTIVE_SELECTOR)) return false;
++  if (document.querySelector(TYPE_TO_FOCUS_FLOATING_LAYER_SELECTOR)) return false;
++  return true;
++}
++
++export function shouldTypeToFocusComposer(event: KeyboardEvent): boolean {
++  if (event.isComposing) return false;
++  if (event.metaKey || event.ctrlKey || event.altKey) return false;
++  if (event.key.length !== 1) return false;
++  if (!shouldRedirectInputToComposer(event)) return false;
++
++  // The right-panel surface launcher claims its shortcut letters while it is
++  // visible (data attribute set in RightPanelTabs); those keys open surfaces
++  // instead of typing into the composer.
++  const launcherKeys = document
++    .querySelector("[data-surface-launcher-keys]")
++    ?.getAttribute("data-surface-launcher-keys");
++  if (launcherKeys && launcherKeys.toLowerCase().includes(event.key.toLowerCase())) return false;
++
++  return true;
++}
++
++/**
++ * Plain text pasted with nothing editable focused, such as after the resting
++ * composer blurred. Files are left to the composer's own paste handler.
++ */
++export function pasteTextToFocusComposer(event: ClipboardEvent): string | null {
++  if (!event.clipboardData || event.clipboardData.files.length > 0) return null;
++  if (!shouldRedirectInputToComposer(event)) return null;
++  const text = event.clipboardData.getData("text/plain");
++  return text.length > 0 ? text : null;
++}
+diff --git a/apps/web/src/state/desktopNetworkAccess.test.ts b/apps/web/src/state/desktopNetworkAccess.test.ts
+index 0dde5f7d7dc8dd5c49608fb73179534f6e250c25..38e5ceaa7cba173507ed39ec1e4150bef350309d 100644
+--- a/apps/web/src/state/desktopNetworkAccess.test.ts
++++ b/apps/web/src/state/desktopNetworkAccess.test.ts
+@@ -10,6 +10,7 @@ const serverExposureState: DesktopServerExposureState = {
+   advertisedHost: "192.168.1.10",
+   endpointUrl: "http://192.168.1.10:37737",
+   mode: "network-accessible",
++  preferredLanInterfaceName: null,
+   tailscaleServeEnabled: false,
+   tailscaleServePort: 443,
+ };
+diff --git a/apps/web/src/workspaceBasenameResolution.test.ts b/apps/web/src/workspaceBasenameResolution.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..0eb789aaef680f0ed3820a2fdf010296a9833fa4
+--- /dev/null
++++ b/apps/web/src/workspaceBasenameResolution.test.ts
+@@ -0,0 +1,30 @@
++import { describe, expect, it, vi } from "vite-plus/test";
++import {
++  cachedWorkspaceBasenameLookup,
++  collectWorkspaceBasenameCandidates,
++} from "./workspaceBasenameResolution";
++
++describe("workspace basename pre-resolution", () => {
++  it("keeps only unique bare path candidates, including image destinations", () => {
++    expect(
++      collectWorkspaceBasenameCandidates([
++        "draft.png",
++        "draft.png",
++        "src/draft.png",
++        "/tmp/draft.png",
++        "https://host/draft.png",
++      ]),
++    ).toEqual(new Set(["draft.png"]));
++  });
++  it("reuses an in-flight lookup for repeated streaming references", async () => {
++    const lookup = vi.fn(async (name: string) => `src/${name}`);
++    const cache = new Map<string, Promise<string | null>>();
++    await expect(
++      Promise.all([
++        cachedWorkspaceBasenameLookup(cache, "a.png", lookup),
++        cachedWorkspaceBasenameLookup(cache, "a.png", lookup),
++      ]),
++    ).resolves.toEqual(["src/a.png", "src/a.png"]);
++    expect(lookup).toHaveBeenCalledTimes(1);
++  });
++});
+diff --git a/apps/web/src/workspaceBasenameResolution.ts b/apps/web/src/workspaceBasenameResolution.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..671b6872b6916ed40198eb60d2a4647ff7376226
+--- /dev/null
++++ b/apps/web/src/workspaceBasenameResolution.ts
+@@ -0,0 +1,18 @@
++import { needsWorkspaceBasenameLookup } from "./workspaceBasenameLookup";
++
++export function collectWorkspaceBasenameCandidates(paths: Iterable<string>): Set<string> {
++  return new Set([...paths].filter(needsWorkspaceBasenameLookup));
++}
++
++export function cachedWorkspaceBasenameLookup(
++  cache: Map<string, Promise<string | null>>,
++  name: string,
++  lookup: (name: string) => Promise<string | null>,
++): Promise<string | null> {
++  let result = cache.get(name);
++  if (!result) {
++    result = lookup(name).catch(() => null);
++    cache.set(name, result);
++  }
++  return result;
++}
+diff --git a/docs/user/devices.md b/docs/user/devices.md
+index a87770853a2d54d6db83b27bb8157a418f370147..fabe4ae2b4bca4e35c454ba4181c3d5174436cf2 100644
+--- a/docs/user/devices.md
++++ b/docs/user/devices.md
+@@ -46,6 +46,11 @@ to the other screen switches the live display and touch input to that screen.
+ **Restore 3D view** returns the device to a screen-facing position.
+ On supported Android foldables, use **Fold device** and **Unfold device** beside
+ the screen to change its posture in either view.
++On Android, Ctrl-based editing shortcuts such as `Ctrl+A` go to the device app.
++`Ctrl+C` and `Ctrl+X` use Android's clipboard. `Ctrl+V`, or `Cmd+V` on a Mac,
++inserts text from your computer's clipboard. Android's clipboard is not synced
++back to your computer, so copying inside the device does not change what you
++paste on the computer or through the Device panel.
+ 
+ ## Tools
+ 
+diff --git a/docs/user/mobile-notifications.md b/docs/user/mobile-notifications.md
+index 9c5e30ef760746bc31cdc190392305eaedf13a80..d53c8f97029ce4d7abeb1c1103c30822a6d182a3 100644
+--- a/docs/user/mobile-notifications.md
++++ b/docs/user/mobile-notifications.md
+@@ -8,4 +8,4 @@ Ordinary alerts stay quiet while the mobile app is in the foreground. Ongoing ac
+ 
+ Android notifications require Android 7.0 or newer and Google Play services. Android 16 and newer can promote ongoing activity to a Live Update, subject to system settings and device support. Other devices show a regular ongoing notification. Android 7's battery-saving modes can delay removal of expired cards.
+ 
+-Notification permission and Android notification channels are controlled in system Settings. Background delivery requires T3 Connect; a direct or Tailscale connection alone does not enable push notifications. The mobile app does not need to maintain a connection to your environment. Force-stopping the Android app in system Settings prevents push delivery until you open it again.
++Notification permission and Android notification channels are controlled in system Settings. Android can also configure device-local notifications without a T3 Connect account from **Settings → Notifications**. This does not use a relay or require an account, but delivery still requires a local sender configured with the Firebase project; the mobile app does not send notifications itself. Without that sender, notifications are not delivered. A direct or Tailscale connection alone does not enable push notifications. Force-stopping the Android app in system Settings prevents push delivery until you open it again.
+diff --git a/packages/client-runtime/src/device/stream.test.ts b/packages/client-runtime/src/device/stream.test.ts
+index 7ea5aca27abfba9250c943758ba11a1c88eea324..26a8f4a13316d2f0a9b43fc154fd174d4ad92ada 100644
+--- a/packages/client-runtime/src/device/stream.test.ts
++++ b/packages/client-runtime/src/device/stream.test.ts
+@@ -158,6 +158,110 @@ describe("native device stream transport", () => {
+     expect(socket.close).toHaveBeenCalledTimes(1);
+   });
+ 
++  it("forwards Android typing and editing keys without duplicating keyup", async () => {
++    const { client, opened } = setup("android");
++    client.start();
++    const socket = await opened;
++    for (const key of ["a", "A", " ", "Enter", "Backspace", "ArrowLeft", "Escape"]) {
++      const event = { key, metaKey: false, ctrlKey: false } as KeyboardEvent;
++      client.sendKey(event, "down");
++      client.sendKey(event, "up");
++    }
++    expect(
++      socket.send.mock.calls.map(([message]) => JSON.parse(message as string) as unknown),
++    ).toEqual([
++      { type: "text", text: "a" },
++      { type: "text", text: "A" },
++      { type: "text", text: " " },
++      { type: "key", keycode: 66 },
++      { type: "key", keycode: 67 },
++      { type: "key", keycode: 21 },
++      { type: "back" },
++    ]);
++    client.stop();
++  });
++
++  it("preserves Android modifiers for editing shortcuts and selection", async () => {
++    const { client, opened } = setup("android");
++    client.start();
++    const socket = await opened;
++    for (const key of ["a", "c", "x", "v", "z"]) {
++      const event = { key, ctrlKey: true } as KeyboardEvent;
++      client.sendKey(event, "down");
++      client.sendKey(event, "up");
++    }
++    client.sendKey({ key: "ArrowLeft", ctrlKey: true, shiftKey: true } as KeyboardEvent, "down");
++    client.sendKey({ key: "ArrowRight", shiftKey: true } as KeyboardEvent, "down");
++    client.sendKey({ key: "A", ctrlKey: true, shiftKey: true } as KeyboardEvent, "down");
++    expect(
++      socket.send.mock.calls.map(([message]) => JSON.parse(message as string) as unknown),
++    ).toEqual([
++      ...[29, 31, 52, 50, 54].map((keycode) => ({ type: "key", keycode, metaState: 0x1000 })),
++      { type: "key", keycode: 21, metaState: 0x1001 },
++      { type: "key", keycode: 22, metaState: 0x1 },
++      { type: "key", keycode: 29, metaState: 0x1001 },
++    ]);
++    client.stop();
++  });
++
++  it("chunks pasted Android text at the hub's UTF-8 limit without losing characters", async () => {
++    const { client, opened } = setup("android");
++    client.start();
++    const socket = await opened;
++    const text = "a".repeat(299) + "🙂é".repeat(120) + "\nend";
++    client.sendText(text);
++    client.sendText("");
++    const messages = socket.send.mock.calls.map(
++      ([message]) => JSON.parse(message as string) as { type: string; text: string },
++    );
++    expect(messages.length).toBeGreaterThan(1);
++    expect(messages.every((message) => message.type === "text")).toBe(true);
++    expect(messages.map((message) => message.text).join("")).toBe(text);
++    for (const message of messages) {
++      expect(new TextEncoder().encode(message.text).length).toBeLessThanOrEqual(300);
++      expect(message.text).not.toContain("\ufffd");
++    }
++    expect(messages[0]!.text).toBe("a".repeat(299));
++    client.stop();
++  });
++
++  it("does not inject Android paste messages on an iOS socket", async () => {
++    const { client, opened } = setup("ios");
++    client.start();
++    const socket = await opened;
++    socket.send.mockClear();
++    client.sendText("hello");
++    expect(socket.send).not.toHaveBeenCalled();
++    client.stop();
++  });
++
++  it("forwards iOS keyboard press and release events, including modifiers", async () => {
++    const { client, opened } = setup("ios");
++    client.start();
++    const socket = await opened;
++    socket.onopen?.();
++    socket.send.mockClear();
++    for (const code of ["ShiftLeft", "KeyA", "Enter", "Backspace", "ArrowLeft"]) {
++      const event = { code } as KeyboardEvent;
++      client.sendKey(event, "down");
++      client.sendKey(event, "up");
++    }
++    const messages = socket.send.mock.calls.map(([bytes]) => {
++      const packet = bytes as Uint8Array;
++      return {
++        tag: packet[0],
++        body: JSON.parse(new TextDecoder().decode(packet.subarray(1))) as unknown,
++      };
++    });
++    expect(messages).toEqual(
++      [0xe1, 0x04, 0x28, 0x2a, 0x50].flatMap((usage) => [
++        { tag: 0x06, body: { type: "down", usage } },
++        { tag: 0x06, body: { type: "up", usage } },
++      ]),
++    );
++    client.stop();
++  });
++
+   it("renews an expired Android ticket when the HTTP upgrade is rejected instead of retrying it forever", async () => {
+     const { client, opened, events } = setup("android");
+     client.start();
+@@ -388,7 +492,7 @@ function recoveryFixture(platform: "ios" | "android" = "ios", preferMjpeg = true
+     close() {
+       this.state = "closed";
+     }
+-    decode() {}
++    decode = vi.fn();
+     readonly callbacks: { output: (frame: VideoFrame) => void; error: () => void };
+     constructor(callbacks: { output: (frame: VideoFrame) => void; error: () => void }) {
+       this.callbacks = callbacks;
+@@ -619,16 +723,32 @@ describe("shared device stream readiness and recovery", () => {
+     expect(vi.getTimerCount()).toBe(0);
+   });
+ 
+-  it("waits for decoded Android output and bounds a rotation that never produces another frame", async () => {
+-    const { client, sockets, sps, events, decodedFrame, drawImage } = recoveryFixture("android");
++  it("decodes the SPS keyframe and distinguishes reset acknowledgements from rotation", async () => {
++    const { client, sockets, sps, events, decodedFrame, drawImage, decoders } =
++      recoveryFixture("android");
+     client.start();
+     sockets[0]!.onmessage?.({ data: sps });
+     await vi.advanceTimersByTimeAsync(0);
+     expect(events.onStatus.mock.calls.some(([status]) => status === "streaming")).toBe(false);
++    expect(decoders[0]!.decode).toHaveBeenCalledOnce();
+     expect(decodedFrame()).toHaveBeenCalledOnce();
+     expect(drawImage).toHaveBeenCalledOnce();
+     expect(events.onStatus).toHaveBeenLastCalledWith("streaming", undefined);
++    const initialResetCount = sockets[0]!.send.mock.calls.filter(([message]) =>
++      String(message).includes("reset-video"),
++    ).length;
++    expect(initialResetCount).toBe(0);
++    // A genuine, unsolicited encoder session change starts one reset request.
++    sockets[0]!.onmessage?.({ data: JSON.stringify({ type: "video-session" }) });
++    const afterRotationResetCount = sockets[0]!.send.mock.calls.filter(([message]) =>
++      String(message).includes("reset-video"),
++    ).length;
++    expect(afterRotationResetCount).toBe(1);
++    // Its session announcement is an acknowledgement, not another rotation.
+     sockets[0]!.onmessage?.({ data: JSON.stringify({ type: "video-session" }) });
++    expect(
++      sockets[0]!.send.mock.calls.filter(([message]) => String(message).includes("reset-video")),
++    ).toHaveLength(1);
+     await vi.advanceTimersByTimeAsync(15_000);
+     expect(events.onStatus).toHaveBeenLastCalledWith("error", expect.stringContaining("No video"));
+     expect(vi.getTimerCount()).toBe(0);
+diff --git a/packages/client-runtime/src/device/stream.ts b/packages/client-runtime/src/device/stream.ts
+index 6b1ff615887945564a4828ab2c3173eb3c144069..8e158e6e5e14d60674bf3c48d07fdd0aa830939d 100644
+--- a/packages/client-runtime/src/device/stream.ts
++++ b/packages/client-runtime/src/device/stream.ts
+@@ -273,6 +273,8 @@ export interface DeviceStreamClient {
+   /** Normalized 0..1 coordinates in the displayed frame. */
+   readonly sendTouch: (phase: "begin" | "move" | "end", x: number, y: number) => void;
+   readonly sendKey: (event: KeyboardEvent, phase: "down" | "up") => void;
++  /** Android text injection; iOS uses hardware key events instead. */
++  readonly sendText: (text: string) => void;
+   readonly pressButton: (button: DeviceHardwareButton) => void;
+   readonly rotate: () => void;
+   readonly setOrientation: (orientation: DeviceScreenSize["orientation"]) => void;
+@@ -364,6 +366,7 @@ export function createDeviceStreamClient(
+   const retryTimers = new Map<"video" | "input", ReturnType<typeof setTimeout>>();
+   let primeController: AbortController | null = null;
+   let videoDecoder: VideoDecoder | null = null;
++  let awaitingSessionAck = false;
+   let timestamp = 0;
+   let awaitingKeyframe = true;
+   let screen: DeviceScreenSize | null = null;
+@@ -603,10 +606,16 @@ export function createDeviceStreamClient(
+     }
+   };
+ 
+-  const requestKeyframe = () => {
+-    if (platform === "android" && socket?.readyState === WebSocket.OPEN) {
+-      socket.send(JSON.stringify({ type: "reset-video", ack: false }));
+-    }
++  // serve-emu re-announces video-session for every reset-video request.
++  let lastKeyframeRequestAt = -Infinity;
++  const KEYFRAME_REQUEST_INTERVAL_MS = 1_000;
++  const requestKeyframe = (force = false) => {
++    if (platform !== "android" || socket?.readyState !== WebSocket.OPEN) return;
++    const now = performance.now();
++    if (!force && now - lastKeyframeRequestAt < KEYFRAME_REQUEST_INTERVAL_MS) return;
++    lastKeyframeRequestAt = now;
++    awaitingSessionAck = true;
++    socket.send(JSON.stringify({ type: "reset-video", ack: false }));
+   };
+ 
+   const scheduleRetry = (channel: "video" | "input", run: () => void) => {
+@@ -871,6 +880,8 @@ export function createDeviceStreamClient(
+   // Android: one socket for video and input.
+   const connectAndroid = () => {
+     if (stopped) return;
++    awaitingSessionAck = false;
++    lastKeyframeRequestAt = -Infinity;
+     const ws = new WebSocket(wsUrl(`/ws?device=${device}&frame-meta=1`));
+     ws.binaryType = "arraybuffer";
+     socket = ws;
+@@ -882,13 +893,16 @@ export function createDeviceStreamClient(
+     ws.onmessage = (event) => {
+       if (stopped || socket !== ws) return;
+       if (typeof event.data === "string") {
+-        // The encoder restarts at a new size when the device rotates; the
+-        // next keyframe carries a fresh SPS, so the decoder is rebuilt from it.
+         if (isVideoSessionMessage(event.data)) {
++          if (awaitingSessionAck) {
++            awaitingSessionAck = false;
++            return;
++          }
++          // An unsolicited new session signals an encoder restart, typically rotation.
+           closeDecoder();
+           configuring = false;
+           connecting();
+-          requestKeyframe();
++          requestKeyframe(true);
+         }
+         return;
+       }
+@@ -909,7 +923,11 @@ export function createDeviceStreamClient(
+             if (!isCurrent() || epoch !== decoderEpoch) return;
+             configuring = false;
+             awaitingKeyframe = true;
+-            if (configured) requestKeyframe();
++            // Configure from this SPS-bearing keyframe, then decode it rather than discarding it.
++            if (configured) {
++              decode(isKey, packet.data, packet.timestamp);
++              if (awaitingKeyframe) requestKeyframe();
++            }
+           },
+         );
+         return;
+@@ -1048,12 +1066,40 @@ export function createDeviceStreamClient(
+       }
+       if (phase !== "down") return;
+       if (event.key === "Escape") return send(JSON.stringify({ type: "back" }));
+-      const keycode = ANDROID_KEYCODE_BY_KEY[event.key];
+-      if (keycode !== undefined) return send(JSON.stringify({ type: "key", keycode }));
+-      if (event.key.length === 1 && !event.metaKey && !event.ctrlKey) {
++      const modified = event.ctrlKey || event.altKey || event.metaKey;
++      const letter = event.key.toLowerCase();
++      const keycode =
++        ANDROID_KEYCODE_BY_KEY[event.key] ??
++        (modified && /^[a-z]$/.test(letter) ? 29 + letter.charCodeAt(0) - 97 : undefined);
++      if (keycode !== undefined) {
++        const metaState =
++          (event.shiftKey ? 0x1 : 0) |
++          (event.altKey ? 0x2 : 0) |
++          (event.ctrlKey ? 0x1000 : 0) |
++          (event.metaKey ? 0x10000 : 0);
++        return send(JSON.stringify({ type: "key", keycode, ...(metaState ? { metaState } : {}) }));
++      }
++      if (event.key.length === 1 && !modified) {
+         send(JSON.stringify({ type: "text", text: event.key }));
+       }
+     },
++    sendText: (text) => {
++      if (platform !== "android") return;
++      // serve-emu truncates each text message at 300 UTF-8 bytes.
++      let chunk = "";
++      let bytes = 0;
++      for (const character of text) {
++        const size = encoder.encode(character).length;
++        if (bytes + size > 300) {
++          send(JSON.stringify({ type: "text", text: chunk }));
++          chunk = "";
++          bytes = 0;
++        }
++        chunk += character;
++        bytes += size;
++      }
++      if (chunk) send(JSON.stringify({ type: "text", text: chunk }));
++    },
+     pressButton: (button) => {
+       if (platform === "ios") {
+         const name =
+diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
+index db2cc2a36cac32fa7271a51d05a7a671a7dd4c0e..17ffd1c48e17a543e5d55c15573aa95b99fe3eee 100644
+--- a/packages/contracts/src/ipc.ts
++++ b/packages/contracts/src/ipc.ts
+@@ -494,6 +494,7 @@ export interface DesktopServerExposureState {
+   mode: DesktopServerExposureMode;
+   endpointUrl: string | null;
+   advertisedHost: string | null;
++  preferredLanInterfaceName: string | null;
+   tailscaleServeEnabled: boolean;
+   tailscaleServePort: number;
+ }
+@@ -502,6 +503,7 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
+   mode: DesktopServerExposureModeSchema,
+   endpointUrl: Schema.NullOr(Schema.String),
+   advertisedHost: Schema.NullOr(Schema.String),
++  preferredLanInterfaceName: Schema.NullOr(Schema.String),
+   tailscaleServeEnabled: Schema.Boolean,
+   tailscaleServePort: Schema.Number,
+ });
+@@ -1189,6 +1191,7 @@ export interface DesktopBridge {
+   resolveSshPasswordPrompt: (requestId: string, password: string | null) => Promise<void>;
+   getServerExposureState: () => Promise<DesktopServerExposureState>;
+   setServerExposureMode: (mode: DesktopServerExposureMode) => Promise<DesktopServerExposureState>;
++  setPreferredLanInterfaceName: (name: string | null) => Promise<DesktopServerExposureState>;
+   setTailscaleServeEnabled: (input: {
+     readonly enabled: boolean;
+     readonly port?: number;
+diff --git a/packages/contracts/src/remoteAccess.ts b/packages/contracts/src/remoteAccess.ts
+index e3de3c29e122fea00f09354d5e3a267817271632..a603f3361d206bb44893fb47d42d69782de84e7c 100644
+--- a/packages/contracts/src/remoteAccess.ts
++++ b/packages/contracts/src/remoteAccess.ts
+@@ -63,6 +63,8 @@ export const AdvertisedEndpoint = Schema.Struct({
+   source: AdvertisedEndpointSource,
+   status: AdvertisedEndpointStatus,
+   isDefault: Schema.optional(Schema.Boolean),
++  /** Network interface this endpoint's address belongs to (LAN endpoints only). */
++  interfaceName: Schema.optional(Schema.String),
+   description: Schema.optional(TrimmedNonEmptyString),
+ });
+ export type AdvertisedEndpoint = typeof AdvertisedEndpoint.Type;
+diff --git a/packages/shared/src/advertisedEndpoint.ts b/packages/shared/src/advertisedEndpoint.ts
+index 314d8272c81652a35e593b7a1df7f4f7d63aa088..ef499b8fb3231b750e1c40437fee5da79d162d18 100644
+--- a/packages/shared/src/advertisedEndpoint.ts
++++ b/packages/shared/src/advertisedEndpoint.ts
+@@ -18,6 +18,8 @@ export interface CreateAdvertisedEndpointInput {
+   readonly source: AdvertisedEndpointSource;
+   readonly status?: AdvertisedEndpointStatus;
+   readonly isDefault?: boolean;
++  /** Network interface this endpoint's address belongs to (LAN endpoints only). */
++  readonly interfaceName?: string;
+   readonly description?: string;
+ }
+ 
+@@ -73,6 +75,7 @@ export function createAdvertisedEndpoint(input: CreateAdvertisedEndpointInput):
+     source: input.source,
+     status: input.status ?? "available",
+     ...(input.isDefault === undefined ? {} : { isDefault: input.isDefault }),
++    ...(input.interfaceName === undefined ? {} : { interfaceName: input.interfaceName }),
+     ...(input.description === undefined ? {} : { description: input.description }),
+   };
+ }

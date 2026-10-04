@@ -19,7 +19,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     t3code-source = {
-      url = "github:PJalv/t3code/32cf1c4a85ca3e56bea0483e4baf8a947002199f";
+      url = "github:pingdotgg/t3code/4ee6bfd50ef4a089440d5c3662db2298da9cc50e";
       flake = false;
     };
   };
@@ -41,10 +41,17 @@
         version = "11.10.0";
         hash = "sha256-YgtmBepPYvxWptCphzP0eQcdAyHgPkhrUix+mnRhdDE=";
       };
+      spdxLicenseData = pkgs.fetchFromGitHub {
+        owner = "spdx";
+        repo = "license-list-data";
+        rev = "c4a7237ec8f4654e867546f9f409749300f1bf4c";
+        hash = "sha256-FbeeEBAg9ih6DkAsXdU6ruZwkC7A2u2zYBvblpl54q0=";
+      };
       sourceAssets = pkgs.callPackage ./package-source.nix {
         src = t3code-source;
         inherit (source) version;
         pnpm_11 = pnpmPinned;
+        inherit spdxLicenseData;
       };
       piSubagents = pkgs.callPackage ./package-pi-subagents.nix { };
       scrcpyServer = pkgs.callPackage ./package-scrcpy-server.nix { };
@@ -52,9 +59,15 @@
       seedDeviceHub = pkgs.writeShellScript "t3code-seed-device-hub"
         (import ./seed-device-hub.nix { inherit deviceHub; });
       piRuntime = pkgs.callPackage ./package-pi-runtime.nix {
-        # pi with the opencode-aligned GitHub Copilot port.
+        # Standalone Pi keeps the user's pinned subagent extension.
         pi = pi-copilot.packages.${system}.pi;
         inherit piSubagents;
+      };
+      t3PiRuntime = pkgs.callPackage ./package-pi-runtime.nix {
+        # T3 must not load the custom Pi subagent extension.
+        pi = pi-copilot.packages.${system}.pi;
+        inherit piSubagents;
+        enableSubagents = false;
       };
       androidComposition = (pkgs.androidenv.override { licenseAccepted = true; }).composeAndroidPackages {
         platformVersions = [ "35" ];
@@ -85,30 +98,22 @@
       androidHome = "${androidSdk}/libexec/android-sdk";
       t3code = pkgs.callPackage ./package.nix {
         codex = llm-agents.packages.${system}.codex;
-        pi = piRuntime;
+        pi = t3PiRuntime;
         inherit sourceAssets seedDeviceHub androidSdk androidPlatformTools androidEmulator androidJdk;
-      };
-      t3codeWithCheckpoints = t3code.override {
-        disableCheckpoints = false;
       };
       server = pkgs.callPackage ./package-server.nix {
         codex = llm-agents.packages.${system}.codex;
-        pi = piRuntime;
+        pi = t3PiRuntime;
         inherit sourceAssets seedDeviceHub androidSdk androidPlatformTools androidEmulator androidJdk;
-      };
-      serverWithCheckpoints = server.override {
-        disableCheckpoints = false;
       };
     in
     {
       packages.${system} = {
         default = t3code;
         inherit t3code;
-        desktop-with-checkpoints = t3codeWithCheckpoints;
         inherit server;
         t3code-server = server;
         t3 = server;
-        server-with-checkpoints = serverWithCheckpoints;
         source-assets = sourceAssets;
         pi = piRuntime;
         pi-subagents = piSubagents;
@@ -123,11 +128,6 @@
           program = "${t3code}/bin/t3code";
           meta = t3code.meta;
         };
-        desktop-with-checkpoints = {
-          type = "app";
-          program = "${t3codeWithCheckpoints}/bin/t3code";
-          meta = t3codeWithCheckpoints.meta;
-        };
         server = {
           type = "app";
           program = "${server}/bin/t3code-server";
@@ -137,11 +137,6 @@
           type = "app";
           program = "${server}/bin/t3";
           meta = server.meta;
-        };
-        server-with-checkpoints = {
-          type = "app";
-          program = "${serverWithCheckpoints}/bin/t3code-server";
-          meta = serverWithCheckpoints.meta;
         };
       };
 
@@ -154,38 +149,21 @@
         bundled-pi = pkgs.runCommand "t3code-bundled-pi" { } ''
           test -x ${t3code.passthru.pi}/bin/pi
           ! grep -q -- '--mcp-config' ${t3code.passthru.pi}/bin/pi
+          ! grep -q 'pi-subagents' ${t3code.passthru.pi}/bin/pi
+          grep -q -- '--extension' ${piRuntime}/bin/pi
           test -f ${piRuntime.passthru.pi}/lib/node_modules/@earendil-works/pi-coding-agent/dist/extensions/mcp/index.js
-          test -f ${piRuntime.passthru.piSubagents}/lib/pi-subagents/src/index.ts
-          grep -q '"version": "0.19.0"' ${piRuntime.passthru.piSubagents}/lib/pi-subagents/package.json
-          grep -q 'subagents:rpc:stop' ${piRuntime.passthru.piSubagents}/lib/pi-subagents/src/cross-extension-rpc.ts
-          grep -q 'pi-subagents-0.19.0' ${t3code.passthru.pi}/bin/pi
-          grep -q 'Type.Union(\[Type.Literal("off"), Type.Literal("worktree")\]' ${piRuntime.passthru.piSubagents}/lib/pi-subagents/src/invocation-config.ts
-          test -f ${piRuntime.passthru.subagentExtension}/index.ts
-          grep -q 'agent.model ??' ${piRuntime.passthru.subagentExtension}/index.ts
-          grep -q 'Use "default" unless' ${piRuntime.passthru.subagentExtension}/index.ts
-          test -f ${piRuntime.passthru.subagentExtension}/agents/default.md
-          test "$(find ${piRuntime.passthru.subagentExtension}/agents -maxdepth 1 -name '*.md' | wc -l)" -eq 1
           ${t3code.passthru.pi}/bin/pi --version > "$out"
-          test "$(cat "$out")" = '${piRuntime.version}'
-          # Management commands must precede the wrapper's extension flags.
+          test "$(cat "$out")" = '${t3PiRuntime.version}'
           export HOME="$(mktemp -d)"
           export PI_CODING_AGENT_DIR="$HOME/.pi/agent"
           ${t3code.passthru.pi}/bin/pi mcp list > mcp-list.txt
           grep -q 'No MCP servers configured' mcp-list.txt
         '';
         source-features = pkgs.runCommand "t3code-source-features" { } ''
-          grep -a -q 'src/provider/Drivers/PiDriver.ts' ${sourceAssets}/apps/server/dist/bin.mjs
-          grep -a -q 'AntigravityDriver' ${sourceAssets}/apps/server/dist/bin.mjs
-          grep -a -q providerNativeFileChangesEnabled ${sourceAssets}/apps/server/dist/bin.mjs
-          grep -a -q T3_DISABLE_CHECKPOINTS ${sourceAssets}/apps/server/dist/bin.mjs
-          grep -R -q "Provider-native file changes" ${sourceAssets}/apps/server/dist/client
-          grep -a -q get_session_stats ${sourceAssets}/apps/server/dist/bin.mjs
-          grep -a -q registerMcpServer ${sourceAssets}/apps/server/dist/bin.mjs
-          grep -a -q 'pi.compaction' ${sourceAssets}/apps/server/dist/bin.mjs
-          grep -R -q 'Compacting context' ${sourceAssets}/apps/server/dist/client
-          grep -a -q t3code.pi-bridge.v1 ${sourceAssets}/apps/server/dist/bin.mjs
-          grep -a -q get_entries ${sourceAssets}/apps/server/dist/bin.mjs
-          grep -R -q PiAgentIcon ${sourceAssets}/apps/server/dist/client
+          grep -a -q 'Pi started agent work outside an active T3 turn' ${sourceAssets}/apps/server/dist/binCli-*.mjs
+          grep -a -q 'delegate_task' ${sourceAssets}/apps/server/dist/binCli-*.mjs
+          grep -q 'preferredLanInterfaceName' ${sourceAssets}/apps/desktop/dist-electron/main.cjs
+          grep -R -q 'Show diff' ${sourceAssets}/apps/server/dist/client/assets
           touch "$out"
         '';
         server-help = pkgs.runCommand "t3code-server-help" { } ''

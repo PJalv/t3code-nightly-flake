@@ -8,6 +8,8 @@
 , libsecret
 , nodejs_24
 , pkg-config
+, patch
+, spdxLicenseData
 , pnpm_11
 , pnpmConfigHook
 , src
@@ -25,7 +27,7 @@ stdenvNoCC.mkDerivation {
     fetcherVersion = 4;
     # Unfiltered: filtered fetches skip packages the sandboxed install
     # resolves (observed with the Sep 13 lockfile and @effect/platform-bun).
-    hash = "sha256-Dda+RLse2N535kmIV55Kc0ixgO7Leei8xEG9Rr0EcMo=";
+    hash = "sha256-kJaXB/mf39ilnPGU6ms6pCKYF1Ql0DUTOJw4m3sYfjs=";
   };
 
   pnpmWorkspaces = [
@@ -37,6 +39,7 @@ stdenvNoCC.mkDerivation {
 
   nativeBuildInputs = [
     cacert
+    patch
     git
     glib
     libsecret
@@ -66,6 +69,10 @@ stdenvNoCC.mkDerivation {
         fs.writeFileSync(file, JSON.stringify(packageJson, null, 2) + "\n");
       ' "$packageJson" "${version}"
     done
+    echo '${(lib.importJSON ./source.json).personalPatchSha256}  ${./patches/personal-qol.patch}' | sha256sum -c -
+    patch -p1 < ${./patches/personal-qol.patch}
+    mkdir -p .generated/third-party-licenses/spdx
+    ln -s ${spdxLicenseData}/json/details .generated/third-party-licenses/spdx/v3.28.0
   '';
 
   buildPhase = ''
@@ -88,6 +95,20 @@ stdenvNoCC.mkDerivation {
     # @ff-labs/fff-node. Preserve the filtered server workspace dependencies so
     # package-server.nix can run dist/bin.mjs without the published launcher.
     cp -rL apps/server/node_modules "$out/apps/server/"
+    # The server CLI externalizes Cursor SDK dependencies whose pnpm peer
+    # context sits beside (not inside) the SDK package directory.
+    cursorContext="$(find node_modules/.pnpm -maxdepth 1 -type d -name '@cursor+sdk@1.0.31*' -print -quit)"
+    if [ -n "$cursorContext" ]; then
+      mkdir -p "$out/apps/server/node_modules/@cursor/sdk/node_modules"
+      for scope in @bufbuild @connectrpc @statsig; do
+        if [ -d "$cursorContext/node_modules/$scope" ]; then
+          cp -rL "$cursorContext/node_modules/$scope" "$out/apps/server/node_modules/@cursor/sdk/node_modules/"
+        fi
+      done
+      if [ -d "$cursorContext/node_modules/zod" ]; then
+        cp -rL "$cursorContext/node_modules/zod" "$out/apps/server/node_modules/@cursor/sdk/node_modules/"
+      fi
+    fi
     cp -r apps/desktop/dist-electron "$out/apps/desktop/"
 
     test -f "$out/apps/server/dist/bin.mjs"

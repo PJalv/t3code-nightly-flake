@@ -111,6 +111,13 @@ fi
 
 new_version="$(jq -r '.version' "$candidate")"
 old_version="$(jq -r '.version' "$root/source.json")"
+
+# The AppImage, source revision, dependency hash, and QoL patch must move together.
+if [ "$new_version" != "$old_version" ] && ! $check_only && [ -s "$root/patches/personal-qol.patch" ]; then
+  echo "personal QoL build is pinned to ${old_version}; rebase the patch and update the source pin and dependency hash before upgrading to ${new_version}" >&2
+  exit 1
+fi
+
 npm_metadata="$(curl -fsSL "https://registry.npmjs.org/t3/${new_version}")"
 npm_url="$(jq -r '.dist.tarball // empty' <<<"$npm_metadata")"
 npm_hash="$(jq -r '.dist.integrity // empty' <<<"$npm_metadata")"

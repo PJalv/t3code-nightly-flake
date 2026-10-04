@@ -1,12 +1,15 @@
 # t3code-nightly-flake
 
 The latest T3 Code nightly runtime for Nix, bundled with Codex from
-[`numtide/llm-agents.nix`](https://github.com/numtide/llm-agents.nix) and Pi 0.99.1
+[`numtide/llm-agents.nix`](https://github.com/numtide/llm-agents.nix) and Pi
 from the `git.pjalv.com/PJalv/pi-copilot` fork.
 
 The web, server, and desktop JavaScript bundles are built from the pinned
-[`PJalv/t3code`](https://github.com/PJalv/t3code) source fork. The upstream
-AppImage supplies Electron and its prebuilt native modules.
+[`pingdotgg/t3code`](https://github.com/pingdotgg/t3code) source revision, then
+apply the personal QoL patch recorded in `source.json`. The patch is based on
+the exact upstream revision pinned by this flake, so it builds without publishing
+the personal source branch. The upstream AppImage supplies Electron and its
+prebuilt native modules.
 
 The default policy selects the newest available upstream nightly. An optional
 minimum release age can still be supplied to the updater when desired.
@@ -48,29 +51,6 @@ The matching nightly npm server is exposed as `server`, `t3code-server`, and
 nix run .#server -- --host 0.0.0.0 --port 13773
 ```
 
-The server packages disable T3 Code's hidden Git checkpoints by default. Those
-checkpoints run `git add -A` against the project workspace at turn boundaries,
-which can be prohibitively expensive for large repositories containing build
-artifacts. The source build honors `T3_DISABLE_CHECKPOINTS=1`, and its wrappers
-set that variable automatically.
-
-The patched source also adds **Provider-native file changes** under Settings →
-General. When enabled, T3 Code records file diffs reported by Codex and OpenCode,
-including absolute paths outside the selected project and files in non-Git
-directories. This review feature is independent from Git checkpoints.
-
-To retain upstream checkpoint behavior, use the explicit opt-in variant:
-
-```sh
-nix run .#server-with-checkpoints -- --host 0.0.0.0 --port 13773
-```
-
-The default desktop package also disables checkpoints. To run the desktop
-application with upstream checkpoint behavior, use:
-
-```sh
-nix run .#desktop-with-checkpoints
-```
 
 Then open the URL printed by the server from a browser. Binding to `0.0.0.0`
 makes it reachable from other machines, so use a firewall or trusted network
@@ -99,15 +79,8 @@ settings. Existing adapter-only options, such as `directTools` and `lifecycle`,
 are not native MCP settings. Use `exposure: "direct"` for directly declared
 tools; native MCP defaults to calling server tools through codemode.
 
-The wrapper still loads `@tintinweb/pi-subagents` 0.19.0 for the `Agent` tool,
-foreground and background work, durable agent IDs, and targeted Stop. Remove
-separately installed copies to avoid loading it twice.
-
-T3 Code translates native MCP calls into MCP tool rows and subagent activity
-into the Agents panel and per-agent usage without replacing `~/.pi/agent`.
-Its RPC-only bridge registers the session MCP server and carries versioned
-lifecycle events and targeted subagent control; it does not fork or import
-pi-subagents internals.
+Standalone `nix run .#pi` retains the pinned `@tintinweb/pi-subagents` extension.
+The Pi runtime bundled into T3 desktop/server does not inject that extension.
 
 The flake follows the `nixpkgs` revision used by `llm-agents.nix` and advertises
 Numtide's binary cache, allowing the agent CLIs to be substituted instead of
@@ -125,6 +98,11 @@ Update to the newest available nightly:
 ```sh
 ./scripts/update.sh
 ```
+
+This checkout carries a personal patch. Before upgrading, rebase it on the new
+upstream source and refresh the source revision, patch hash, and pnpm dependency
+hash together. `./scripts/update.sh --check` only reports the update and does
+not change files.
 
 Optionally require a stabilization delay:
 
@@ -151,8 +129,10 @@ emulator, `cmdline-tools` (`avdmanager`/`sdkmanager`), one `google_apis` API 35
 `x86_64` system image, and a JDK — and export `ANDROID_HOME`, `ANDROID_SDK_ROOT`,
 and `JAVA_HOME` so the panel can find them without a host Android SDK. Both
 launchers also seed the pinned device hub and scrcpy server under T3 home before
-the backend starts. Restart the desktop app after updating the flake; pressing
-**Refresh devices** alone does not replace an already-running backend.
+the backend starts. The flake packages desktop, server, and web assets; it does
+not build or ship the source tree's native mobile app or an APK. Restart the
+desktop app after updating the flake; pressing **Refresh devices** alone does
+not replace an already-running backend.
 
 An AVD must exist before T3 can start an emulator; create one against the bundled
 image, for example:
