@@ -1,5 +1,5 @@
 diff --git a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
-index 07644a8af47ccba490c2cd6b35b5147cb83eefbd..81a4a7e28da8e9d6414a244724b6d7f859d1491d 100644
+index 07644a8af4..81a4a7e28d 100644
 --- a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
 +++ b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
 @@ -46,6 +46,7 @@ const serverExposureLayer = Layer.succeed(DesktopServerExposure.DesktopServerExp
@@ -11,7 +11,7 @@ index 07644a8af47ccba490c2cd6b35b5147cb83eefbd..81a4a7e28da8e9d6414a244724b6d7f8
    getAdvertisedEndpoints: Effect.succeed([]),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 diff --git a/apps/desktop/src/backend/DesktopServerExposure.test.ts b/apps/desktop/src/backend/DesktopServerExposure.test.ts
-index 0914167cffb09079ac6aed6fe74207143d275b85..c36273d3d80a1fdd8a823fa76b8c39de49fa6988 100644
+index 0914167cff..c36273d3d8 100644
 --- a/apps/desktop/src/backend/DesktopServerExposure.test.ts
 +++ b/apps/desktop/src/backend/DesktopServerExposure.test.ts
 @@ -38,6 +38,30 @@ const tailnetNetworkInterfaces: DesktopNetworkInterfaces.NetworkInterfaces = {
@@ -230,7 +230,7 @@ index 0914167cffb09079ac6aed6fe74207143d275b85..c36273d3d80a1fdd8a823fa76b8c39de
                id: "desktop-core",
                label: "Desktop",
 diff --git a/apps/desktop/src/backend/DesktopServerExposure.ts b/apps/desktop/src/backend/DesktopServerExposure.ts
-index a04f4ecbc10066fcffc716a491c81530d1b557a6..265e1d232057c5ff2580dc2da1bc2228efbd92fb 100644
+index a04f4ecbc1..265e1d2320 100644
 --- a/apps/desktop/src/backend/DesktopServerExposure.ts
 +++ b/apps/desktop/src/backend/DesktopServerExposure.ts
 @@ -43,6 +43,9 @@ interface DesktopAdvertisedEndpointInput {
@@ -535,7 +535,7 @@ index a04f4ecbc10066fcffc716a491c81530d1b557a6..265e1d232057c5ff2580dc2da1bc2228
      getAdvertisedEndpoints,
    });
 diff --git a/apps/desktop/src/ipc/DesktopIpcHandlers.ts b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
-index 4b43cd0eee966ef0dda5db66025e234c43f1090c..d3a337fdef0ae0fc6c7cc00ddcecdeec310aa3ed 100644
+index 4b43cd0eee..d3a337fdef 100644
 --- a/apps/desktop/src/ipc/DesktopIpcHandlers.ts
 +++ b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
 @@ -16,6 +16,7 @@ import {
@@ -555,7 +555,7 @@ index 4b43cd0eee966ef0dda5db66025e234c43f1090c..d3a337fdef0ae0fc6c7cc00ddcecdeec
    yield* ipc.handle(getAdvertisedEndpoints);
  
 diff --git a/apps/desktop/src/ipc/channels.ts b/apps/desktop/src/ipc/channels.ts
-index 151cd633d04ed05900e9a8c438b7d01612fb3537..c5e4a02c3ca2d2e3f3b99b7aab4a54ab76ada9f3 100644
+index 151cd633d0..c5e4a02c3c 100644
 --- a/apps/desktop/src/ipc/channels.ts
 +++ b/apps/desktop/src/ipc/channels.ts
 @@ -60,6 +60,7 @@ export const ISSUE_SSH_WEBSOCKET_TOKEN_CHANNEL = "desktop:issue-ssh-websocket-to
@@ -567,7 +567,7 @@ index 151cd633d04ed05900e9a8c438b7d01612fb3537..c5e4a02c3ca2d2e3f3b99b7aab4a54ab
  export const SET_TAILSCALE_SERVE_ENABLED_CHANNEL = "desktop:set-tailscale-serve-enabled";
  export const GET_ADVERTISED_ENDPOINTS_CHANNEL = "desktop:get-advertised-endpoints";
 diff --git a/apps/desktop/src/ipc/methods/serverExposure.ts b/apps/desktop/src/ipc/methods/serverExposure.ts
-index 9a9ce768973b363c69e4aa8cbdeec77f5d953ad7..b69c1e76ca68179b878f7ba732d47b21d2b5006f 100644
+index 9a9ce76897..b69c1e76ca 100644
 --- a/apps/desktop/src/ipc/methods/serverExposure.ts
 +++ b/apps/desktop/src/ipc/methods/serverExposure.ts
 @@ -41,6 +41,19 @@ export const setServerExposureMode = DesktopIpc.makeIpcMethod({
@@ -591,7 +591,7 @@ index 9a9ce768973b363c69e4aa8cbdeec77f5d953ad7..b69c1e76ca68179b878f7ba732d47b21
    channel: IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL,
    payload: SetTailscaleServeEnabledInput,
 diff --git a/apps/desktop/src/preload.ts b/apps/desktop/src/preload.ts
-index e84a5821e9ff95165913bdefea7e3c7849316d3e..99d7dd297932457be1d29dd651fc2d89ad0d9baa 100644
+index e84a5821e9..99d7dd2979 100644
 --- a/apps/desktop/src/preload.ts
 +++ b/apps/desktop/src/preload.ts
 @@ -164,6 +164,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
@@ -604,7 +604,7 @@ index e84a5821e9ff95165913bdefea7e3c7849316d3e..99d7dd297932457be1d29dd651fc2d89
      ipcRenderer.invoke(IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL, input),
    getAdvertisedEndpoints: () => ipcRenderer.invoke(IpcChannels.GET_ADVERTISED_ENDPOINTS_CHANNEL),
 diff --git a/apps/desktop/src/settings/DesktopAppSettings.test.ts b/apps/desktop/src/settings/DesktopAppSettings.test.ts
-index 18813eb9025aede411a6ca367ca71d433ca04089..2531079a7fd88ef94eaf776632088ac20d8f807b 100644
+index 18813eb902..2531079a7f 100644
 --- a/apps/desktop/src/settings/DesktopAppSettings.test.ts
 +++ b/apps/desktop/src/settings/DesktopAppSettings.test.ts
 @@ -26,6 +26,7 @@ const DesktopSettingsPatch = Schema.Struct({
@@ -728,7 +728,7 @@ index 18813eb9025aede411a6ca367ca71d433ca04089..2531079a7fd88ef94eaf776632088ac2
            tailscaleServePort: 443,
            updateChannel: "latest",
 diff --git a/apps/desktop/src/settings/DesktopAppSettings.ts b/apps/desktop/src/settings/DesktopAppSettings.ts
-index efd9fbfbfd3bd72b4e4d8af05dc9fc9f31457917..dc8dd8f8ccbe9d958d19fa35fce31a6210687065 100644
+index efd9fbfbfd..dc8dd8f8cc 100644
 --- a/apps/desktop/src/settings/DesktopAppSettings.ts
 +++ b/apps/desktop/src/settings/DesktopAppSettings.ts
 @@ -31,6 +31,13 @@ export interface DesktopSettings {
@@ -833,7 +833,7 @@ index efd9fbfbfd3bd72b4e4d8af05dc9fc9f31457917..dc8dd8f8ccbe9d958d19fa35fce31a62
          setUpdateChannel: (channel) => update((settings) => setUpdateChannel(settings, channel)),
          setWslBackendEnabled: (enabled) =>
 diff --git a/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts b/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
-index a8c0e0f79ac4f78b373685646a908e0ec5e1ea87..f45c0244b11bbd9e08619453bb975aa7ce970c9c 100644
+index a8c0e0f79a..f45c0244b1 100644
 --- a/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
 +++ b/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
 @@ -6,6 +6,7 @@ import { SNAP_SHOT_MODIFIERS, type SnapShotModifier } from "@t3tools/contracts";
@@ -861,7 +861,7 @@ index a8c0e0f79ac4f78b373685646a908e0ec5e1ea87..f45c0244b11bbd9e08619453bb975aa7
      active = pressed;
    }, POLL_INTERVAL_MS);
 diff --git a/apps/desktop/src/snapShot/RegionSnapShotWorker.ts b/apps/desktop/src/snapShot/RegionSnapShotWorker.ts
-index fcc7b56259a7a3f5d495ee64a6a75ed20b982d0f..24df9695f7f2a9e902f395e230e2c70e8ca46298 100644
+index fcc7b56259..24df9695f7 100644
 --- a/apps/desktop/src/snapShot/RegionSnapShotWorker.ts
 +++ b/apps/desktop/src/snapShot/RegionSnapShotWorker.ts
 @@ -1,13 +1,14 @@
@@ -895,7 +895,7 @@ index fcc7b56259a7a3f5d495ee64a6a75ed20b982d0f..24df9695f7f2a9e902f395e230e2c70e
      message: error instanceof Error ? error.message : "Windows window capture failed.",
    } satisfies RegionSnapShotResult),
 diff --git a/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts b/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts
-index 41c344bc2f555a9549deff860acbec8b728e0cd0..a3cab095c609f899130bf10b554138e89194664e 100644
+index 41c344bc2f..a3cab095c6 100644
 --- a/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts
 +++ b/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts
 @@ -2,12 +2,13 @@ import {
@@ -934,7 +934,7 @@ index 41c344bc2f555a9549deff860acbec8b728e0cd0..a3cab095c609f899130bf10b554138e8
  }
 diff --git a/apps/desktop/src/snapShot/WorkerIpc.test.ts b/apps/desktop/src/snapShot/WorkerIpc.test.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..3d186d9ec00fb22c12229f3a437cf53a9fb017f0
+index 0000000000..3d186d9ec0
 --- /dev/null
 +++ b/apps/desktop/src/snapShot/WorkerIpc.test.ts
 @@ -0,0 +1,63 @@
@@ -1003,7 +1003,7 @@ index 0000000000000000000000000000000000000000..3d186d9ec00fb22c12229f3a437cf53a
 +});
 diff --git a/apps/desktop/src/snapShot/WorkerIpc.ts b/apps/desktop/src/snapShot/WorkerIpc.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..f6309dcb8c9b94bf376e3426479c6b6317745f6f
+index 0000000000..f6309dcb8c
 --- /dev/null
 +++ b/apps/desktop/src/snapShot/WorkerIpc.ts
 @@ -0,0 +1,47 @@
@@ -1055,7 +1055,7 @@ index 0000000000000000000000000000000000000000..f6309dcb8c9b94bf376e3426479c6b63
 +  }
 +}
 diff --git a/apps/desktop/src/updates/updatesTestHarness.ts b/apps/desktop/src/updates/updatesTestHarness.ts
-index 5455f1602855069bf9e4a1f7320454289254b7be..03f1908b38e72ad6d88fb48c56c07ce161ff9cf9 100644
+index 5455f16028..03f1908b38 100644
 --- a/apps/desktop/src/updates/updatesTestHarness.ts
 +++ b/apps/desktop/src/updates/updatesTestHarness.ts
 @@ -182,6 +182,8 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
@@ -1068,7 +1068,7 @@ index 5455f1602855069bf9e4a1f7320454289254b7be..03f1908b38e72ad6d88fb48c56c07ce1
            setUpdateChannel: (channel) =>
              setUpdateChannelError
 diff --git a/apps/desktop/src/window/DesktopWindow.test.ts b/apps/desktop/src/window/DesktopWindow.test.ts
-index 1345c37bf687935f25c1d9d51b701a066577d1f0..726789d76671bd66edf368b1bc586ba56c530c91 100644
+index 1345c37bf6..726789d766 100644
 --- a/apps/desktop/src/window/DesktopWindow.test.ts
 +++ b/apps/desktop/src/window/DesktopWindow.test.ts
 @@ -178,6 +178,7 @@ const desktopServerExposureLayer = Layer.succeed(DesktopServerExposure.DesktopSe
@@ -1088,7 +1088,7 @@ index 1345c37bf687935f25c1d9d51b701a066577d1f0..726789d76671bd66edf368b1bc586ba5
      setUpdateChannel: () => Effect.die("unexpected update channel change"),
      setWslBackendEnabled: () => Effect.die("unexpected WSL backend toggle"),
 diff --git a/apps/desktop/src/wsl/DesktopWslBackend.test.ts b/apps/desktop/src/wsl/DesktopWslBackend.test.ts
-index c2daf352837f50bfd1de12243054ba245b741539..aa86bbd529f752d40c795650073a9b4724f1a9c6 100644
+index c2daf35283..aa86bbd529 100644
 --- a/apps/desktop/src/wsl/DesktopWslBackend.test.ts
 +++ b/apps/desktop/src/wsl/DesktopWslBackend.test.ts
 @@ -61,6 +61,7 @@ const serverExposureLayer = Layer.succeed(DesktopServerExposure.DesktopServerExp
@@ -1101,7 +1101,7 @@ index c2daf352837f50bfd1de12243054ba245b741539..aa86bbd529f752d40c795650073a9b47
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 diff --git a/apps/mobile/src/features/agent-awareness/localNotifications.test.ts b/apps/mobile/src/features/agent-awareness/localNotifications.test.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..3d1995e38baf99babd38b80faa3f4b016e887310
+index 0000000000..3d1995e38b
 --- /dev/null
 +++ b/apps/mobile/src/features/agent-awareness/localNotifications.test.ts
 @@ -0,0 +1,94 @@
@@ -1201,7 +1201,7 @@ index 0000000000000000000000000000000000000000..3d1995e38baf99babd38b80faa3f4b01
 +});
 diff --git a/apps/mobile/src/features/agent-awareness/localNotifications.ts b/apps/mobile/src/features/agent-awareness/localNotifications.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..be0b724849d996b05a5f6f184c47a3db06de0384
+index 0000000000..be0b724849
 --- /dev/null
 +++ b/apps/mobile/src/features/agent-awareness/localNotifications.ts
 @@ -0,0 +1,87 @@
@@ -1293,7 +1293,7 @@ index 0000000000000000000000000000000000000000..be0b724849d996b05a5f6f184c47a3db
 +  );
 +}
 diff --git a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
-index 7ed7ddc8bae1b9e21cd4b55f332f4184da7e72f5..a7fdd88151ee8899909ef5b15c73fd9f3d695daa 100644
+index 7ed7ddc8ba..a7fdd88151 100644
 --- a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 +++ b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 @@ -3,6 +3,7 @@ import {
@@ -1313,7 +1313,7 @@ index 7ed7ddc8bae1b9e21cd4b55f332f4184da7e72f5..a7fdd88151ee8899909ef5b15c73fd9f
      pushTokenSubscription = null;
      appStateSubscription?.remove();
 diff --git a/apps/mobile/src/features/devices/device-stream.browser.test.ts b/apps/mobile/src/features/devices/device-stream.browser.test.ts
-index 5aeefdac0203248974195f2356cdc673930a9ddb..135912b6150dac8e260e5c369a97839e847d241c 100644
+index 5aeefdac02..135912b615 100644
 --- a/apps/mobile/src/features/devices/device-stream.browser.test.ts
 +++ b/apps/mobile/src/features/devices/device-stream.browser.test.ts
 @@ -11,15 +11,22 @@ class Element extends EventTarget {
@@ -1382,7 +1382,7 @@ index 5aeefdac0203248974195f2356cdc673930a9ddb..135912b6150dac8e260e5c369a97839e
    const { elements, messages, sockets, configuration } = await setup();
    sockets[0]!.onopen?.();
 diff --git a/apps/mobile/src/features/devices/device-stream.browser.ts b/apps/mobile/src/features/devices/device-stream.browser.ts
-index 0b9e98a51b9fb2393fa29e5d2999d7bfd58fddef..95d0c9642defe0a6e5431191faafac6dac395a4a 100644
+index 0b9e98a51b..95d0c9642d 100644
 --- a/apps/mobile/src/features/devices/device-stream.browser.ts
 +++ b/apps/mobile/src/features/devices/device-stream.browser.ts
 @@ -179,9 +179,22 @@ export function start(configuration: DeviceStreamConfiguration) {
@@ -1409,7 +1409,7 @@ index 0b9e98a51b9fb2393fa29e5d2999d7bfd58fddef..95d0c9642defe0a6e5431191faafac6d
    window.addEventListener("pagehide", stop, { once: true });
    post({ type: "input", connected: false });
 diff --git a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
-index 8809c429c824bcd6003170a42fd7a3991b0284f2..6b36ea1c2884b1ca4a256edb914948ea39062fc1 100644
+index 8809c429c8..6b36ea1c28 100644
 --- a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 @@ -10,6 +10,7 @@ import { Alert, AppState, Linking, Platform } from "react-native";
@@ -1702,8 +1702,166 @@ index 8809c429c824bcd6003170a42fd7a3991b0284f2..6b36ea1c2884b1ca4a256edb914948ea
            {supportsAndroidLiveUpdateSettings() ? (
              <SettingsRow
                icon="bolt.circle"
+diff --git a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
+index e0f3e2ecc6..c9e698cf21 100644
+--- a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
++++ b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
+@@ -14,6 +14,7 @@ import { useEnvironmentQuery } from "../../state/query";
+ import { serverEnvironment } from "../../state/server";
+ import { useAtomCommand } from "../../state/use-atom-command";
+ import { SettingsActionRow } from "./components/SettingsActionRow";
++import { CustomAcpCommandEditor } from "./components/CustomAcpCommandEditor";
+ import {
+   AndroidSettingsEnvironmentFilter,
+   SettingsEnvironmentFilterHeader,
+@@ -40,6 +41,7 @@ export function SettingsProviderAccountsRouteScreen() {
+           ) : (
+             selectedTargets.map((environment) => (
+               <SettingsSection key={environment.environmentId} title={environment.label}>
++                <CustomAcpCommandEditor environment={environment} />
+                 {environment.serverConfig.providers
+                   .filter(
+                     (provider) =>
+diff --git a/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx b/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx
+new file mode 100644
+index 0000000000..fc23d109f1
+--- /dev/null
++++ b/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx
+@@ -0,0 +1,132 @@
++import { AcpRegistrySettings, ProviderDriverKind, ProviderInstanceId } from "@t3tools/contracts";
++import * as Schema from "effect/Schema";
++import { useState } from "react";
++import { TextInput, View } from "react-native";
++import { AppText as Text } from "../../../components/AppText";
++import { serverEnvironment } from "../../../state/server";
++import { useAtomCommand } from "../../../state/use-atom-command";
++import type { SettingsTarget } from "../settings-environment-filter";
++import { SettingsActionRow } from "./SettingsActionRow";
++
++const decodeSettings = Schema.decodeUnknownSync(AcpRegistrySettings);
++
++export function CustomAcpCommandEditor({ environment }: { readonly environment: SettingsTarget }) {
++  const instances = environment.serverConfig.settings.providerInstances;
++  const save = useAtomCommand(serverEnvironment.mutateProviderInstance);
++  const [id, setId] = useState("acpRegistry_custom");
++  const [name, setName] = useState("Custom ACP");
++  const [launchMode, setLaunchMode] = useState<"registry" | "custom">("custom");
++  const [agentId, setAgentId] = useState("");
++  const [command, setCommand] = useState("nix");
++  const [args, setArgs] = useState('["run", "github:tontinton/maki", "--", "acp"]');
++  const [env, setEnv] = useState("{}");
++  const [pending, setPending] = useState(false);
++  const [message, setMessage] = useState<string | null>(null);
++  const existing = Object.entries(instances).find(([key]) => key === id)?.[1];
++  function field(label: string, value: string, onChangeText: (value: string) => void) {
++    return (
++      <TextInput
++        accessibilityLabel={label}
++        placeholder={label}
++        value={value}
++        onChangeText={onChangeText}
++        editable={!pending}
++        autoCapitalize="none"
++        autoCorrect={false}
++        className="rounded-lg border border-border-subtle px-3 py-2 text-base text-foreground"
++      />
++    );
++  }
++  return (
++    <View className="gap-3 p-4">
++      <Text className="text-lg font-semibold text-foreground">Custom ACP command</Text>
++      <Text className="text-sm text-foreground-muted">
++        Runs on the selected environment. Arguments are a JSON array; environment overrides are a
++        JSON object. No shell is used.
++      </Text>
++      {Object.entries(instances)
++        .filter(([, instance]) => instance.driver === "acpRegistry")
++        .map(([key, instance]) => (
++          <SettingsActionRow
++            key={key}
++            icon="pencil"
++            label={`Edit ${instance.displayName ?? key}`}
++            disabled={pending}
++            onPress={() => {
++              const config = decodeSettings(instance.config ?? {});
++              setId(key);
++              setName(instance.displayName ?? key);
++              setCommand(config.commandPath);
++              setLaunchMode(config.launchMode);
++              setAgentId(config.agentId);
++              setArgs(JSON.stringify(config.args));
++              setEnv(JSON.stringify(config.env));
++              setMessage(null);
++            }}
++          />
++        ))}
++      {field("Instance ID", id, setId)}
++      {field("Display name", name, setName)}
++      <SettingsActionRow
++        icon="arrow.left.arrow.right"
++        label={`Launch mode: ${launchMode}. Tap to switch.`}
++        disabled={pending}
++        onPress={() => setLaunchMode(launchMode === "custom" ? "registry" : "custom")}
++      />
++      {launchMode === "registry" ? field("Registry agent ID", agentId, setAgentId) : null}
++      {field("Executable", command, setCommand)}
++      {field("Arguments JSON", args, setArgs)}
++      {field("Environment JSON", env, setEnv)}
++      <SettingsActionRow
++        icon="plus"
++        label={existing ? "Save ACP configuration" : "Add ACP command"}
++        disabled={pending || (launchMode === "custom" ? !command.trim() : !agentId.trim())}
++        onPress={() => {
++          void (async () => {
++            try {
++              if (existing && existing.driver !== "acpRegistry")
++                throw new Error("That ID belongs to another provider.");
++              const instanceId = ProviderInstanceId.make(id);
++              const config = decodeSettings({
++                ...(existing?.config && typeof existing.config === "object" ? existing.config : {}),
++                launchMode,
++                agentId,
++                commandPath: command,
++                args: JSON.parse(args),
++                env: JSON.parse(env),
++              });
++              setPending(true);
++              setMessage(null);
++              const result = await save({
++                environmentId: environment.environmentId,
++                input: {
++                  patch: {},
++                  providerInstanceMutation: {
++                    operation: existing ? "upsert" : "create",
++                    instanceId,
++                    instance: {
++                      ...existing,
++                      driver: ProviderDriverKind.make("acpRegistry"),
++                      displayName: name.trim(),
++                      config,
++                    },
++                  },
++                },
++              });
++              setMessage(result._tag === "Success" ? "Saved." : "Could not save custom command.");
++            } catch {
++              setMessage("Check the instance ID, arguments array, and environment object.");
++            } finally {
++              setPending(false);
++            }
++          })();
++        }}
++      />
++      {message ? (
++        <Text accessibilityLiveRegion="polite" className="text-sm text-foreground-muted">
++          {message}
++        </Text>
++      ) : null}
++    </View>
++  );
++}
 diff --git a/apps/mobile/src/persistence/mobile-preferences.ts b/apps/mobile/src/persistence/mobile-preferences.ts
-index ee96bce2d5cec0ffae8d7db83ceaab88ec93a436..08e3d0cf7a802bde0c4b3f74f4eba4fd82ac9b6c 100644
+index ee96bce2d5..08e3d0cf7a 100644
 --- a/apps/mobile/src/persistence/mobile-preferences.ts
 +++ b/apps/mobile/src/persistence/mobile-preferences.ts
 @@ -18,6 +18,9 @@ const PREFERENCES_FALLBACK_KEY = "t3code.preferences.fallback";
@@ -1738,8 +1896,518 @@ index ee96bce2d5cec0ffae8d7db83ceaab88ec93a436..08e3d0cf7a802bde0c4b3f74f4eba4fd
    if (
      typeof parsed.themeId === "string" &&
      (MOBILE_THEME_IDS as readonly string[]).includes(parsed.themeId)
+diff --git a/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.test.ts b/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.test.ts
+index e822ea4efd..2de1c3ebf1 100644
+--- a/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.test.ts
++++ b/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.test.ts
+@@ -122,6 +122,9 @@ describe("AcpRegistryAdapterV2", () => {
+     assert.equal(AcpRegistryAdapterV2Driver.driverKind, ACP_REGISTRY_PROVIDER);
+     assert.deepEqual(AcpRegistryAdapterV2Driver.defaultConfig(), {
+       enabled: true,
++      launchMode: "registry",
++      args: [],
++      env: {},
+       agentId: "",
+       commandPath: "",
+       authMethodId: "",
+diff --git a/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.ts b/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.ts
+index 76326b2745..d93ca86593 100644
+--- a/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.ts
++++ b/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.ts
+@@ -153,7 +153,8 @@ function makeAcpRegistryRuntime(options: AcpRegistryAdapterV2Options) {
+           Effect.mapError(
+             (cause) =>
+               new EffectAcpErrors.AcpSpawnError({
+-                command: options.settings.agentId || ACP_REGISTRY_PROVIDER,
++                command:
++                  AcpRegistrySupport.acpLaunchIdentity(options.settings) || ACP_REGISTRY_PROVIDER,
+                 cause,
+               }),
+           ),
+@@ -183,14 +184,15 @@ function makeAcpRegistryRuntime(options: AcpRegistryAdapterV2Options) {
+ 
+ export function makeAcpRegistryAdapterV2(options: AcpRegistryAdapterV2Options) {
+   const runtimeCoordinator = options.runtimeCoordinator;
+-  const isDevin = options.settings.agentId === "devin";
++  const isDevin = AcpRegistrySupport.acpLaunchIdentity(options.settings) === "devin";
+   const flavor: AcpAdapterV2Flavor = {
+     driver: ACP_REGISTRY_PROVIDER,
+     capabilities: AcpProviderCapabilitiesV2,
+-    promptFailure: (cause) => acpRegistryPromptFailure(options.settings.agentId, cause),
++    promptFailure: (cause) =>
++      acpRegistryPromptFailure(AcpRegistrySupport.acpLaunchIdentity(options.settings), cause),
+     // Per-agent exceptions (Mistral Vibe, Devin): see the note above
+     // registerMistralVibeAcpExtensions before adding any more.
+-    ...(options.settings.agentId === "mistral-vibe"
++    ...(AcpRegistrySupport.acpLaunchIdentity(options.settings) === "mistral-vibe"
+       ? { registerExtensions: registerMistralVibeAcpExtensions }
+       : {}),
+     ...(isDevin
+@@ -230,7 +232,10 @@ export function makeAcpRegistryAdapterV2(options: AcpRegistryAdapterV2Options) {
+             });
+           },
+           withRuntimeStartup: <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+-            runtimeCoordinator.withForegroundStartup(options.settings.agentId, effect),
++            runtimeCoordinator.withForegroundStartup(
++              AcpRegistrySupport.acpLaunchIdentity(options.settings),
++              effect,
++            ),
+         }),
+     ...(options.assertComplete === undefined ? {} : { assertComplete: options.assertComplete }),
+   };
+diff --git a/apps/server/src/provider/Drivers/AcpRegistryDriver.ts b/apps/server/src/provider/Drivers/AcpRegistryDriver.ts
+index 68bf797fa0..ba98e6c6cd 100644
+--- a/apps/server/src/provider/Drivers/AcpRegistryDriver.ts
++++ b/apps/server/src/provider/Drivers/AcpRegistryDriver.ts
+@@ -138,7 +138,8 @@ export function acpRegistrySnapshotReadiness(
+         installed: false,
+         version: null,
+         status: "warning",
+-        message: "Select an ACP Registry agent before starting a thread.",
++        message:
++          "Configure an ACP registry agent ID or a custom executable before starting a thread.",
+       };
+     case "not_found":
+       return {
+@@ -200,7 +201,9 @@ function baseSnapshot(
+ ): ServerProvider {
+   const iconUrl =
+     resolveOfficialAcpRegistryIconUrl(input.probe?.probe.icon) ??
+-    officialAcpRegistryIconUrlForAgentId(input.settings.agentId);
++    (input.settings.launchMode === "registry"
++      ? officialAcpRegistryIconUrlForAgentId(input.settings.agentId)
++      : undefined);
+   return {
+     instanceId: input.instanceId,
+     driver: DRIVER_KIND,
+@@ -225,7 +228,7 @@ function baseSnapshot(
+         input.installed &&
+         (input.probe
+           ? input.probe.probe.authMethods.length > 0
+-          : input.settings.agentId.length > 0),
++          : input.settings.launchMode === "custom" || input.settings.agentId.length > 0),
+     },
+     ...(input.message ? { message: input.message } : {}),
+     models: modelsFromDiscovery(input.probe?.probe, input.settings.customModels),
+@@ -633,7 +636,7 @@ export const AcpRegistryDriver: ProviderDriver<AcpRegistrySettings, AcpRegistryD
+           const publishEnrichment = (
+             Option.isSome(runtimeCoordinator)
+               ? runtimeCoordinator.value.runBackgroundProbe(
+-                  effectiveConfig.agentId,
++                  AcpRegistrySupport.acpLaunchIdentity(effectiveConfig),
+                   enrichProviderCached(snapshot),
+                 )
+               : enrichProviderCached(snapshot).pipe(Effect.map(Option.some))
+diff --git a/apps/server/src/provider/acp/AcpRegistryAuth.ts b/apps/server/src/provider/acp/AcpRegistryAuth.ts
+index 4befdb1cec..0d6e966145 100644
+--- a/apps/server/src/provider/acp/AcpRegistryAuth.ts
++++ b/apps/server/src/provider/acp/AcpRegistryAuth.ts
+@@ -139,7 +139,7 @@ export const makeAcpRegistryAuth = Effect.fn("makeAcpRegistryAuth")(function* (o
+ 
+   const methods = Option.isSome(coordinator)
+     ? coordinator.value
+-        .runBackgroundProbe(options.settings.agentId, discoverMethods)
++        .runBackgroundProbe(AcpRegistrySupport.acpLaunchIdentity(options.settings), discoverMethods)
+         .pipe(
+           Effect.flatMap((result) =>
+             Option.isSome(result)
+@@ -327,7 +327,10 @@ export const makeAcpRegistryAuth = Effect.fn("makeAcpRegistryAuth")(function* (o
+         }),
+       );
+       yield* Option.isSome(coordinator)
+-        ? coordinator.value.withForegroundStartup(options.settings.agentId, login)
++        ? coordinator.value.withForegroundStartup(
++            AcpRegistrySupport.acpLaunchIdentity(options.settings),
++            login,
++          )
+         : login;
+       yield* options.onChanged(true);
+     });
+@@ -354,14 +357,20 @@ export const makeAcpRegistryAuth = Effect.fn("makeAcpRegistryAuth")(function* (o
+   );
+   const signOut = (
+     Option.isSome(coordinator)
+-      ? coordinator.value.withForegroundStartup(options.settings.agentId, logout)
++      ? coordinator.value.withForegroundStartup(
++          AcpRegistrySupport.acpLaunchIdentity(options.settings),
++          logout,
++        )
+       : logout
+   ).pipe(Effect.andThen(options.onChanged(false)));
+   return yield* ProviderAuthFlow.make({
+     instanceId: options.instanceId,
+     // ACP doesn't advertise its credential scope. Conservatively treat all
+     // instances of the same agent on this environment as sharing credentials.
+-    credentialBinding: { owner: "provider", key: `acp:${options.settings.agentId}` },
++    credentialBinding: {
++      owner: "provider",
++      key: `acp:${AcpRegistrySupport.acpLaunchIdentity(options.settings)}`,
++    },
+     methods,
+     ...(options.settings.authMethodId ? { defaultMethodId: options.settings.authMethodId } : {}),
+     authenticate,
+diff --git a/apps/server/src/provider/acp/AcpRegistryAuthenticationState.test.ts b/apps/server/src/provider/acp/AcpRegistryAuthenticationState.test.ts
+index 8f5e1ba63c..24446a8714 100644
+--- a/apps/server/src/provider/acp/AcpRegistryAuthenticationState.test.ts
++++ b/apps/server/src/provider/acp/AcpRegistryAuthenticationState.test.ts
+@@ -71,6 +71,40 @@ it.layer(NodeServices.layer)("ACP sign-in confirmation", (it) => {
+       }),
+   );
+ 
++  it.effect("binds custom command confirmation to arguments and environment overrides", () =>
++    Effect.gen(function* () {
++      const fs = yield* FileSystem.FileSystem;
++      const cacheDir = yield* fs.makeTempDirectoryScoped();
++      const config = {
++        ...settings,
++        launchMode: "custom" as const,
++        commandPath: "nix",
++        args: ["acp"],
++        env: { PROFILE: "one" },
++      };
++      const input = {
++        cacheDir,
++        instanceId: ProviderInstanceId.make("acp_custom"),
++        settings: config,
++        environment: [],
++        processEnvironment: {},
++      };
++      for (const changedConfig of [
++        { ...config, args: ["other", "acp"] },
++        { ...config, env: { PROFILE: "two" } },
++        { ...config, launchMode: "registry" as const },
++      ]) {
++        const signedIn = yield* makeAcpRegistryAuthenticationState(input);
++        yield* signedIn.set(true);
++        const changed = yield* makeAcpRegistryAuthenticationState({
++          ...input,
++          settings: changedConfig,
++        });
++        assert.isFalse(yield* changed.get);
++      }
++    }),
++  );
++
+   it.effect("ignores damaged confirmation and keeps another instance independent", () =>
+     Effect.gen(function* () {
+       const fs = yield* FileSystem.FileSystem;
+diff --git a/apps/server/src/provider/acp/AcpRegistryAuthenticationState.ts b/apps/server/src/provider/acp/AcpRegistryAuthenticationState.ts
+index 1f4799e65c..6efde5009a 100644
+--- a/apps/server/src/provider/acp/AcpRegistryAuthenticationState.ts
++++ b/apps/server/src/provider/acp/AcpRegistryAuthenticationState.ts
+@@ -34,6 +34,13 @@ export const makeAcpRegistryAuthenticationState = Effect.fn("makeAcpRegistryAuth
+     // Cosmetic settings and model discovery can rebuild the driver without
+     // changing the account. Credential overrides and profile paths cannot.
+     const binding = hash({
++      ...(input.settings.launchMode === "custom"
++        ? {
++            launchMode: input.settings.launchMode,
++            args: input.settings.args,
++            env: Object.entries(input.settings.env).toSorted(),
++          }
++        : {}),
+       agentId: input.settings.agentId,
+       commandPath: input.settings.commandPath,
+       distribution: input.settings.distribution,
+diff --git a/apps/server/src/provider/acp/AcpRegistrySupport.test.ts b/apps/server/src/provider/acp/AcpRegistrySupport.test.ts
+index b12b13e3a4..d79602c30b 100644
+--- a/apps/server/src/provider/acp/AcpRegistrySupport.test.ts
++++ b/apps/server/src/provider/acp/AcpRegistrySupport.test.ts
+@@ -137,6 +137,51 @@ const makeFakeUvToolchain = Effect.fn("AcpRegistrySupport.test.makeFakeUvToolcha
+ });
+ 
+ describe("AcpRegistrySupport", () => {
++  it.effect("launches custom commands without registry requests or managed installs", () =>
++    Effect.gen(function* () {
++      const fs = yield* FileSystem.FileSystem;
++      const cacheDir = yield* fs.makeTempDirectoryScoped({ prefix: "t3-custom-acp-" });
++      const executable = `${cacheDir}/agent`;
++      yield* fs.writeFileString(executable, "#!/bin/sh\n");
++      yield* fs.chmod(executable, 0o755);
++      const catalog = yield* AcpRegistrySupport.makeAcpRegistryCatalog({
++        cacheDir,
++        toolsDir: `${cacheDir}/tools`,
++        registryUrl,
++      });
++      const config = settings({
++        launchMode: "custom",
++        agentId: "",
++        commandPath: executable,
++        args: ["acp", "", "argument with spaces"],
++        env: { OVERRIDE: "custom" },
++      });
++      expect(yield* catalog.inspect(config)).toMatchObject({ status: "ready", version: null });
++      const resolved = yield* catalog.resolve(config, "/workspace", {
++        HOME: "/existing/profile",
++        OVERRIDE: "host",
++      });
++      expect(resolved.spawn).toEqual({
++        command: executable,
++        args: ["acp", "", "argument with spaces"],
++        cwd: "/workspace",
++        env: { HOME: "/existing/profile", OVERRIDE: "custom" },
++      });
++      expect(yield* fs.exists(`${cacheDir}/tools`)).toBe(false);
++      expect(AcpRegistrySupport.acpLaunchIdentity(config)).not.toBe(
++        AcpRegistrySupport.acpLaunchIdentity({ ...config, args: ["other"] }),
++      );
++      expect(yield* catalog.inspect({ ...config, commandPath: "" })).toEqual({
++        status: "unconfigured",
++      });
++      expect(
++        yield* catalog.inspect({ ...config, commandPath: `${cacheDir}/missing` }),
++      ).toMatchObject({ status: "missing_runner" });
++    }).pipe(
++      Effect.scoped,
++      Effect.provide(resolverLayer(() => Effect.die("Custom mode must not fetch the registry"))),
++    ),
++  );
+   it("preserves the registry failure when translating it for clients", () => {
+     const cause = new Error("registry unavailable");
+     const failure = new AcpRegistrySupport.AcpRegistryError({
+diff --git a/apps/server/src/provider/acp/AcpRegistrySupport.ts b/apps/server/src/provider/acp/AcpRegistrySupport.ts
+index 21c34e6dcf..be1f2e8f8d 100644
+--- a/apps/server/src/provider/acp/AcpRegistrySupport.ts
++++ b/apps/server/src/provider/acp/AcpRegistrySupport.ts
+@@ -438,6 +438,20 @@ export function resolveAcpRegistryDistribution(input: {
+   return undefined;
+ }
+ 
++export function acpLaunchIdentity(settings: AcpRegistrySettings): string {
++  return settings.launchMode === "custom"
++    ? `custom:${NodeCrypto.createHash("sha256")
++        .update(
++          JSON.stringify([
++            settings.commandPath,
++            settings.args,
++            Object.entries(settings.env).toSorted(),
++          ]),
++        )
++        .digest("hex")}`
++    : settings.agentId;
++}
++
+ export interface ResolvedAcpRegistryAgent {
+   readonly agent: AcpRegistryAgent;
+   readonly distribution: AcpRegistryDistributionKind;
+@@ -1612,6 +1626,29 @@ export const makeAcpRegistryCatalog = Effect.fn("AcpRegistryCatalog.make")(funct
+ 
+   const inspect: AcpRegistryCatalog["Service"]["inspect"] = (settings, environment) =>
+     Effect.gen(function* () {
++      if (settings.launchMode === "custom") {
++        const command = settings.commandPath.trim();
++        if (!command) return { status: "unconfigured" } as const;
++        const available =
++          resolveExecutable(command, platform, {
++            ...(environment ?? hostEnvironment),
++            ...settings.env,
++          }) !== undefined;
++        return available
++          ? ({
++              status: "ready",
++              agentId: acpLaunchIdentity(settings),
++              version: null,
++              distribution: "binary",
++            } as const)
++          : ({
++              status: "missing_runner",
++              agentId: acpLaunchIdentity(settings),
++              version: "custom",
++              distribution: "binary",
++              runner: command,
++            } as const);
++      }
+       const agentId = settings.agentId.trim();
+       if (agentId.length === 0) return { status: "unconfigured" } as const;
+       const registry = yield* loadCachedRegistry();
+@@ -1713,6 +1750,34 @@ export const makeAcpRegistryCatalog = Effect.fn("AcpRegistryCatalog.make")(funct
+ 
+   const resolve: AcpRegistryCatalog["Service"]["resolve"] = (settings, cwd, environment) =>
+     Effect.gen(function* () {
++      if (settings.launchMode === "custom") {
++        const env = { ...(environment ?? hostEnvironment), ...settings.env };
++        const executable = settings.commandPath.trim();
++        if (!executable) {
++          return yield* new AcpRegistryError({
++            reason: "agent_not_configured",
++            detail: "Custom ACP requires an executable.",
++          });
++        }
++        const command = resolveExecutable(executable, platform, env);
++        if (command === undefined) {
++          return yield* new AcpRegistryError({
++            reason: "runner_unavailable",
++            detail: "Custom ACP executable is not available on this provider instance's PATH.",
++          });
++        }
++        return {
++          agent: {
++            id: acpLaunchIdentity(settings),
++            name: executable,
++            version: "custom",
++            description: "Custom ACP command",
++            distribution: {},
++          },
++          distribution: "binary",
++          spawn: { command, args: settings.args, cwd, env },
++        } satisfies ResolvedAcpRegistryAgent;
++      }
+       const agentId = settings.agentId.trim();
+       if (agentId.length === 0) {
+         return yield* new AcpRegistryError({
+diff --git a/apps/server/src/provider/acp/MakiCustom.integration.test.ts b/apps/server/src/provider/acp/MakiCustom.integration.test.ts
+new file mode 100644
+index 0000000000..6ea1ef9133
+--- /dev/null
++++ b/apps/server/src/provider/acp/MakiCustom.integration.test.ts
+@@ -0,0 +1,131 @@
++import * as NodeServices from "@effect/platform-node/NodeServices";
++import { it, expect } from "@effect/vitest";
++import { AcpRegistrySettings } from "@t3tools/contracts";
++import * as Effect from "effect/Effect";
++import * as FileSystem from "effect/FileSystem";
++import * as Schema from "effect/Schema";
++import * as Layer from "effect/Layer";
++import * as Stream from "effect/Stream";
++import * as Ref from "effect/Ref";
++import * as Deferred from "effect/Deferred";
++import { HttpClient } from "effect/unstable/http";
++import * as AcpRegistrySupport from "./AcpRegistrySupport.ts";
++import * as AcpSessionRuntime from "./AcpSessionRuntime.ts";
++import { probeAcpRegistryConfiguration } from "./AcpRegistryProbe.ts";
++import { ProviderInstanceId } from "@t3tools/contracts";
++
++const encodeEvidence = Schema.encodeSync(Schema.fromJsonString(Schema.Unknown));
++const decodeSettings = Schema.decodeEffect(AcpRegistrySettings);
++
++it.live.skipIf(process.env.T3_MAKI_ACP_INTEGRATION !== "1")(
++  "Nix Maki runs through T3 custom ACP transport with the existing profile",
++  () =>
++    Effect.gen(function* () {
++      const fs = yield* FileSystem.FileSystem;
++      const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3-maki-custom-integration-" });
++      const cwd = `${root}/workspace`;
++      yield* fs.makeDirectory(cwd);
++      const catalog = yield* AcpRegistrySupport.makeAcpRegistryCatalog({
++        cacheDir: `${root}/cache`,
++        toolsDir: `${root}/tools`,
++      });
++      const settings = yield* decodeSettings({
++        launchMode: "custom",
++        commandPath: "nix",
++        args: ["run", "github:tontinton/maki", "--", "acp"],
++      });
++      expect(yield* catalog.inspect(settings)).toMatchObject({ status: "ready" });
++      const probe = yield* probeAcpRegistryConfiguration({
++        instanceId: ProviderInstanceId.make("acpRegistry_maki_verification"),
++        settings,
++        cwd,
++        environment: process.env,
++      }).pipe(Effect.provideService(AcpRegistrySupport.AcpRegistryCatalog, catalog));
++      expect(probe.probe.models.length).toBeGreaterThan(0);
++      const resolved = yield* catalog.resolve(settings, cwd, process.env);
++      const context = yield* Layer.build(
++        AcpSessionRuntime.layer({
++          spawn: resolved.spawn,
++          cwd,
++          clientInfo: { name: "t3-custom-acp-verification", version: "0.0.0" },
++          authenticateOnAuthRequired: false,
++          clientCapabilities: {
++            fs: { readTextFile: false, writeTextFile: false },
++            terminal: false,
++          },
++        }).pipe(Layer.provide(NodeServices.layer)),
++      );
++      const runtime = yield* Effect.service(AcpSessionRuntime.AcpSessionRuntime).pipe(
++        Effect.provide(context),
++      );
++      const initialize = yield* runtime.initialize();
++      const answerRef = yield* Ref.make("");
++      yield* runtime.getEvents().pipe(
++        Stream.runForEach((event) =>
++          event._tag === "EventStreamBarrier"
++            ? Deferred.succeed(event.acknowledge, undefined)
++            : event._tag === "ContentDelta"
++              ? Ref.update(answerRef, (text) => text + event.text)
++              : Effect.void,
++        ),
++        Effect.forkScoped,
++      );
++      yield* runtime.start();
++      const modes = yield* runtime.getModeState;
++      const config = yield* runtime.getConfigOptions;
++      yield* runtime.setMode("plan");
++      expect((yield* runtime.getModeState)?.currentModeId).toBe("plan");
++      const model = config.find((option) => option.category === "model");
++      if (model?.type === "select" && typeof model.currentValue === "string") {
++        yield* runtime.setModel(model.currentValue);
++      }
++      const response = yield* runtime.prompt({
++        prompt: [
++          {
++            type: "text",
++            text: "Reply with exactly ACP_OK. Do not read or write files, run tools, or change configuration.",
++          },
++        ],
++      });
++      expect(response.stopReason).toBe("end_turn");
++      yield* runtime.drainEvents;
++      const answer = yield* Ref.get(answerRef);
++      expect(answer.trim()).toBe("ACP_OK");
++      expect(yield* fs.readDirectory(cwd)).toEqual([]);
++      expect(yield* fs.exists(`${root}/tools`)).toBe(false);
++      yield* fs.writeFileString(
++        "/tmp/custom-acp-maki-evidence.json",
++        encodeEvidence({
++          command: "nix run github:tontinton/maki -- acp",
++          transport: "T3 AcpSessionRuntime",
++          existingHome: true,
++          registryRequests: 0,
++          initialize: {
++            protocolVersion: initialize.protocolVersion,
++            agentInfo: initialize.agentInfo,
++            agentCapabilities: initialize.agentCapabilities,
++            authMethodIds: initialize.authMethods?.map((m) => m.id),
++          },
++          probe: {
++            models: probe.probe.models,
++            configOptions: probe.probe.configOptions,
++            sessionManagement: probe.probe.sessionManagement,
++          },
++          modes,
++          modeSwitch: "plan",
++          config,
++          promptResponse: response,
++          answer,
++          workspaceUntouched: true,
++        }),
++      );
++    }).pipe(
++      Effect.scoped,
++      Effect.provideService(
++        HttpClient.HttpClient,
++        HttpClient.make(() => Effect.die("Registry access forbidden")),
++      ),
++      Effect.provide(NodeServices.layer),
++    ),
++  240_000,
++);
+diff --git a/apps/server/src/ws.ts b/apps/server/src/ws.ts
+index 7800603f28..f1011d4f93 100644
+--- a/apps/server/src/ws.ts
++++ b/apps/server/src/ws.ts
+@@ -2124,7 +2124,8 @@ const makeWsRpcLayer = (
+                       ) {
+                         return false;
+                       }
+-                      return (instance.config as Record<string, unknown>).agentId === input.agentId;
++                      const config = instance.config as Record<string, unknown>;
++                      return config.launchMode !== "custom" && config.agentId === input.agentId;
+                     }),
+                   ),
+                 ),
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index 26b97c24719dd6dca4359f8441794f568cbfcb67..18156b15f5a8247a9c7ce651018fa14ef3544bb8 100644
+index 26b97c2471..18156b15f5 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
 @@ -176,6 +176,10 @@ import { previewEnvironment } from "../state/preview";
@@ -1909,7 +2577,7 @@ index 26b97c24719dd6dca4359f8441794f568cbfcb67..18156b15f5a8247a9c7ce651018fa14e
      const directUri = imageSource._tag === "Direct" ? imageSource.uri : null;
      const githubMediaUrl =
 diff --git a/apps/web/src/components/ChatView.logic.test.ts b/apps/web/src/components/ChatView.logic.test.ts
-index 9e6b96b21018fa726ed6ec07f1abaa9b6dc3842a..8cdccbfeac980df2301c2ce2e08acba3da915a90 100644
+index 9e6b96b210..8cdccbfeac 100644
 --- a/apps/web/src/components/ChatView.logic.test.ts
 +++ b/apps/web/src/components/ChatView.logic.test.ts
 @@ -1828,6 +1828,12 @@ describe("shouldRefocusComposerOnWindowFocus", () => {
@@ -1926,7 +2594,7 @@ index 9e6b96b21018fa726ed6ec07f1abaa9b6dc3842a..8cdccbfeac980df2301c2ce2e08acba3
      expect(shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "dialog" }))).toBe(false);
      expect(shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "-popup" }))).toBe(false);
 diff --git a/apps/web/src/components/ChatView.logic.ts b/apps/web/src/components/ChatView.logic.ts
-index 3323a8f3e0b986de1e59f86a23caa410d931ee70..a4a7c10c22bd9420926c3fe6d26231a0cae0147f 100644
+index 3323a8f3e0..a4a7c10c22 100644
 --- a/apps/web/src/components/ChatView.logic.ts
 +++ b/apps/web/src/components/ChatView.logic.ts
 @@ -1292,10 +1292,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
@@ -1952,7 +2620,7 @@ index 3323a8f3e0b986de1e59f86a23caa410d931ee70..a4a7c10c22bd9420926c3fe6d26231a0
    );
  }
 diff --git a/apps/web/src/components/ChatView.tsx b/apps/web/src/components/ChatView.tsx
-index 78c5f113162e6c4ad10b516841db9a34041666fc..2ef9fd185229d8d86256cc0953ddb038557f06f6 100644
+index 78c5f11316..2ef9fd1852 100644
 --- a/apps/web/src/components/ChatView.tsx
 +++ b/apps/web/src/components/ChatView.tsx
 @@ -86,6 +86,14 @@ import {
@@ -2070,7 +2738,7 @@ index 78c5f113162e6c4ad10b516841db9a34041666fc..2ef9fd185229d8d86256cc0953ddb038
          return;
 diff --git a/apps/web/src/components/chat/V2FileChangeDiffView.tsx b/apps/web/src/components/chat/V2FileChangeDiffView.tsx
 new file mode 100644
-index 0000000000000000000000000000000000000000..63745660f3d132256decf35235e989bbd3fd4a9d
+index 0000000000..63745660f3
 --- /dev/null
 +++ b/apps/web/src/components/chat/V2FileChangeDiffView.tsx
 @@ -0,0 +1,43 @@
@@ -2118,7 +2786,7 @@ index 0000000000000000000000000000000000000000..63745660f3d132256decf35235e989bb
 +  );
 +}
 diff --git a/apps/web/src/components/chat/V2ItemInspector.tsx b/apps/web/src/components/chat/V2ItemInspector.tsx
-index 0b8275065549a4c18ac080300e6a718d190e0a4f..76ee99880be1562a485e6b0913801676fc4bbf77 100644
+index 0b82750655..76ee99880b 100644
 --- a/apps/web/src/components/chat/V2ItemInspector.tsx
 +++ b/apps/web/src/components/chat/V2ItemInspector.tsx
 @@ -11,7 +11,7 @@ import {
@@ -2262,7 +2930,7 @@ index 0b8275065549a4c18ac080300e6a718d190e0a4f..76ee99880be1562a485e6b0913801676
        {item.type === "file_search" && item.pattern?.trim() ? (
 diff --git a/apps/web/src/components/chat/v2FileChangeDiff.test.ts b/apps/web/src/components/chat/v2FileChangeDiff.test.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..f5e096a5c44647aa7f9a0c532ff832519f9e7199
+index 0000000000..f5e096a5c4
 --- /dev/null
 +++ b/apps/web/src/components/chat/v2FileChangeDiff.test.ts
 @@ -0,0 +1,36 @@
@@ -2304,7 +2972,7 @@ index 0000000000000000000000000000000000000000..f5e096a5c44647aa7f9a0c532ff83251
 +});
 diff --git a/apps/web/src/components/chat/v2FileChangeDiff.ts b/apps/web/src/components/chat/v2FileChangeDiff.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..5f2284e73de274f297e984277d443edb2a7541ae
+index 0000000000..5f2284e73d
 --- /dev/null
 +++ b/apps/web/src/components/chat/v2FileChangeDiff.ts
 @@ -0,0 +1,42 @@
@@ -2351,7 +3019,7 @@ index 0000000000000000000000000000000000000000..5f2284e73de274f297e984277d443edb
 +  return `${header}\n${body.join("\n")}`;
 +}
 diff --git a/apps/web/src/components/device/DeviceStreamView.test.tsx b/apps/web/src/components/device/DeviceStreamView.test.tsx
-index 7e03923401290d2393dd2555be172eb060233a96..7c57904c43631bcd96eaf921e298252096265c11 100644
+index 7e03923401..7c57904c43 100644
 --- a/apps/web/src/components/device/DeviceStreamView.test.tsx
 +++ b/apps/web/src/components/device/DeviceStreamView.test.tsx
 @@ -42,8 +42,13 @@ afterEach(async () => {
@@ -2442,7 +3110,7 @@ index 7e03923401290d2393dd2555be172eb060233a96..7c57904c43631bcd96eaf921e2982520
    await setup();
    await act(async () => {
 diff --git a/apps/web/src/components/device/DeviceStreamView.tsx b/apps/web/src/components/device/DeviceStreamView.tsx
-index 25c4c39dae2f3904ff7fe7f25586b09060836877..4b0effd28b3f9c4265b3d8fbbbdbb715229fff20 100644
+index 25c4c39dae..4b0effd28b 100644
 --- a/apps/web/src/components/device/DeviceStreamView.tsx
 +++ b/apps/web/src/components/device/DeviceStreamView.tsx
 @@ -395,13 +395,30 @@ export function DeviceStreamView(props: {
@@ -2476,8 +3144,66 @@ index 25c4c39dae2f3904ff7fe7f25586b09060836877..4b0effd28b3f9c4265b3d8fbbbdbb715
          onKeyUp={(event) => {
            if (event.target !== event.currentTarget) return;
            clientRef.current?.sendKey(event.nativeEvent, "up");
+diff --git a/apps/web/src/components/settings/AddProviderInstanceDialog.logic.ts b/apps/web/src/components/settings/AddProviderInstanceDialog.logic.ts
+index 20d575c1cc..cebe84a00a 100644
+--- a/apps/web/src/components/settings/AddProviderInstanceDialog.logic.ts
++++ b/apps/web/src/components/settings/AddProviderInstanceDialog.logic.ts
+@@ -65,7 +65,8 @@ export function isConfiguredAcpRegistryAgent(
+     ) {
+       return false;
+     }
+-    return (instance.config as Record<string, unknown>).agentId === agentId;
++    const config = instance.config as Record<string, unknown>;
++    return config.launchMode !== "custom" && config.agentId === agentId;
+   });
+ }
+ 
+diff --git a/apps/web/src/components/settings/AddProviderInstanceDialog.test.ts b/apps/web/src/components/settings/AddProviderInstanceDialog.test.ts
+index 71cac1f1c3..7e27090a73 100644
+--- a/apps/web/src/components/settings/AddProviderInstanceDialog.test.ts
++++ b/apps/web/src/components/settings/AddProviderInstanceDialog.test.ts
+@@ -91,6 +91,12 @@ describe("ACP Registry wizard", () => {
+ 
+     expect(isConfiguredAcpRegistryAgent(instances, "gemini")).toBe(true);
+     expect(isConfiguredAcpRegistryAgent(instances, "codex")).toBe(false);
++    expect(
++      isConfiguredAcpRegistryAgent(
++        { custom: { driver: "acpRegistry", config: { launchMode: "custom", agentId: "gemini" } } },
++        "gemini",
++      ),
++    ).toBe(false);
+   });
+ 
+   it("keeps registry-prefilled identity separate from other drivers", () => {
+diff --git a/apps/web/src/components/settings/AddProviderInstanceDialog.tsx b/apps/web/src/components/settings/AddProviderInstanceDialog.tsx
+index 1288d990b9..545656bffc 100644
+--- a/apps/web/src/components/settings/AddProviderInstanceDialog.tsx
++++ b/apps/web/src/components/settings/AddProviderInstanceDialog.tsx
+@@ -172,7 +172,11 @@ export function AddProviderInstanceDialog({
+   const configDraft = configByDriver[driver] ?? EMPTY_CONFIG_DRAFT;
+   const manualAgentId = typeof configDraft.agentId === "string" ? configDraft.agentId.trim() : "";
+   const acpSelectionError =
+-    selectedAcp !== null || (isManualAcpConfiguration && manualAgentId.length > 0)
++    selectedAcp !== null ||
++    (isManualAcpConfiguration &&
++      (configDraft.launchMode === "custom"
++        ? typeof configDraft.commandPath === "string" && configDraft.commandPath.trim().length > 0
++        : manualAgentId.length > 0))
+       ? null
+       : "Select an ACP or configure one manually.";
+   const wizardStepSummaries = isAcpRegistry
+@@ -436,7 +440,8 @@ export function AddProviderInstanceDialog({
+                         <div>
+                           <h3 className="text-sm font-medium text-foreground">Enter manually</h3>
+                           <p className="mt-0.5 text-xs text-muted-foreground">
+-                            Enter an official registry ID and any local executable or auth override.
++                            Choose registry mode with an official agent ID, or custom mode with your
++                            own executable and arguments.
+                           </p>
+                         </div>
+                         <Button
 diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
-index 4a50af16cef52e813d3d58a23e0c67f41692a746..267169b4e5ed54f7d33fc97471c053989248e503 100644
+index 4a50af16ce..267169b4e5 100644
 --- a/apps/web/src/components/settings/ConnectionsSettings.tsx
 +++ b/apps/web/src/components/settings/ConnectionsSettings.tsx
 @@ -1989,6 +1989,7 @@ export function ConnectionsSettings() {
@@ -2613,8 +3339,145 @@ index 4a50af16cef52e813d3d58a23e0c67f41692a746..267169b4e5ed54f7d33fc97471c05398
                  {renderEndpointRows("endpoint-rail")}
                  {renderTailscaleRow()}
                  {renderWslRow()}
+diff --git a/apps/web/src/components/settings/ProviderInstanceCard.tsx b/apps/web/src/components/settings/ProviderInstanceCard.tsx
+index 415ebb97c0..0979e5d426 100644
+--- a/apps/web/src/components/settings/ProviderInstanceCard.tsx
++++ b/apps/web/src/components/settings/ProviderInstanceCard.tsx
+@@ -717,8 +717,16 @@ export function ProviderInstanceCard({
+       driverKind={driverKind ?? instance.driver}
+       displayName={displayName}
+       accentColor={accentColor}
+-      acpRegistryAgentId={readConfigString(instance.config, "agentId") ?? undefined}
+-      acpRegistryIconUrl={readConfigString(instance.config, "registryIconUrl") ?? undefined}
++      acpRegistryAgentId={
++        readConfigString(instance.config, "launchMode") === "custom"
++          ? undefined
++          : (readConfigString(instance.config, "agentId") ?? undefined)
++      }
++      acpRegistryIconUrl={
++        readConfigString(instance.config, "launchMode") === "custom"
++          ? undefined
++          : (readConfigString(instance.config, "registryIconUrl") ?? undefined)
++      }
+       showBadge={Boolean(accentColor)}
+       className="size-5"
+       iconClassName="size-4 text-foreground/80"
+diff --git a/apps/web/src/components/settings/ProviderSettingsForm.test.ts b/apps/web/src/components/settings/ProviderSettingsForm.test.ts
+index 5737e47f2a..48493c2a03 100644
+--- a/apps/web/src/components/settings/ProviderSettingsForm.test.ts
++++ b/apps/web/src/components/settings/ProviderSettingsForm.test.ts
+@@ -57,12 +57,29 @@ describe("ProviderSettingsForm helpers", () => {
+     expect(acpRegistry).toBeDefined();
+     expect(acpRegistry?.hasDefaultInstance).toBe(false);
+     expect(deriveProviderSettingsFields(acpRegistry!).map((field) => field.key)).toEqual([
++      "launchMode",
+       "agentId",
+       "commandPath",
++      "args",
++      "env",
+       "authMethodId",
+     ]);
+   });
+ 
++  it("stores validated custom arguments and environment as JSON values", () => {
++    const definition = DRIVER_OPTION_BY_VALUE[ProviderDriverKind.make("acpRegistry")]!;
++    const fields = deriveProviderSettingsFields(definition);
++    const args = fields.find((field) => field.key === "args")!;
++    const env = fields.find((field) => field.key === "env")!;
++    expect(nextProviderConfigWithFieldValue({}, args, '["acp", "with spaces", ""]')).toEqual({
++      args: ["acp", "with spaces", ""],
++    });
++    expect(nextProviderConfigWithFieldValue({}, env, '{"PROFILE":"existing"}')).toEqual({
++      env: { PROFILE: "existing" },
++    });
++    expect(nextProviderConfigWithFieldValue({}, args, "[1]")).toEqual({ args: "[1]" });
++  });
++
+   it("derives a select control with its choices for the Antigravity sign-in method", () => {
+     const antigravity = DRIVER_OPTION_BY_VALUE[ProviderDriverKind.make("antigravity")];
+     expect(antigravity).toBeDefined();
+diff --git a/apps/web/src/components/settings/ProviderSettingsForm.tsx b/apps/web/src/components/settings/ProviderSettingsForm.tsx
+index 94372b97c8..4bf4b55d1a 100644
+--- a/apps/web/src/components/settings/ProviderSettingsForm.tsx
++++ b/apps/web/src/components/settings/ProviderSettingsForm.tsx
+@@ -29,6 +29,7 @@ export interface ProviderSettingsFieldModel {
+   readonly defaultBooleanValue?: boolean | undefined;
+   /** Choices for a `select` control. The first entry is the default. */
+   readonly options?: ReadonlyArray<ProviderSettingsFormOption> | undefined;
++  readonly decodeJson?: ((value: string) => Option.Option<unknown>) | undefined;
+ }
+ 
+ function titleizeFieldKey(key: string): string {
+@@ -108,6 +109,13 @@ export function deriveProviderSettingsFields(
+             ? { placeholder: formAnnotation.placeholder }
+             : {}),
+           clearWhenEmpty: formAnnotation.clearWhenEmpty ?? "omit",
++          ...(formAnnotation.control === "json"
++            ? {
++                decodeJson: Schema.decodeUnknownOption(
++                  Schema.fromJsonString(fieldSchema as Schema.Decoder<unknown>),
++                ),
++              }
++            : {}),
+           ...(formAnnotation.control === "switch"
+             ? { defaultBooleanValue: readFieldBooleanDefault(fieldSchema) }
+             : {}),
+@@ -122,7 +130,7 @@ export function deriveProviderSettingsFields(
+ function readProviderConfigString(config: unknown, key: string): string {
+   if (config === null || typeof config !== "object") return "";
+   const value = (config as Record<string, unknown>)[key];
+-  return typeof value === "string" ? value : "";
++  return typeof value === "string" ? value : value === undefined ? "" : JSON.stringify(value);
+ }
+ 
+ function readProviderConfigBoolean(config: unknown, key: string, defaultValue = false): boolean {
+@@ -153,7 +161,8 @@ export function nextProviderConfigWithFieldValue(
+   if (field.clearWhenEmpty === "omit" && trimmed.length === 0) {
+     delete base[field.key];
+   } else {
+-    base[field.key] = value;
++    const decoded = field.decodeJson?.(value);
++    base[field.key] = decoded && Option.isSome(decoded) ? decoded.value : value;
+   }
+   return Object.keys(base).length > 0 ? base : undefined;
+ }
+@@ -268,7 +277,7 @@ function ProviderSettingsFieldRow({
+           className="w-full max-w-full @min-[32rem]/settings-row:w-56"
+           onChange={onChange}
+         />
+-      ) : field.control === "textarea" ? (
++      ) : field.control === "textarea" || field.control === "json" ? (
+         <Textarea
+           id={inputId}
+           aria-describedby={descriptionId}
+@@ -347,7 +356,7 @@ function ProviderSettingsFieldRow({
+     );
+   }
+ 
+-  if (field.control === "textarea") {
++  if (field.control === "textarea" || field.control === "json") {
+     return (
+       <FieldFrame variant={variant}>
+         <label htmlFor={inputId} className={cn(variant === "card" && "block")}>
+diff --git a/apps/web/src/components/settings/ProviderSettingsPanel.tsx b/apps/web/src/components/settings/ProviderSettingsPanel.tsx
+index 41fd9efb5d..83b7a244c2 100644
+--- a/apps/web/src/components/settings/ProviderSettingsPanel.tsx
++++ b/apps/web/src/components/settings/ProviderSettingsPanel.tsx
+@@ -921,7 +921,11 @@ export function EnvironmentProviderSettings({
+       return;
+     }
+ 
+-    if (row.driver !== ProviderDriverKind.make("acpRegistry")) return;
++    if (
++      row.driver !== ProviderDriverKind.make("acpRegistry") ||
++      providerConfigString(row.instance.config, "launchMode") === "custom"
++    )
++      return;
+     const agentId = providerConfigString(row.instance.config, "agentId");
+     if (agentId === null) return;
+ 
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index ae55a327d1631e7405c4bd3f750325728bd499a7..78deb3d0e96d9bc2b2e832520caf6d510fc24d67 100644
+index ae55a327d1..78deb3d0e9 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
 @@ -798,6 +798,14 @@ export const SETTINGS_SEARCH_ITEMS = [
@@ -2634,7 +3497,7 @@ index ae55a327d1631e7405c4bd3f750325728bd499a7..78deb3d0e96d9bc2b2e832520caf6d51
      title: "Tailscale HTTPS",
 diff --git a/apps/web/src/lib/composerInputFocus.test.ts b/apps/web/src/lib/composerInputFocus.test.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..eaff6c14934e65f06e873b47779704f3b7c92717
+index 0000000000..eaff6c1493
 --- /dev/null
 +++ b/apps/web/src/lib/composerInputFocus.test.ts
 @@ -0,0 +1,92 @@
@@ -2732,7 +3595,7 @@ index 0000000000000000000000000000000000000000..eaff6c14934e65f06e873b47779704f3
 +});
 diff --git a/apps/web/src/lib/composerInputFocus.ts b/apps/web/src/lib/composerInputFocus.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..42376299c4c83a404a2b6194dcf56394f39fabe5
+index 0000000000..42376299c4
 --- /dev/null
 +++ b/apps/web/src/lib/composerInputFocus.ts
 @@ -0,0 +1,83 @@
@@ -2820,7 +3683,7 @@ index 0000000000000000000000000000000000000000..42376299c4c83a404a2b6194dcf56394
 +  return text.length > 0 ? text : null;
 +}
 diff --git a/apps/web/src/state/desktopNetworkAccess.test.ts b/apps/web/src/state/desktopNetworkAccess.test.ts
-index 0dde5f7d7dc8dd5c49608fb73179534f6e250c25..38e5ceaa7cba173507ed39ec1e4150bef350309d 100644
+index 0dde5f7d7d..38e5ceaa7c 100644
 --- a/apps/web/src/state/desktopNetworkAccess.test.ts
 +++ b/apps/web/src/state/desktopNetworkAccess.test.ts
 @@ -10,6 +10,7 @@ const serverExposureState: DesktopServerExposureState = {
@@ -2833,7 +3696,7 @@ index 0dde5f7d7dc8dd5c49608fb73179534f6e250c25..38e5ceaa7cba173507ed39ec1e4150be
  };
 diff --git a/apps/web/src/workspaceBasenameResolution.test.ts b/apps/web/src/workspaceBasenameResolution.test.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..0eb789aaef680f0ed3820a2fdf010296a9833fa4
+index 0000000000..0eb789aaef
 --- /dev/null
 +++ b/apps/web/src/workspaceBasenameResolution.test.ts
 @@ -0,0 +1,30 @@
@@ -2869,7 +3732,7 @@ index 0000000000000000000000000000000000000000..0eb789aaef680f0ed3820a2fdf010296
 +});
 diff --git a/apps/web/src/workspaceBasenameResolution.ts b/apps/web/src/workspaceBasenameResolution.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..671b6872b6916ed40198eb60d2a4647ff7376226
+index 0000000000..671b6872b6
 --- /dev/null
 +++ b/apps/web/src/workspaceBasenameResolution.ts
 @@ -0,0 +1,18 @@
@@ -2892,7 +3755,7 @@ index 0000000000000000000000000000000000000000..671b6872b6916ed40198eb60d2a4647f
 +  return result;
 +}
 diff --git a/docs/user/devices.md b/docs/user/devices.md
-index a87770853a2d54d6db83b27bb8157a418f370147..fabe4ae2b4bca4e35c454ba4181c3d5174436cf2 100644
+index a87770853a..fabe4ae2b4 100644
 --- a/docs/user/devices.md
 +++ b/docs/user/devices.md
 @@ -46,6 +46,11 @@ to the other screen switches the live display and touch input to that screen.
@@ -2908,7 +3771,7 @@ index a87770853a2d54d6db83b27bb8157a418f370147..fabe4ae2b4bca4e35c454ba4181c3d51
  ## Tools
  
 diff --git a/docs/user/mobile-notifications.md b/docs/user/mobile-notifications.md
-index 9c5e30ef760746bc31cdc190392305eaedf13a80..d53c8f97029ce4d7abeb1c1103c30822a6d182a3 100644
+index 9c5e30ef76..d53c8f9702 100644
 --- a/docs/user/mobile-notifications.md
 +++ b/docs/user/mobile-notifications.md
 @@ -8,4 +8,4 @@ Ordinary alerts stay quiet while the mobile app is in the foreground. Ongoing ac
@@ -2917,8 +3780,47 @@ index 9c5e30ef760746bc31cdc190392305eaedf13a80..d53c8f97029ce4d7abeb1c1103c30822
  
 -Notification permission and Android notification channels are controlled in system Settings. Background delivery requires T3 Connect; a direct or Tailscale connection alone does not enable push notifications. The mobile app does not need to maintain a connection to your environment. Force-stopping the Android app in system Settings prevents push delivery until you open it again.
 +Notification permission and Android notification channels are controlled in system Settings. Android can also configure device-local notifications without a T3 Connect account from **Settings → Notifications**. This does not use a relay or require an account, but delivery still requires a local sender configured with the Firebase project; the mobile app does not send notifications itself. Without that sender, notifications are not delivered. A direct or Tailscale connection alone does not enable push notifications. Force-stopping the Android app in system Settings prevents push delivery until you open it again.
+diff --git a/docs/user/providers-acp.md b/docs/user/providers-acp.md
+index adf4e17af6..e6856a5127 100644
+--- a/docs/user/providers-acp.md
++++ b/docs/user/providers-acp.md
+@@ -1,4 +1,4 @@
+-# ACP Registry
++# ACP agents
+ 
+ T3 Code can run coding agents from the official
+ [ACP Registry](https://agentclientprotocol.com/get-started/registry). Registry agents bring their
+@@ -23,6 +23,28 @@ work through the same generic integration.
+ Search only shows agents that can run on the connected server. Registry agents are third-party
+ code; review an agent's source and license before adding it.
+ 
++## Run a custom command
++
++For an agent outside the Registry, choose **Configure manually** when adding an ACP provider,
++then set **Launch mode** to **Custom command**. Set the executable and enter its arguments as a
++JSON array. On mobile, use **Settings → Provider accounts → Custom ACP command**. Existing ACP
++instances can switch between custom and registry mode without changing their instance ID.
++
++For Maki installed through Nix, use executable `nix` and these arguments:
++
++```json
++["run", "github:tontinton/maki", "--", "acp"]
++```
++
++Custom commands use the agent's existing configuration and credentials on the server. T3 Code
++inherits its server environment, applies the instance's environment settings, then applies any
++**Custom environment** JSON overrides. It does not add trust flags or start a login automatically
++during discovery. Global CLI flags belong before `acp` in the argument array.
++
++Custom mode skips registry downloads and installation. Install the executable yourself and use
++an absolute path if it is not on the server's PATH. Registry mode still uses registry arguments
++and environment, even when you override its executable.
++
+ ## Where agents run
+ 
+ Registry agents always run on the machine that hosts your T3 Code server. That stays true when you
 diff --git a/packages/client-runtime/src/device/stream.test.ts b/packages/client-runtime/src/device/stream.test.ts
-index 7ea5aca27abfba9250c943758ba11a1c88eea324..26a8f4a13316d2f0a9b43fc154fd174d4ad92ada 100644
+index 7ea5aca27a..26a8f4a133 100644
 --- a/packages/client-runtime/src/device/stream.test.ts
 +++ b/packages/client-runtime/src/device/stream.test.ts
 @@ -158,6 +158,110 @@ describe("native device stream transport", () => {
@@ -3077,7 +3979,7 @@ index 7ea5aca27abfba9250c943758ba11a1c88eea324..26a8f4a13316d2f0a9b43fc154fd174d
      expect(events.onStatus).toHaveBeenLastCalledWith("error", expect.stringContaining("No video"));
      expect(vi.getTimerCount()).toBe(0);
 diff --git a/packages/client-runtime/src/device/stream.ts b/packages/client-runtime/src/device/stream.ts
-index 6b1ff615887945564a4828ab2c3173eb3c144069..8e158e6e5e14d60674bf3c48d07fdd0aa830939d 100644
+index 6b1ff61588..8e158e6e5e 100644
 --- a/packages/client-runtime/src/device/stream.ts
 +++ b/packages/client-runtime/src/device/stream.ts
 @@ -273,6 +273,8 @@ export interface DeviceStreamClient {
@@ -3205,7 +4107,7 @@ index 6b1ff615887945564a4828ab2c3173eb3c144069..8e158e6e5e14d60674bf3c48d07fdd0a
        if (platform === "ios") {
          const name =
 diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
-index db2cc2a36cac32fa7271a51d05a7a671a7dd4c0e..17ffd1c48e17a543e5d55c15573aa95b99fe3eee 100644
+index db2cc2a36c..17ffd1c48e 100644
 --- a/packages/contracts/src/ipc.ts
 +++ b/packages/contracts/src/ipc.ts
 @@ -494,6 +494,7 @@ export interface DesktopServerExposureState {
@@ -3233,7 +4135,7 @@ index db2cc2a36cac32fa7271a51d05a7a671a7dd4c0e..17ffd1c48e17a543e5d55c15573aa95b
      readonly enabled: boolean;
      readonly port?: number;
 diff --git a/packages/contracts/src/remoteAccess.ts b/packages/contracts/src/remoteAccess.ts
-index e3de3c29e122fea00f09354d5e3a267817271632..a603f3361d206bb44893fb47d42d69782de84e7c 100644
+index e3de3c29e1..a603f3361d 100644
 --- a/packages/contracts/src/remoteAccess.ts
 +++ b/packages/contracts/src/remoteAccess.ts
 @@ -63,6 +63,8 @@ export const AdvertisedEndpoint = Schema.Struct({
@@ -3245,8 +4147,83 @@ index e3de3c29e122fea00f09354d5e3a267817271632..a603f3361d206bb44893fb47d42d6978
    description: Schema.optional(TrimmedNonEmptyString),
  });
  export type AdvertisedEndpoint = typeof AdvertisedEndpoint.Type;
+diff --git a/packages/contracts/src/settings.ts b/packages/contracts/src/settings.ts
+index 082459efc3..27f86d5bf5 100644
+--- a/packages/contracts/src/settings.ts
++++ b/packages/contracts/src/settings.ts
+@@ -532,7 +532,13 @@ const makeBinaryPathSetting = (fallback: string) =>
+     Schema.withDecodingDefault(Effect.succeed(fallback)),
+   );
+ 
+-export type ProviderSettingsFormControl = "text" | "password" | "textarea" | "switch" | "select";
++export type ProviderSettingsFormControl =
++  | "text"
++  | "password"
++  | "textarea"
++  | "switch"
++  | "select"
++  | "json";
+ 
+ export interface ProviderSettingsFormOption {
+   readonly value: string;
+@@ -875,6 +881,37 @@ export const AcpRegistrySettings = makeProviderSettingsSchema(
+       Schema.withDecodingDefault(Effect.succeed(true)),
+       Schema.annotateKey({ providerSettingsForm: { hidden: true } }),
+     ),
++    launchMode: Schema.Literals(["registry", "custom"]).pipe(
++      Schema.withDecodingDefault(Effect.succeed("registry")),
++      Schema.annotateKey({
++        title: "Launch mode",
++        providerSettingsForm: {
++          control: "select",
++          options: [
++            { value: "registry", label: "ACP Registry" },
++            { value: "custom", label: "Custom command" },
++          ],
++        },
++      }),
++    ),
++    args: Schema.Array(Schema.String).pipe(
++      Schema.withDecodingDefault(Effect.succeed([])),
++      Schema.annotateKey({
++        title: "Custom arguments",
++        description:
++          'JSON argument array, for example ["run", "github:tontinton/maki", "--", "acp"]. Used only in custom mode.',
++        providerSettingsForm: { control: "json", placeholder: "[]" },
++      }),
++    ),
++    env: Schema.Record(Schema.String, Schema.String).pipe(
++      Schema.withDecodingDefault(Effect.succeed({})),
++      Schema.annotateKey({
++        title: "Custom environment",
++        description:
++          "JSON environment overrides. Custom mode inherits the server environment and provider instance overrides.",
++        providerSettingsForm: { control: "json", placeholder: "{}" },
++      }),
++    ),
+     agentId: TrimmedString.pipe(
+       Schema.withDecodingDefault(Effect.succeed("")),
+       Schema.annotateKey({
+@@ -888,7 +925,7 @@ export const AcpRegistrySettings = makeProviderSettingsSchema(
+       Schema.annotateKey({
+         title: "Executable override",
+         description:
+-          "Optional local executable to use instead of installing the registry distribution. Registry arguments and environment are still applied.",
++          "Executable for custom mode, for example nix. In registry mode this overrides the executable but keeps registry arguments and environment.",
+         providerSettingsForm: { placeholder: "Registry default", clearWhenEmpty: "omit" },
+       }),
+     ),
+@@ -911,7 +948,7 @@ export const AcpRegistrySettings = makeProviderSettingsSchema(
+     ),
+   },
+   {
+-    order: ["agentId", "commandPath", "authMethodId"],
++    order: ["launchMode", "agentId", "commandPath", "args", "env", "authMethodId"],
+   },
+ );
+ export type AcpRegistrySettings = typeof AcpRegistrySettings.Type;
 diff --git a/packages/shared/src/advertisedEndpoint.ts b/packages/shared/src/advertisedEndpoint.ts
-index 314d8272c81652a35e593b7a1df7f4f7d63aa088..ef499b8fb3231b750e1c40437fee5da79d162d18 100644
+index 314d8272c8..ef499b8fb3 100644
 --- a/packages/shared/src/advertisedEndpoint.ts
 +++ b/packages/shared/src/advertisedEndpoint.ts
 @@ -18,6 +18,8 @@ export interface CreateAdvertisedEndpointInput {
