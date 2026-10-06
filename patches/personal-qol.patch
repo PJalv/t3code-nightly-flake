@@ -4243,3 +4243,88 @@ index 314d8272c8..ef499b8fb3 100644
      ...(input.description === undefined ? {} : { description: input.description }),
    };
  }
+diff --git a/apps/server/src/orchestration-v2/CheckpointService.test.ts b/apps/server/src/orchestration-v2/CheckpointService.test.ts
+index b03437700a..328cb64cba 100644
+--- a/apps/server/src/orchestration-v2/CheckpointService.test.ts
++++ b/apps/server/src/orchestration-v2/CheckpointService.test.ts
+@@ -17,6 +17,63 @@ import * as CheckpointStore from "../checkpointing/CheckpointStore.ts";
+ import * as CheckpointService from "./CheckpointService.ts";
+ import * as IdAllocator from "./IdAllocator.ts";
+ 
++it.effect("disables baseline and completion snapshots without invoking Git", () =>
++  Effect.gen(function* () {
++    const previous = process.env.T3_DISABLE_CHECKPOINTS;
++    process.env.T3_DISABLE_CHECKPOINTS = "1";
++    try {
++      const scope: OrchestrationV2CheckpointScope = {
++        id: CheckpointScopeId.make("scope:disabled"),
++        threadId: ThreadId.make("thread:disabled"),
++        runId: RunId.make("run:disabled"),
++        nodeId: NodeId.make("node:disabled"),
++        parentScopeId: null,
++        providerThreadId: ProviderThreadId.make("provider:disabled"),
++        kind: "root_run",
++        ordinalWithinParent: 0,
++        advancesAppRunCount: true,
++        cwd: "/repo",
++        createdAt: DateTime.makeUnsafe("2026-07-28T00:00:00.000Z"),
++      };
++      const testLayer = CheckpointService.layer.pipe(
++        Layer.provide(
++          Layer.mergeAll(
++            IdAllocator.layer,
++            Layer.mock(CheckpointStore.CheckpointStore)({
++              isGitRepository: () => Effect.die("disabled checkpoints must not invoke Git"),
++              hasCheckpointRef: () => Effect.die("disabled checkpoints must not look up refs"),
++              captureCheckpoint: () => Effect.die("disabled checkpoints must not capture"),
++              diffCheckpoints: () => Effect.die("disabled checkpoints must not diff"),
++            }),
++          ),
++        ),
++      );
++      yield* Effect.gen(function* () {
++        const checkpoints = yield* CheckpointService.CheckpointServiceV2;
++        yield* checkpoints.captureBaseline({ scope, ordinalWithinScope: 0 });
++        const baseline = yield* checkpoints.materializeBaselineCheckpoint({
++          scope,
++          ordinalWithinScope: 0,
++        });
++        const completion = yield* checkpoints.capture({
++          scope,
++          ordinalWithinScope: 1,
++          runId: scope.runId!,
++          nodeId: scope.nodeId!,
++          appRunOrdinal: 1,
++          capturedAt: scope.createdAt,
++        });
++        assert.equal(baseline.status, "missing");
++        assert.equal(completion.status, "missing");
++        assert.deepEqual(completion.files, []);
++      }).pipe(Effect.provide(testLayer));
++    } finally {
++      if (previous === undefined) delete process.env.T3_DISABLE_CHECKPOINTS;
++      else process.env.T3_DISABLE_CHECKPOINTS = previous;
++    }
++  }),
++);
++
+ it.effect.each([false, true, "interrupt"] as const)(
+   "materializes baseline, lookup fails=%s",
+   (lookupFails) => {
+diff --git a/apps/server/src/orchestration-v2/CheckpointService.ts b/apps/server/src/orchestration-v2/CheckpointService.ts
+index 1471de7503..9046ff027e 100644
+--- a/apps/server/src/orchestration-v2/CheckpointService.ts
++++ b/apps/server/src/orchestration-v2/CheckpointService.ts
+@@ -273,8 +273,11 @@ export const layer: Layer.Layer<
+     const withWorkspaceLock = <A, E, R>(cwd: string, effect: Effect.Effect<A, E, R>) =>
+       Effect.flatMap(getWorkspaceSemaphore(cwd), (semaphore) => semaphore.withPermits(1)(effect));
+ 
++    // Keep run completion and provider-native diffs working without writing workspace snapshots.
+     const isGitCheckpointable = (cwd: string) =>
+-      checkpointStore.isGitRepository(cwd).pipe(Effect.orElseSucceed(() => false));
++      process.env.T3_DISABLE_CHECKPOINTS === "1"
++        ? Effect.succeed(false)
++        : checkpointStore.isGitRepository(cwd).pipe(Effect.orElseSucceed(() => false));
+ 
+     const ensureScope: CheckpointServiceV2Shape["ensureScope"] = (scope) => Effect.succeed(scope);
+ 

@@ -106,6 +106,7 @@ buildNpmPackage {
 
     makeWrapper ${nodejs_24}/bin/node "$out/bin/t3" \
       --add-flags "$out/lib/node_modules/t3/${binPath}" \
+      --set T3_DISABLE_CHECKPOINTS "1" \
       --set ANDROID_HOME "${androidHome}" \
       --set ANDROID_SDK_ROOT "${androidHome}" \
       --set JAVA_HOME "${androidJdk.home}" \
@@ -115,6 +116,7 @@ buildNpmPackage {
     makeWrapper ${nodejs_24}/bin/node "$out/bin/t3code-server" \
       --add-flags "$out/lib/node_modules/t3/${binPath}" \
       --add-flags "serve" \
+      --set T3_DISABLE_CHECKPOINTS "1" \
       --set ANDROID_HOME "${androidHome}" \
       --set ANDROID_SDK_ROOT "${androidHome}" \
       --set JAVA_HOME "${androidJdk.home}" \

@@ -152,6 +152,7 @@ runCommand "${pname}-${version}"
 
     makeWrapper ${sourceAppimageContents}/${pname} "$out/bin/${pname}" \
       --add-flags "--ignore-certificate-errors" \
+      --set T3_DISABLE_CHECKPOINTS "1" \
       --set APPDIR "${sourceAppimageContents}" \
       --set GSETTINGS_SCHEMA_DIR "${sourceAppimageContents}/usr/share/glib-2.0/schemas" \
       --run 'if ! ${pkgs.util-linux}/bin/unshare -Ur true 2>/dev/null; then set -- --no-sandbox "$@"; fi' \
