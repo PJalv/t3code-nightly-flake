@@ -1,8 +1,8 @@
 diff --git a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
-index 07644a8af4..81a4a7e28d 100644
+index 3b282c1c1..b870795a6 100644
 --- a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
 +++ b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
-@@ -46,6 +46,7 @@ const serverExposureLayer = Layer.succeed(DesktopServerExposure.DesktopServerExp
+@@ -48,6 +48,7 @@ const layerServerExposure = Layer.succeed(DesktopServerExposure.DesktopServerExp
    }),
    configureFromSettings: () => Effect.die("unexpected configureFromSettings"),
    setMode: () => Effect.die("unexpected setMode"),
@@ -11,10 +11,10 @@ index 07644a8af4..81a4a7e28d 100644
    getAdvertisedEndpoints: Effect.succeed([]),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 diff --git a/apps/desktop/src/backend/DesktopServerExposure.test.ts b/apps/desktop/src/backend/DesktopServerExposure.test.ts
-index 0914167cff..c36273d3d8 100644
+index b4d0a0626..615a9caa5 100644
 --- a/apps/desktop/src/backend/DesktopServerExposure.test.ts
 +++ b/apps/desktop/src/backend/DesktopServerExposure.test.ts
-@@ -38,6 +38,30 @@ const tailnetNetworkInterfaces: DesktopNetworkInterfaces.NetworkInterfaces = {
+@@ -40,6 +40,30 @@ const tailnetNetworkInterfaces: DesktopNetworkInterfaces.NetworkInterfaces = {
    ],
  };
  
@@ -42,10 +42,10 @@ index 0914167cff..c36273d3d8 100644
 +  ],
 +};
 +
- function mockSpawnerLayer(statusJson = "{}") {
+ function layerMockSpawner(statusJson = "{}") {
    return Layer.succeed(
      ChildProcessSpawner.ChildProcessSpawner,
-@@ -195,6 +219,7 @@ describe("DesktopServerExposure", () => {
+@@ -197,6 +221,7 @@ describe("DesktopServerExposure", () => {
            mode: "network-accessible",
            endpointUrl: "http://192.168.1.20:4173",
            advertisedHost: "192.168.1.20",
@@ -53,7 +53,7 @@ index 0914167cff..c36273d3d8 100644
            tailscaleServeEnabled: false,
            tailscaleServePort: 443,
          });
-@@ -209,6 +234,159 @@ describe("DesktopServerExposure", () => {
+@@ -211,6 +236,159 @@ describe("DesktopServerExposure", () => {
      ),
    );
  
@@ -213,7 +213,7 @@ index 0914167cff..c36273d3d8 100644
    it.effect("persists tailscale serve preferences atomically and reports no-op updates", () =>
      withHarness(
        emptyNetworkInterfaces,
-@@ -252,6 +430,7 @@ describe("DesktopServerExposure", () => {
+@@ -254,6 +432,7 @@ describe("DesktopServerExposure", () => {
        load: Effect.succeed(DesktopAppSettings.DEFAULT_DESKTOP_SETTINGS),
        setMainWindowBounds: () => Effect.die("unexpected main window bounds update"),
        setServerExposureMode: () => Effect.fail(settingsFailure),
@@ -221,7 +221,7 @@ index 0914167cff..c36273d3d8 100644
        setTailscaleServe: () => Effect.fail(settingsFailure),
        setUpdateChannel: () => Effect.die("unexpected update channel change"),
        setWslBackendEnabled: () => Effect.die("unexpected WSL backend toggle"),
-@@ -426,6 +605,7 @@ describe("DesktopServerExposure", () => {
+@@ -477,6 +656,7 @@ describe("DesktopServerExposure", () => {
            {
              id: "desktop-lan:http://192.168.1.20:3773",
              label: "Local network",
@@ -230,10 +230,10 @@ index 0914167cff..c36273d3d8 100644
                id: "desktop-core",
                label: "Desktop",
 diff --git a/apps/desktop/src/backend/DesktopServerExposure.ts b/apps/desktop/src/backend/DesktopServerExposure.ts
-index a04f4ecbc1..265e1d2320 100644
+index e5bd11035..c7d88c1cf 100644
 --- a/apps/desktop/src/backend/DesktopServerExposure.ts
 +++ b/apps/desktop/src/backend/DesktopServerExposure.ts
-@@ -43,6 +43,9 @@ interface DesktopAdvertisedEndpointInput {
+@@ -44,6 +44,9 @@ interface DesktopAdvertisedEndpointInput {
    readonly port: number;
    readonly exposure: ResolvedDesktopServerExposure;
    readonly customHttpsEndpointUrls?: readonly string[];
@@ -243,7 +243,7 @@ index a04f4ecbc1..265e1d2320 100644
  }
  
  const DESKTOP_CORE_ENDPOINT_PROVIDER: AdvertisedEndpointProvider = {
-@@ -69,6 +72,43 @@ const isUsableLanIpv4Address = (address: string): boolean =>
+@@ -70,6 +73,43 @@ const isUsableLanIpv4Address = (address: string): boolean =>
    !address.startsWith("169.254.") &&
    !isTailscaleIpv4Address(address);
  
@@ -287,7 +287,7 @@ index a04f4ecbc1..265e1d2320 100644
  const isHttpsEndpointUrl = (value: string): boolean => {
    try {
      return new URL(value).protocol === "https:";
-@@ -80,24 +120,31 @@ const isHttpsEndpointUrl = (value: string): boolean => {
+@@ -81,24 +121,31 @@ const isHttpsEndpointUrl = (value: string): boolean => {
  const resolveLanAdvertisedHost = (
    networkInterfaces: DesktopNetworkInterfaces.NetworkInterfaces,
    explicitHost: string | undefined,
@@ -327,7 +327,7 @@ index a04f4ecbc1..265e1d2320 100644
  };
  
  const resolveDesktopServerExposure = (input: {
-@@ -105,6 +152,7 @@ const resolveDesktopServerExposure = (input: {
+@@ -106,6 +153,7 @@ const resolveDesktopServerExposure = (input: {
    readonly port: number;
    readonly networkInterfaces: DesktopNetworkInterfaces.NetworkInterfaces;
    readonly advertisedHostOverride?: string;
@@ -335,7 +335,7 @@ index a04f4ecbc1..265e1d2320 100644
  }): ResolvedDesktopServerExposure => {
    const localHttpUrl = `http://${DESKTOP_LOOPBACK_HOST}:${input.port}`;
    const localWsUrl = `ws://${DESKTOP_LOOPBACK_HOST}:${input.port}`;
-@@ -123,6 +171,7 @@ const resolveDesktopServerExposure = (input: {
+@@ -124,6 +172,7 @@ const resolveDesktopServerExposure = (input: {
    const advertisedHost = resolveLanAdvertisedHost(
      input.networkInterfaces,
      input.advertisedHostOverride,
@@ -343,7 +343,7 @@ index a04f4ecbc1..265e1d2320 100644
    );
  
    return {
-@@ -168,6 +217,19 @@ const resolveDesktopCoreAdvertisedEndpoints = (
+@@ -169,6 +218,19 @@ const resolveDesktopCoreAdvertisedEndpoints = (
    ];
  
    if (input.exposure.endpointUrl) {
@@ -363,7 +363,7 @@ index a04f4ecbc1..265e1d2320 100644
      endpoints.push(
        createDesktopEndpoint({
          id: `desktop-lan:${input.exposure.endpointUrl}`,
-@@ -176,9 +238,24 @@ const resolveDesktopCoreAdvertisedEndpoints = (
+@@ -177,9 +239,24 @@ const resolveDesktopCoreAdvertisedEndpoints = (
          reachability: "lan",
          status: "available",
          isDefault: true,
@@ -388,7 +388,7 @@ index a04f4ecbc1..265e1d2320 100644
    }
  
    for (const customEndpointUrl of input.customHttpsEndpointUrls ?? []) {
-@@ -247,10 +324,22 @@ export const DesktopServerExposureSetModeError = Schema.Union([
+@@ -248,10 +325,22 @@ export const DesktopServerExposureSetModeError = Schema.Union([
  ]);
  export type DesktopServerExposureSetModeError = typeof DesktopServerExposureSetModeError.Type;
  
@@ -411,7 +411,7 @@ index a04f4ecbc1..265e1d2320 100644
  ]);
  export type DesktopServerExposureError = typeof DesktopServerExposureError.Type;
  
-@@ -278,6 +367,12 @@ export class DesktopServerExposure extends Context.Service<
+@@ -279,6 +368,12 @@ export class DesktopServerExposure extends Context.Service<
      readonly setMode: (
        mode: DesktopServerExposureMode,
      ) => Effect.Effect<DesktopServerExposureChange, DesktopServerExposureSetModeError>;
@@ -424,7 +424,7 @@ index a04f4ecbc1..265e1d2320 100644
      readonly setTailscaleServeEnabled: (input: {
        readonly enabled: boolean;
        readonly port?: number;
-@@ -296,6 +391,7 @@ interface RuntimeState {
+@@ -297,6 +392,7 @@ interface RuntimeState {
    readonly httpBaseUrl: URL;
    readonly endpointUrl: Option.Option<string>;
    readonly advertisedHost: Option.Option<string>;
@@ -432,7 +432,7 @@ index a04f4ecbc1..265e1d2320 100644
    readonly tailscaleServeEnabled: boolean;
    readonly tailscaleServePort: number;
  }
-@@ -321,6 +417,7 @@ const toContractState = (state: RuntimeState): DesktopServerExposureState => ({
+@@ -322,6 +418,7 @@ const toContractState = (state: RuntimeState): DesktopServerExposureState => ({
    mode: state.mode,
    endpointUrl: Option.getOrNull(state.endpointUrl),
    advertisedHost: Option.getOrNull(state.advertisedHost),
@@ -440,7 +440,7 @@ index a04f4ecbc1..265e1d2320 100644
    tailscaleServeEnabled: state.tailscaleServeEnabled,
    tailscaleServePort: state.tailscaleServePort,
  });
-@@ -358,6 +455,7 @@ function runtimeStateFromResolvedExposure(input: {
+@@ -359,6 +456,7 @@ function runtimeStateFromResolvedExposure(input: {
      httpBaseUrl: new URL(input.exposure.localHttpUrl),
      endpointUrl: Option.fromNullishOr(input.exposure.endpointUrl),
      advertisedHost: Option.fromNullishOr(input.exposure.advertisedHost),
@@ -448,7 +448,7 @@ index a04f4ecbc1..265e1d2320 100644
      tailscaleServeEnabled: input.settings.tailscaleServeEnabled,
      tailscaleServePort: input.settings.tailscaleServePort,
    };
-@@ -376,6 +474,7 @@ function resolveRuntimeState(input: {
+@@ -377,6 +475,7 @@ function resolveRuntimeState(input: {
      port: input.port,
      networkInterfaces: input.networkInterfaces,
      ...(advertisedHostOverride ? { advertisedHostOverride } : {}),
@@ -456,8 +456,8 @@ index a04f4ecbc1..265e1d2320 100644
    });
    const unavailable =
      input.requestedMode === "network-accessible" &&
-@@ -529,13 +628,68 @@ export const make = Effect.gen(function* () {
-     },
+@@ -535,13 +634,68 @@ export const make = Effect.gen(function* () {
+     changePermit.withPermit,
    );
  
 +  const setPreferredLanInterfaceName = Effect.fn(
@@ -526,7 +526,7 @@ index a04f4ecbc1..265e1d2320 100644
      });
  
      // Don't spawn the Tailscale CLI when the user hasn't opted into any
-@@ -563,6 +717,7 @@ export const make = Effect.gen(function* () {
+@@ -569,6 +723,7 @@ export const make = Effect.gen(function* () {
      backendConfig,
      configureFromSettings,
      setMode,
@@ -535,7 +535,7 @@ index a04f4ecbc1..265e1d2320 100644
      getAdvertisedEndpoints,
    });
 diff --git a/apps/desktop/src/ipc/DesktopIpcHandlers.ts b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
-index 4b43cd0eee..d3a337fdef 100644
+index a16535c4a..02bd6a6ee 100644
 --- a/apps/desktop/src/ipc/DesktopIpcHandlers.ts
 +++ b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
 @@ -16,6 +16,7 @@ import {
@@ -546,7 +546,7 @@ index 4b43cd0eee..d3a337fdef 100644
    setServerExposureMode,
    setTailscaleServeEnabled,
  } from "./methods/serverExposure.ts";
-@@ -118,6 +119,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
+@@ -124,6 +125,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
  
    yield* ipc.handle(getServerExposureState);
    yield* ipc.handle(setServerExposureMode);
@@ -555,7 +555,7 @@ index 4b43cd0eee..d3a337fdef 100644
    yield* ipc.handle(getAdvertisedEndpoints);
  
 diff --git a/apps/desktop/src/ipc/channels.ts b/apps/desktop/src/ipc/channels.ts
-index 151cd633d0..c5e4a02c3c 100644
+index 9ae71cab1..893d301aa 100644
 --- a/apps/desktop/src/ipc/channels.ts
 +++ b/apps/desktop/src/ipc/channels.ts
 @@ -60,6 +60,7 @@ export const ISSUE_SSH_WEBSOCKET_TOKEN_CHANNEL = "desktop:issue-ssh-websocket-to
@@ -567,7 +567,7 @@ index 151cd633d0..c5e4a02c3c 100644
  export const SET_TAILSCALE_SERVE_ENABLED_CHANNEL = "desktop:set-tailscale-serve-enabled";
  export const GET_ADVERTISED_ENDPOINTS_CHANNEL = "desktop:get-advertised-endpoints";
 diff --git a/apps/desktop/src/ipc/methods/serverExposure.ts b/apps/desktop/src/ipc/methods/serverExposure.ts
-index 9a9ce76897..b69c1e76ca 100644
+index 9a9ce7689..b69c1e76c 100644
 --- a/apps/desktop/src/ipc/methods/serverExposure.ts
 +++ b/apps/desktop/src/ipc/methods/serverExposure.ts
 @@ -41,6 +41,19 @@ export const setServerExposureMode = DesktopIpc.makeIpcMethod({
@@ -591,10 +591,10 @@ index 9a9ce76897..b69c1e76ca 100644
    channel: IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL,
    payload: SetTailscaleServeEnabledInput,
 diff --git a/apps/desktop/src/preload.ts b/apps/desktop/src/preload.ts
-index e84a5821e9..99d7dd2979 100644
+index a97f224a1..536de518a 100644
 --- a/apps/desktop/src/preload.ts
 +++ b/apps/desktop/src/preload.ts
-@@ -164,6 +164,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
+@@ -177,6 +177,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
    getServerExposureState: () => ipcRenderer.invoke(IpcChannels.GET_SERVER_EXPOSURE_STATE_CHANNEL),
    setServerExposureMode: (mode) =>
      ipcRenderer.invoke(IpcChannels.SET_SERVER_EXPOSURE_MODE_CHANNEL, mode),
@@ -604,7 +604,7 @@ index e84a5821e9..99d7dd2979 100644
      ipcRenderer.invoke(IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL, input),
    getAdvertisedEndpoints: () => ipcRenderer.invoke(IpcChannels.GET_ADVERTISED_ENDPOINTS_CHANNEL),
 diff --git a/apps/desktop/src/settings/DesktopAppSettings.test.ts b/apps/desktop/src/settings/DesktopAppSettings.test.ts
-index 18813eb902..2531079a7f 100644
+index a98aa9607..666c0b1ab 100644
 --- a/apps/desktop/src/settings/DesktopAppSettings.test.ts
 +++ b/apps/desktop/src/settings/DesktopAppSettings.test.ts
 @@ -26,6 +26,7 @@ const DesktopSettingsPatch = Schema.Struct({
@@ -728,7 +728,7 @@ index 18813eb902..2531079a7f 100644
            tailscaleServePort: 443,
            updateChannel: "latest",
 diff --git a/apps/desktop/src/settings/DesktopAppSettings.ts b/apps/desktop/src/settings/DesktopAppSettings.ts
-index efd9fbfbfd..dc8dd8f8cc 100644
+index efd9fbfbf..dc8dd8f8c 100644
 --- a/apps/desktop/src/settings/DesktopAppSettings.ts
 +++ b/apps/desktop/src/settings/DesktopAppSettings.ts
 @@ -31,6 +31,13 @@ export interface DesktopSettings {
@@ -833,7 +833,7 @@ index efd9fbfbfd..dc8dd8f8cc 100644
          setUpdateChannel: (channel) => update((settings) => setUpdateChannel(settings, channel)),
          setWslBackendEnabled: (enabled) =>
 diff --git a/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts b/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
-index a8c0e0f79a..f45c0244b1 100644
+index a8c0e0f79..f45c0244b 100644
 --- a/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
 +++ b/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
 @@ -6,6 +6,7 @@ import { SNAP_SHOT_MODIFIERS, type SnapShotModifier } from "@t3tools/contracts";
@@ -861,7 +861,7 @@ index a8c0e0f79a..f45c0244b1 100644
      active = pressed;
    }, POLL_INTERVAL_MS);
 diff --git a/apps/desktop/src/snapShot/RegionSnapShotWorker.ts b/apps/desktop/src/snapShot/RegionSnapShotWorker.ts
-index fcc7b56259..24df9695f7 100644
+index fcc7b5625..24df9695f 100644
 --- a/apps/desktop/src/snapShot/RegionSnapShotWorker.ts
 +++ b/apps/desktop/src/snapShot/RegionSnapShotWorker.ts
 @@ -1,13 +1,14 @@
@@ -895,7 +895,7 @@ index fcc7b56259..24df9695f7 100644
      message: error instanceof Error ? error.message : "Windows window capture failed.",
    } satisfies RegionSnapShotResult),
 diff --git a/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts b/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts
-index 41c344bc2f..a3cab095c6 100644
+index 41c344bc2..a3cab095c 100644
 --- a/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts
 +++ b/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts
 @@ -2,12 +2,13 @@ import {
@@ -934,7 +934,7 @@ index 41c344bc2f..a3cab095c6 100644
  }
 diff --git a/apps/desktop/src/snapShot/WorkerIpc.test.ts b/apps/desktop/src/snapShot/WorkerIpc.test.ts
 new file mode 100644
-index 0000000000..3d186d9ec0
+index 000000000..3d186d9ec
 --- /dev/null
 +++ b/apps/desktop/src/snapShot/WorkerIpc.test.ts
 @@ -0,0 +1,63 @@
@@ -1003,7 +1003,7 @@ index 0000000000..3d186d9ec0
 +});
 diff --git a/apps/desktop/src/snapShot/WorkerIpc.ts b/apps/desktop/src/snapShot/WorkerIpc.ts
 new file mode 100644
-index 0000000000..f6309dcb8c
+index 000000000..f6309dcb8
 --- /dev/null
 +++ b/apps/desktop/src/snapShot/WorkerIpc.ts
 @@ -0,0 +1,47 @@
@@ -1055,7 +1055,7 @@ index 0000000000..f6309dcb8c
 +  }
 +}
 diff --git a/apps/desktop/src/updates/updatesTestHarness.ts b/apps/desktop/src/updates/updatesTestHarness.ts
-index 5455f16028..03f1908b38 100644
+index 9d4556af4..d7e8f77da 100644
 --- a/apps/desktop/src/updates/updatesTestHarness.ts
 +++ b/apps/desktop/src/updates/updatesTestHarness.ts
 @@ -182,6 +182,8 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
@@ -1068,10 +1068,10 @@ index 5455f16028..03f1908b38 100644
            setUpdateChannel: (channel) =>
              setUpdateChannelError
 diff --git a/apps/desktop/src/window/DesktopWindow.test.ts b/apps/desktop/src/window/DesktopWindow.test.ts
-index 1345c37bf6..726789d766 100644
+index cb374b810..0bdcac1cc 100644
 --- a/apps/desktop/src/window/DesktopWindow.test.ts
 +++ b/apps/desktop/src/window/DesktopWindow.test.ts
-@@ -178,6 +178,7 @@ const desktopServerExposureLayer = Layer.succeed(DesktopServerExposure.DesktopSe
+@@ -179,6 +179,7 @@ const layerDesktopServerExposure = Layer.succeed(DesktopServerExposure.DesktopSe
    }),
    configureFromSettings: () => Effect.die("unexpected configureFromSettings"),
    setMode: () => Effect.die("unexpected setMode"),
@@ -1079,7 +1079,7 @@ index 1345c37bf6..726789d766 100644
    setTailscaleServeEnabled: () => Effect.die("unexpected setTailscaleServeEnabled"),
    getAdvertisedEndpoints: Effect.die("unexpected getAdvertisedEndpoints"),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
-@@ -252,6 +253,7 @@ function makeTestLayer(input: {
+@@ -253,6 +254,7 @@ function layerTest(input: {
          return { settings: desktopSettings, changed };
        }),
      setServerExposureMode: () => Effect.die("unexpected server exposure update"),
@@ -1088,10 +1088,10 @@ index 1345c37bf6..726789d766 100644
      setUpdateChannel: () => Effect.die("unexpected update channel change"),
      setWslBackendEnabled: () => Effect.die("unexpected WSL backend toggle"),
 diff --git a/apps/desktop/src/wsl/DesktopWslBackend.test.ts b/apps/desktop/src/wsl/DesktopWslBackend.test.ts
-index c2daf35283..aa86bbd529 100644
+index 8afc1bdd9..4809f9fcf 100644
 --- a/apps/desktop/src/wsl/DesktopWslBackend.test.ts
 +++ b/apps/desktop/src/wsl/DesktopWslBackend.test.ts
-@@ -61,6 +61,7 @@ const serverExposureLayer = Layer.succeed(DesktopServerExposure.DesktopServerExp
+@@ -61,6 +61,7 @@ const layerServerExposure = Layer.succeed(DesktopServerExposure.DesktopServerExp
    }),
    configureFromSettings: () => Effect.die("unexpected configureFromSettings"),
    setMode: () => Effect.die("unexpected setMode"),
@@ -1101,7 +1101,7 @@ index c2daf35283..aa86bbd529 100644
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 diff --git a/apps/mobile/src/features/agent-awareness/localNotifications.test.ts b/apps/mobile/src/features/agent-awareness/localNotifications.test.ts
 new file mode 100644
-index 0000000000..3d1995e38b
+index 000000000..3d1995e38
 --- /dev/null
 +++ b/apps/mobile/src/features/agent-awareness/localNotifications.test.ts
 @@ -0,0 +1,94 @@
@@ -1201,7 +1201,7 @@ index 0000000000..3d1995e38b
 +});
 diff --git a/apps/mobile/src/features/agent-awareness/localNotifications.ts b/apps/mobile/src/features/agent-awareness/localNotifications.ts
 new file mode 100644
-index 0000000000..be0b724849
+index 000000000..be0b72484
 --- /dev/null
 +++ b/apps/mobile/src/features/agent-awareness/localNotifications.ts
 @@ -0,0 +1,87 @@
@@ -1293,7 +1293,7 @@ index 0000000000..be0b724849
 +  );
 +}
 diff --git a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
-index 7ed7ddc8ba..a7fdd88151 100644
+index 7ed7ddc8b..a7fdd8815 100644
 --- a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 +++ b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 @@ -3,6 +3,7 @@ import {
@@ -1313,7 +1313,7 @@ index 7ed7ddc8ba..a7fdd88151 100644
      pushTokenSubscription = null;
      appStateSubscription?.remove();
 diff --git a/apps/mobile/src/features/devices/device-stream.browser.test.ts b/apps/mobile/src/features/devices/device-stream.browser.test.ts
-index 5aeefdac02..135912b615 100644
+index 5aeefdac0..135912b61 100644
 --- a/apps/mobile/src/features/devices/device-stream.browser.test.ts
 +++ b/apps/mobile/src/features/devices/device-stream.browser.test.ts
 @@ -11,15 +11,22 @@ class Element extends EventTarget {
@@ -1382,7 +1382,7 @@ index 5aeefdac02..135912b615 100644
    const { elements, messages, sockets, configuration } = await setup();
    sockets[0]!.onopen?.();
 diff --git a/apps/mobile/src/features/devices/device-stream.browser.ts b/apps/mobile/src/features/devices/device-stream.browser.ts
-index 0b9e98a51b..95d0c9642d 100644
+index 0b9e98a51..95d0c9642 100644
 --- a/apps/mobile/src/features/devices/device-stream.browser.ts
 +++ b/apps/mobile/src/features/devices/device-stream.browser.ts
 @@ -179,9 +179,22 @@ export function start(configuration: DeviceStreamConfiguration) {
@@ -1409,10 +1409,10 @@ index 0b9e98a51b..95d0c9642d 100644
    window.addEventListener("pagehide", stop, { once: true });
    post({ type: "input", connected: false });
 diff --git a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
-index 8809c429c8..6b36ea1c28 100644
+index 25c2e03d4..1428a6c7b 100644
 --- a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
-@@ -10,6 +10,7 @@ import { Alert, AppState, Linking, Platform } from "react-native";
+@@ -12,6 +12,7 @@ import { Alert, AppState, Linking, Platform } from "react-native";
  import { useSafeAreaInsets } from "react-native-safe-area-context";
  
  import { AppText as Text } from "../../components/AppText";
@@ -1420,7 +1420,7 @@ index 8809c429c8..6b36ea1c28 100644
  import {
    isAtomCommandInterrupted,
    reportAtomCommandResult,
-@@ -23,6 +24,12 @@ import {
+@@ -25,6 +26,12 @@ import {
    supportsAndroidLiveUpdateSettings,
  } from "../agent-awareness/androidNotifications";
  import { setLiveActivityUpdatesEnabled } from "../agent-awareness/liveActivityPreferences";
@@ -1433,7 +1433,7 @@ index 8809c429c8..6b36ea1c28 100644
  import { requestAgentNotificationPermission } from "../agent-awareness/notificationPermissions";
  import {
    getAgentAwarenessRegistrationStatus,
-@@ -58,6 +65,7 @@ function useDeviceRegistered(): boolean {
+@@ -60,6 +67,7 @@ function useDeviceRegistered(): boolean {
  
  export function SettingsNotificationsRouteScreen() {
    if (!hasCloudPublicConfig()) {
@@ -1441,7 +1441,7 @@ index 8809c429c8..6b36ea1c28 100644
      return (
        <SettingsScreen title="Notifications">
          <ScrollView
-@@ -75,6 +83,106 @@ export function SettingsNotificationsRouteScreen() {
+@@ -77,6 +85,106 @@ export function SettingsNotificationsRouteScreen() {
    return <ConfiguredSettingsNotificationsRouteScreen />;
  }
  
@@ -1548,7 +1548,7 @@ index 8809c429c8..6b36ea1c28 100644
  function ConfiguredSettingsNotificationsRouteScreen() {
    const preferencesResult = useAtomValue(mobilePreferencesAtom);
    const savePreferences = useAtomSet(updateMobilePreferencesAtom);
-@@ -90,6 +198,8 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -92,6 +200,8 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    const { savedConnectionsById } = useSavedRemoteConnections();
    const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>("checking");
    const [liveActivityStatus, setLiveActivityStatus] = useState<LiveActivityStatus>("checking");
@@ -1557,7 +1557,7 @@ index 8809c429c8..6b36ea1c28 100644
    const liveActivityWriteInFlight = useRef(false);
    const deviceRegistered = useDeviceRegistered();
    const liveActivitiesPreferenceEnabled = AsyncResult.isSuccess(preferencesResult)
-@@ -116,6 +226,20 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -118,6 +228,20 @@ function ConfiguredSettingsNotificationsRouteScreen() {
      setNotificationStatus(result.value.granted ? "enabled" : "disabled");
    }, []);
  
@@ -1578,7 +1578,7 @@ index 8809c429c8..6b36ea1c28 100644
    useEffect(() => {
      void refreshNotifications();
      const subscription = AppState.addEventListener("change", (state) => {
-@@ -130,7 +254,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -132,7 +256,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
        return;
      }
      if (!isSignedIn) {
@@ -1587,7 +1587,7 @@ index 8809c429c8..6b36ea1c28 100644
        return;
      }
      if (!AsyncResult.isSuccess(preferencesResult)) {
-@@ -145,7 +269,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -147,7 +271,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
      setLiveActivityStatus(
        preferencesResult.value.liveActivitiesEnabled === false ? "disabled" : "enabled",
      );
@@ -1596,7 +1596,7 @@ index 8809c429c8..6b36ea1c28 100644
  
    const requestNotifications = useCallback(async () => {
      const result = await settleAsyncResult(() =>
-@@ -324,6 +448,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -328,6 +452,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    const handleDeviceNotificationsChange = useCallback(
      (enabled: boolean) => {
        if (enabled) {
@@ -1624,7 +1624,7 @@ index 8809c429c8..6b36ea1c28 100644
          if (!isSignedIn) {
            promptSignIn();
            return;
-@@ -332,6 +477,14 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -336,6 +481,14 @@ function ConfiguredSettingsNotificationsRouteScreen() {
          return;
        }
  
@@ -1639,7 +1639,7 @@ index 8809c429c8..6b36ea1c28 100644
        Alert.alert(
          "Disable notifications",
          "Open system Settings to disable notifications for T3 Code.",
-@@ -347,6 +500,24 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -351,6 +504,24 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    const handleLiveActivitiesChange = useCallback(
      (enabled: boolean) => {
        if (liveActivityWriteInFlight.current) return;
@@ -1664,7 +1664,7 @@ index 8809c429c8..6b36ea1c28 100644
        if (!enabled) {
          liveActivityWriteInFlight.current = true;
          setLiveActivityStatus("linking");
-@@ -408,6 +579,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -414,6 +585,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
        connections,
        getToken,
        isSignedIn,
@@ -1672,7 +1672,7 @@ index 8809c429c8..6b36ea1c28 100644
        linkEnvironments,
        liveActivitiesPreferenceEnabled,
        promptSignIn,
-@@ -441,7 +613,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -447,7 +619,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
              // relay; otherwise notifications cannot be delivered regardless of
              // the local iOS permission.
              value={
@@ -1683,7 +1683,7 @@ index 8809c429c8..6b36ea1c28 100644
              }
              onValueChange={handleDeviceNotificationsChange}
            />
-@@ -467,7 +641,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -473,7 +647,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
              value={
                agentAwarenessPushAvailable &&
                (liveActivityStatus === "enabled" || liveActivityStatus === "linking") &&
@@ -1692,7 +1692,7 @@ index 8809c429c8..6b36ea1c28 100644
              }
              onValueChange={handleLiveActivitiesChange}
            />
-@@ -478,6 +652,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -484,6 +658,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
                onPress={() => handleLiveActivitiesChange(false)}
              />
            ) : null}
@@ -1703,7 +1703,7 @@ index 8809c429c8..6b36ea1c28 100644
              <SettingsRow
                icon="bolt.circle"
 diff --git a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
-index e0f3e2ecc6..c9e698cf21 100644
+index e0f3e2ecc..c9e698cf2 100644
 --- a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
 @@ -14,6 +14,7 @@ import { useEnvironmentQuery } from "../../state/query";
@@ -1724,10 +1724,10 @@ index e0f3e2ecc6..c9e698cf21 100644
                      (provider) =>
 diff --git a/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx b/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx
 new file mode 100644
-index 0000000000..fc23d109f1
+index 000000000..83a5eea36
 --- /dev/null
 +++ b/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx
-@@ -0,0 +1,132 @@
+@@ -0,0 +1,155 @@
 +import { AcpRegistrySettings, ProviderDriverKind, ProviderInstanceId } from "@t3tools/contracts";
 +import * as Schema from "effect/Schema";
 +import { useState } from "react";
@@ -1739,13 +1739,14 @@ index 0000000000..fc23d109f1
 +import { SettingsActionRow } from "./SettingsActionRow";
 +
 +const decodeSettings = Schema.decodeUnknownSync(AcpRegistrySettings);
++const decodeEnvironment = Schema.decodeUnknownSync(Schema.Record(Schema.String, Schema.String));
 +
 +export function CustomAcpCommandEditor({ environment }: { readonly environment: SettingsTarget }) {
 +  const instances = environment.serverConfig.settings.providerInstances;
 +  const save = useAtomCommand(serverEnvironment.mutateProviderInstance);
 +  const [id, setId] = useState("acpRegistry_custom");
 +  const [name, setName] = useState("Custom ACP");
-+  const [launchMode, setLaunchMode] = useState<"registry" | "custom">("custom");
++  const [source, setSource] = useState<"registry" | "local">("local");
 +  const [agentId, setAgentId] = useState("");
 +  const [command, setCommand] = useState("nix");
 +  const [args, setArgs] = useState('["run", "github:tontinton/maki", "--", "acp"]');
@@ -1787,10 +1788,18 @@ index 0000000000..fc23d109f1
 +              setId(key);
 +              setName(instance.displayName ?? key);
 +              setCommand(config.commandPath);
-+              setLaunchMode(config.launchMode);
++              setSource(config.source);
 +              setAgentId(config.agentId);
-+              setArgs(JSON.stringify(config.args));
-+              setEnv(JSON.stringify(config.env));
++              setArgs(JSON.stringify(config.commandArgs));
++              setEnv(
++                JSON.stringify(
++                  Object.fromEntries(
++                    (instance.environment ?? [])
++                      .filter((entry) => !entry.valueRedacted)
++                      .map((entry) => [entry.name, entry.value]),
++                  ),
++                ),
++              );
 +              setMessage(null);
 +            }}
 +          />
@@ -1799,18 +1808,18 @@ index 0000000000..fc23d109f1
 +      {field("Display name", name, setName)}
 +      <SettingsActionRow
 +        icon="arrow.left.arrow.right"
-+        label={`Launch mode: ${launchMode}. Tap to switch.`}
++        label={`ACP source: ${source}. Tap to switch.`}
 +        disabled={pending}
-+        onPress={() => setLaunchMode(launchMode === "custom" ? "registry" : "custom")}
++        onPress={() => setSource(source === "local" ? "registry" : "local")}
 +      />
-+      {launchMode === "registry" ? field("Registry agent ID", agentId, setAgentId) : null}
++      {source === "registry" ? field("Registry agent ID", agentId, setAgentId) : null}
 +      {field("Executable", command, setCommand)}
 +      {field("Arguments JSON", args, setArgs)}
 +      {field("Environment JSON", env, setEnv)}
 +      <SettingsActionRow
 +        icon="plus"
 +        label={existing ? "Save ACP configuration" : "Add ACP command"}
-+        disabled={pending || (launchMode === "custom" ? !command.trim() : !agentId.trim())}
++        disabled={pending || (source === "local" ? !command.trim() : !agentId.trim())}
 +        onPress={() => {
 +          void (async () => {
 +            try {
@@ -1819,12 +1828,25 @@ index 0000000000..fc23d109f1
 +              const instanceId = ProviderInstanceId.make(id);
 +              const config = decodeSettings({
 +                ...(existing?.config && typeof existing.config === "object" ? existing.config : {}),
-+                launchMode,
++                source,
 +                agentId,
 +                commandPath: command,
-+                args: JSON.parse(args),
-+                env: JSON.parse(env),
++                commandArgs: JSON.parse(args),
 +              });
++              const overrides = decodeEnvironment(JSON.parse(env));
++              const variables = new Map(
++                (existing?.environment ?? []).map((entry) => [entry.name, entry]),
++              );
++              for (const [name, value] of Object.entries(overrides)) {
++                variables.set(name, {
++                  name,
++                  value,
++                  sensitive: variables.get(name)?.sensitive ?? false,
++                });
++              }
++              const environmentVariables = [...variables.values()].filter(
++                (entry) => entry.valueRedacted || Object.hasOwn(overrides, entry.name),
++              );
 +              setPending(true);
 +              setMessage(null);
 +              const result = await save({
@@ -1839,6 +1861,7 @@ index 0000000000..fc23d109f1
 +                      driver: ProviderDriverKind.make("acpRegistry"),
 +                      displayName: name.trim(),
 +                      config,
++                      environment: environmentVariables,
 +                    },
 +                  },
 +                },
@@ -1861,7 +1884,7 @@ index 0000000000..fc23d109f1
 +  );
 +}
 diff --git a/apps/mobile/src/persistence/mobile-preferences.ts b/apps/mobile/src/persistence/mobile-preferences.ts
-index ee96bce2d5..08e3d0cf7a 100644
+index ee96bce2d..08e3d0cf7 100644
 --- a/apps/mobile/src/persistence/mobile-preferences.ts
 +++ b/apps/mobile/src/persistence/mobile-preferences.ts
 @@ -18,6 +18,9 @@ const PREFERENCES_FALLBACK_KEY = "t3code.preferences.fallback";
@@ -1896,371 +1919,169 @@ index ee96bce2d5..08e3d0cf7a 100644
    if (
      typeof parsed.themeId === "string" &&
      (MOBILE_THEME_IDS as readonly string[]).includes(parsed.themeId)
-diff --git a/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.test.ts b/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.test.ts
-index e822ea4efd..2de1c3ebf1 100644
---- a/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.test.ts
-+++ b/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.test.ts
-@@ -122,6 +122,9 @@ describe("AcpRegistryAdapterV2", () => {
-     assert.equal(AcpRegistryAdapterV2Driver.driverKind, ACP_REGISTRY_PROVIDER);
-     assert.deepEqual(AcpRegistryAdapterV2Driver.defaultConfig(), {
-       enabled: true,
-+      launchMode: "registry",
-+      args: [],
-+      env: {},
-       agentId: "",
-       commandPath: "",
-       authMethodId: "",
-diff --git a/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.ts b/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.ts
-index 76326b2745..d93ca86593 100644
---- a/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.ts
-+++ b/apps/server/src/orchestration-v2/Adapters/AcpRegistryAdapterV2.ts
-@@ -153,7 +153,8 @@ function makeAcpRegistryRuntime(options: AcpRegistryAdapterV2Options) {
-           Effect.mapError(
-             (cause) =>
-               new EffectAcpErrors.AcpSpawnError({
--                command: options.settings.agentId || ACP_REGISTRY_PROVIDER,
-+                command:
-+                  AcpRegistrySupport.acpLaunchIdentity(options.settings) || ACP_REGISTRY_PROVIDER,
-                 cause,
-               }),
-           ),
-@@ -183,14 +184,15 @@ function makeAcpRegistryRuntime(options: AcpRegistryAdapterV2Options) {
- 
- export function makeAcpRegistryAdapterV2(options: AcpRegistryAdapterV2Options) {
-   const runtimeCoordinator = options.runtimeCoordinator;
--  const isDevin = options.settings.agentId === "devin";
-+  const isDevin = AcpRegistrySupport.acpLaunchIdentity(options.settings) === "devin";
-   const flavor: AcpAdapterV2Flavor = {
-     driver: ACP_REGISTRY_PROVIDER,
-     capabilities: AcpProviderCapabilitiesV2,
--    promptFailure: (cause) => acpRegistryPromptFailure(options.settings.agentId, cause),
-+    promptFailure: (cause) =>
-+      acpRegistryPromptFailure(AcpRegistrySupport.acpLaunchIdentity(options.settings), cause),
-     // Per-agent exceptions (Mistral Vibe, Devin): see the note above
-     // registerMistralVibeAcpExtensions before adding any more.
--    ...(options.settings.agentId === "mistral-vibe"
-+    ...(AcpRegistrySupport.acpLaunchIdentity(options.settings) === "mistral-vibe"
-       ? { registerExtensions: registerMistralVibeAcpExtensions }
-       : {}),
-     ...(isDevin
-@@ -230,7 +232,10 @@ export function makeAcpRegistryAdapterV2(options: AcpRegistryAdapterV2Options) {
-             });
-           },
-           withRuntimeStartup: <A, E, R>(effect: Effect.Effect<A, E, R>) =>
--            runtimeCoordinator.withForegroundStartup(options.settings.agentId, effect),
-+            runtimeCoordinator.withForegroundStartup(
-+              AcpRegistrySupport.acpLaunchIdentity(options.settings),
-+              effect,
-+            ),
-         }),
-     ...(options.assertComplete === undefined ? {} : { assertComplete: options.assertComplete }),
-   };
-diff --git a/apps/server/src/provider/Drivers/AcpRegistryDriver.ts b/apps/server/src/provider/Drivers/AcpRegistryDriver.ts
-index 68bf797fa0..ba98e6c6cd 100644
---- a/apps/server/src/provider/Drivers/AcpRegistryDriver.ts
-+++ b/apps/server/src/provider/Drivers/AcpRegistryDriver.ts
-@@ -138,7 +138,8 @@ export function acpRegistrySnapshotReadiness(
-         installed: false,
-         version: null,
-         status: "warning",
--        message: "Select an ACP Registry agent before starting a thread.",
-+        message:
-+          "Configure an ACP registry agent ID or a custom executable before starting a thread.",
-       };
-     case "not_found":
-       return {
-@@ -200,7 +201,9 @@ function baseSnapshot(
- ): ServerProvider {
-   const iconUrl =
-     resolveOfficialAcpRegistryIconUrl(input.probe?.probe.icon) ??
--    officialAcpRegistryIconUrlForAgentId(input.settings.agentId);
-+    (input.settings.launchMode === "registry"
-+      ? officialAcpRegistryIconUrlForAgentId(input.settings.agentId)
-+      : undefined);
-   return {
-     instanceId: input.instanceId,
-     driver: DRIVER_KIND,
-@@ -225,7 +228,7 @@ function baseSnapshot(
-         input.installed &&
-         (input.probe
-           ? input.probe.probe.authMethods.length > 0
--          : input.settings.agentId.length > 0),
-+          : input.settings.launchMode === "custom" || input.settings.agentId.length > 0),
-     },
-     ...(input.message ? { message: input.message } : {}),
-     models: modelsFromDiscovery(input.probe?.probe, input.settings.customModels),
-@@ -633,7 +636,7 @@ export const AcpRegistryDriver: ProviderDriver<AcpRegistrySettings, AcpRegistryD
-           const publishEnrichment = (
-             Option.isSome(runtimeCoordinator)
-               ? runtimeCoordinator.value.runBackgroundProbe(
--                  effectiveConfig.agentId,
-+                  AcpRegistrySupport.acpLaunchIdentity(effectiveConfig),
-                   enrichProviderCached(snapshot),
-                 )
-               : enrichProviderCached(snapshot).pipe(Effect.map(Option.some))
-diff --git a/apps/server/src/provider/acp/AcpRegistryAuth.ts b/apps/server/src/provider/acp/AcpRegistryAuth.ts
-index 4befdb1cec..0d6e966145 100644
---- a/apps/server/src/provider/acp/AcpRegistryAuth.ts
-+++ b/apps/server/src/provider/acp/AcpRegistryAuth.ts
-@@ -139,7 +139,7 @@ export const makeAcpRegistryAuth = Effect.fn("makeAcpRegistryAuth")(function* (o
- 
-   const methods = Option.isSome(coordinator)
-     ? coordinator.value
--        .runBackgroundProbe(options.settings.agentId, discoverMethods)
-+        .runBackgroundProbe(AcpRegistrySupport.acpLaunchIdentity(options.settings), discoverMethods)
-         .pipe(
-           Effect.flatMap((result) =>
-             Option.isSome(result)
-@@ -327,7 +327,10 @@ export const makeAcpRegistryAuth = Effect.fn("makeAcpRegistryAuth")(function* (o
-         }),
-       );
-       yield* Option.isSome(coordinator)
--        ? coordinator.value.withForegroundStartup(options.settings.agentId, login)
-+        ? coordinator.value.withForegroundStartup(
-+            AcpRegistrySupport.acpLaunchIdentity(options.settings),
-+            login,
-+          )
-         : login;
-       yield* options.onChanged(true);
-     });
-@@ -354,14 +357,20 @@ export const makeAcpRegistryAuth = Effect.fn("makeAcpRegistryAuth")(function* (o
-   );
-   const signOut = (
-     Option.isSome(coordinator)
--      ? coordinator.value.withForegroundStartup(options.settings.agentId, logout)
-+      ? coordinator.value.withForegroundStartup(
-+          AcpRegistrySupport.acpLaunchIdentity(options.settings),
-+          logout,
-+        )
-       : logout
-   ).pipe(Effect.andThen(options.onChanged(false)));
-   return yield* ProviderAuthFlow.make({
-     instanceId: options.instanceId,
-     // ACP doesn't advertise its credential scope. Conservatively treat all
-     // instances of the same agent on this environment as sharing credentials.
--    credentialBinding: { owner: "provider", key: `acp:${options.settings.agentId}` },
-+    credentialBinding: {
-+      owner: "provider",
-+      key: `acp:${AcpRegistrySupport.acpLaunchIdentity(options.settings)}`,
-+    },
-     methods,
-     ...(options.settings.authMethodId ? { defaultMethodId: options.settings.authMethodId } : {}),
-     authenticate,
-diff --git a/apps/server/src/provider/acp/AcpRegistryAuthenticationState.test.ts b/apps/server/src/provider/acp/AcpRegistryAuthenticationState.test.ts
-index 8f5e1ba63c..24446a8714 100644
---- a/apps/server/src/provider/acp/AcpRegistryAuthenticationState.test.ts
-+++ b/apps/server/src/provider/acp/AcpRegistryAuthenticationState.test.ts
-@@ -71,6 +71,40 @@ it.layer(NodeServices.layer)("ACP sign-in confirmation", (it) => {
-       }),
-   );
- 
-+  it.effect("binds custom command confirmation to arguments and environment overrides", () =>
-+    Effect.gen(function* () {
-+      const fs = yield* FileSystem.FileSystem;
-+      const cacheDir = yield* fs.makeTempDirectoryScoped();
-+      const config = {
-+        ...settings,
-+        launchMode: "custom" as const,
-+        commandPath: "nix",
-+        args: ["acp"],
-+        env: { PROFILE: "one" },
-+      };
-+      const input = {
-+        cacheDir,
-+        instanceId: ProviderInstanceId.make("acp_custom"),
-+        settings: config,
-+        environment: [],
-+        processEnvironment: {},
-+      };
-+      for (const changedConfig of [
-+        { ...config, args: ["other", "acp"] },
-+        { ...config, env: { PROFILE: "two" } },
-+        { ...config, launchMode: "registry" as const },
-+      ]) {
-+        const signedIn = yield* makeAcpRegistryAuthenticationState(input);
-+        yield* signedIn.set(true);
-+        const changed = yield* makeAcpRegistryAuthenticationState({
-+          ...input,
-+          settings: changedConfig,
-+        });
-+        assert.isFalse(yield* changed.get);
-+      }
-+    }),
-+  );
+diff --git a/apps/server/src/orchestration-v2/CheckpointService.test.ts b/apps/server/src/orchestration-v2/CheckpointService.test.ts
+index cef73dd1c..8d49f6bde 100644
+--- a/apps/server/src/orchestration-v2/CheckpointService.test.ts
++++ b/apps/server/src/orchestration-v2/CheckpointService.test.ts
+@@ -1,5 +1,8 @@
+ import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
+-import { assert, it, vi } from "@effect/vitest";
++import { afterEach, assert, beforeEach, it, vi } from "@effect/vitest";
 +
-   it.effect("ignores damaged confirmation and keeps another instance independent", () =>
-     Effect.gen(function* () {
-       const fs = yield* FileSystem.FileSystem;
-diff --git a/apps/server/src/provider/acp/AcpRegistryAuthenticationState.ts b/apps/server/src/provider/acp/AcpRegistryAuthenticationState.ts
-index 1f4799e65c..6efde5009a 100644
---- a/apps/server/src/provider/acp/AcpRegistryAuthenticationState.ts
-+++ b/apps/server/src/provider/acp/AcpRegistryAuthenticationState.ts
-@@ -34,6 +34,13 @@ export const makeAcpRegistryAuthenticationState = Effect.fn("makeAcpRegistryAuth
-     // Cosmetic settings and model discovery can rebuild the driver without
-     // changing the account. Credential overrides and profile paths cannot.
-     const binding = hash({
-+      ...(input.settings.launchMode === "custom"
-+        ? {
-+            launchMode: input.settings.launchMode,
-+            args: input.settings.args,
-+            env: Object.entries(input.settings.env).toSorted(),
-+          }
-+        : {}),
-       agentId: input.settings.agentId,
-       commandPath: input.settings.commandPath,
-       distribution: input.settings.distribution,
-diff --git a/apps/server/src/provider/acp/AcpRegistrySupport.test.ts b/apps/server/src/provider/acp/AcpRegistrySupport.test.ts
-index b12b13e3a4..d79602c30b 100644
---- a/apps/server/src/provider/acp/AcpRegistrySupport.test.ts
-+++ b/apps/server/src/provider/acp/AcpRegistrySupport.test.ts
-@@ -137,6 +137,51 @@ const makeFakeUvToolchain = Effect.fn("AcpRegistrySupport.test.makeFakeUvToolcha
- });
++beforeEach(() => vi.stubEnv("T3_DISABLE_CHECKPOINTS", undefined));
++afterEach(() => vi.unstubAllEnvs());
+ import {
+   CheckpointScopeId,
+   NodeId,
+@@ -18,6 +21,125 @@ import * as CheckpointStore from "../checkpointing/CheckpointStore.ts";
+ import * as CheckpointService from "./CheckpointService.ts";
+ import * as IdAllocator from "./IdAllocator.ts";
  
- describe("AcpRegistrySupport", () => {
-+  it.effect("launches custom commands without registry requests or managed installs", () =>
-+    Effect.gen(function* () {
-+      const fs = yield* FileSystem.FileSystem;
-+      const cacheDir = yield* fs.makeTempDirectoryScoped({ prefix: "t3-custom-acp-" });
-+      const executable = `${cacheDir}/agent`;
-+      yield* fs.writeFileString(executable, "#!/bin/sh\n");
-+      yield* fs.chmod(executable, 0o755);
-+      const catalog = yield* AcpRegistrySupport.makeAcpRegistryCatalog({
-+        cacheDir,
-+        toolsDir: `${cacheDir}/tools`,
-+        registryUrl,
-+      });
-+      const config = settings({
-+        launchMode: "custom",
-+        agentId: "",
-+        commandPath: executable,
-+        args: ["acp", "", "argument with spaces"],
-+        env: { OVERRIDE: "custom" },
-+      });
-+      expect(yield* catalog.inspect(config)).toMatchObject({ status: "ready", version: null });
-+      const resolved = yield* catalog.resolve(config, "/workspace", {
-+        HOME: "/existing/profile",
-+        OVERRIDE: "host",
-+      });
-+      expect(resolved.spawn).toEqual({
-+        command: executable,
-+        args: ["acp", "", "argument with spaces"],
-+        cwd: "/workspace",
-+        env: { HOME: "/existing/profile", OVERRIDE: "custom" },
-+      });
-+      expect(yield* fs.exists(`${cacheDir}/tools`)).toBe(false);
-+      expect(AcpRegistrySupport.acpLaunchIdentity(config)).not.toBe(
-+        AcpRegistrySupport.acpLaunchIdentity({ ...config, args: ["other"] }),
++it.effect("disables baseline and completion snapshots without invoking Git", () =>
++  Effect.gen(function* () {
++    const previous = process.env.T3_DISABLE_CHECKPOINTS;
++    process.env.T3_DISABLE_CHECKPOINTS = "1";
++    try {
++      const scope: OrchestrationV2CheckpointScope = {
++        id: CheckpointScopeId.make("scope:disabled"),
++        threadId: ThreadId.make("thread:disabled"),
++        runId: RunId.make("run:disabled"),
++        nodeId: NodeId.make("node:disabled"),
++        parentScopeId: null,
++        providerThreadId: ProviderThreadId.make("provider:disabled"),
++        kind: "root_run",
++        ordinalWithinParent: 0,
++        advancesAppRunCount: true,
++        cwd: "/repo",
++        createdAt: DateTime.makeUnsafe("2026-07-28T00:00:00.000Z"),
++      };
++      const testLayer = CheckpointService.layer.pipe(
++        Layer.provide(
++          Layer.mergeAll(
++            IdAllocator.layer,
++            NodeCrypto.layer,
++            Layer.mock(CheckpointStore.CheckpointStore)({
++              isGitRepository: () => Effect.die("disabled checkpoints must not invoke Git"),
++              hasCheckpointRef: () => Effect.die("disabled checkpoints must not look up refs"),
++              captureCheckpoint: () => Effect.die("disabled checkpoints must not capture"),
++              diffCheckpoints: () => Effect.die("disabled checkpoints must not diff"),
++            }),
++          ),
++        ),
 +      );
-+      expect(yield* catalog.inspect({ ...config, commandPath: "" })).toEqual({
-+        status: "unconfigured",
-+      });
-+      expect(
-+        yield* catalog.inspect({ ...config, commandPath: `${cacheDir}/missing` }),
-+      ).toMatchObject({ status: "missing_runner" });
-+    }).pipe(
-+      Effect.scoped,
-+      Effect.provide(resolverLayer(() => Effect.die("Custom mode must not fetch the registry"))),
-+    ),
-+  );
-   it("preserves the registry failure when translating it for clients", () => {
-     const cause = new Error("registry unavailable");
-     const failure = new AcpRegistrySupport.AcpRegistryError({
-diff --git a/apps/server/src/provider/acp/AcpRegistrySupport.ts b/apps/server/src/provider/acp/AcpRegistrySupport.ts
-index 21c34e6dcf..be1f2e8f8d 100644
---- a/apps/server/src/provider/acp/AcpRegistrySupport.ts
-+++ b/apps/server/src/provider/acp/AcpRegistrySupport.ts
-@@ -438,6 +438,20 @@ export function resolveAcpRegistryDistribution(input: {
-   return undefined;
- }
- 
-+export function acpLaunchIdentity(settings: AcpRegistrySettings): string {
-+  return settings.launchMode === "custom"
-+    ? `custom:${NodeCrypto.createHash("sha256")
-+        .update(
-+          JSON.stringify([
-+            settings.commandPath,
-+            settings.args,
-+            Object.entries(settings.env).toSorted(),
-+          ]),
-+        )
-+        .digest("hex")}`
-+    : settings.agentId;
-+}
++      yield* Effect.gen(function* () {
++        const checkpoints = yield* CheckpointService.CheckpointServiceV2;
++        yield* checkpoints.captureBaseline({ scope, ordinalWithinScope: 0 });
++        const baseline = yield* checkpoints.materializeBaselineCheckpoint({
++          scope,
++          ordinalWithinScope: 0,
++        });
++        const completion = yield* checkpoints.capture({
++          scope,
++          ordinalWithinScope: 1,
++          runId: scope.runId!,
++          nodeId: scope.nodeId!,
++          appRunOrdinal: 1,
++          capturedAt: scope.createdAt,
++        });
++        assert.equal(baseline.status, "missing");
++        assert.equal(completion.status, "missing");
++        assert.deepEqual(completion.files, []);
++      }).pipe(Effect.provide(testLayer));
++    } finally {
++      if (previous === undefined) delete process.env.T3_DISABLE_CHECKPOINTS;
++      else process.env.T3_DISABLE_CHECKPOINTS = previous;
++    }
++  }),
++);
 +
- export interface ResolvedAcpRegistryAgent {
-   readonly agent: AcpRegistryAgent;
-   readonly distribution: AcpRegistryDistributionKind;
-@@ -1612,6 +1626,29 @@ export const makeAcpRegistryCatalog = Effect.fn("AcpRegistryCatalog.make")(funct
++it.effect("captures baseline and completion snapshots when the opt-out is absent", () =>
++  Effect.gen(function* () {
++    assert.isUndefined(process.env.T3_DISABLE_CHECKPOINTS);
++    const scope: OrchestrationV2CheckpointScope = {
++      id: CheckpointScopeId.make("scope:enabled"),
++      threadId: ThreadId.make("thread:enabled"),
++      runId: RunId.make("run:enabled"),
++      nodeId: NodeId.make("node:enabled"),
++      parentScopeId: null,
++      providerThreadId: ProviderThreadId.make("provider:enabled"),
++      kind: "root_run",
++      ordinalWithinParent: 0,
++      advancesAppRunCount: true,
++      cwd: "/repo",
++      createdAt: DateTime.makeUnsafe("2026-07-28T00:00:00.000Z"),
++    };
++    const refs = new Set<string>();
++    const captureCheckpoint = vi.fn((input: CheckpointStore.CaptureCheckpointInput) =>
++      Effect.sync(() => {
++        refs.add(input.checkpointRef);
++      }),
++    );
++    const testLayer = CheckpointService.layer.pipe(
++      Layer.provide(
++        Layer.mergeAll(
++          IdAllocator.layer,
++          NodeCrypto.layer,
++          Layer.mock(CheckpointStore.CheckpointStore)({
++            isGitRepository: () => Effect.succeed(true),
++            hasCheckpointRef: (input) => Effect.succeed(refs.has(input.checkpointRef)),
++            captureCheckpoint,
++            diffCheckpoints: () => Effect.succeed("2\t1\tsrc/example.ts\0"),
++          }),
++        ),
++      ),
++    );
++    yield* Effect.gen(function* () {
++      const checkpoints = yield* CheckpointService.CheckpointServiceV2;
++      yield* checkpoints.captureBaseline({ scope, ordinalWithinScope: 0 });
++      const baseline = yield* checkpoints.materializeBaselineCheckpoint({
++        scope,
++        ordinalWithinScope: 0,
++      });
++      const completion = yield* checkpoints.capture({
++        scope,
++        ordinalWithinScope: 1,
++        runId: scope.runId!,
++        nodeId: scope.nodeId!,
++        appRunOrdinal: 1,
++        capturedAt: scope.createdAt,
++      });
++      assert.equal(baseline.status, "ready");
++      assert.equal(completion.status, "ready");
++      assert.equal(captureCheckpoint.mock.calls.length, 2);
++      assert.deepEqual(completion.files, [
++        { path: "src/example.ts", kind: "modified", additions: 2, deletions: 1 },
++      ]);
++    }).pipe(Effect.provide(testLayer));
++  }),
++);
++
+ it.effect.each([false, true, "interrupt"] as const)(
+   "materializes baseline, lookup fails=%s",
+   (lookupFails) => {
+diff --git a/apps/server/src/orchestration-v2/CheckpointService.ts b/apps/server/src/orchestration-v2/CheckpointService.ts
+index cb5145293..1643c237d 100644
+--- a/apps/server/src/orchestration-v2/CheckpointService.ts
++++ b/apps/server/src/orchestration-v2/CheckpointService.ts
+@@ -259,8 +259,11 @@ export const layer: Layer.Layer<
+     const withWorkspaceLock = <A, E, R>(cwd: string, effect: Effect.Effect<A, E, R>) =>
+       workspaceLocks.withLock(cwd, effect);
  
-   const inspect: AcpRegistryCatalog["Service"]["inspect"] = (settings, environment) =>
-     Effect.gen(function* () {
-+      if (settings.launchMode === "custom") {
-+        const command = settings.commandPath.trim();
-+        if (!command) return { status: "unconfigured" } as const;
-+        const available =
-+          resolveExecutable(command, platform, {
-+            ...(environment ?? hostEnvironment),
-+            ...settings.env,
-+          }) !== undefined;
-+        return available
-+          ? ({
-+              status: "ready",
-+              agentId: acpLaunchIdentity(settings),
-+              version: null,
-+              distribution: "binary",
-+            } as const)
-+          : ({
-+              status: "missing_runner",
-+              agentId: acpLaunchIdentity(settings),
-+              version: "custom",
-+              distribution: "binary",
-+              runner: command,
-+            } as const);
-+      }
-       const agentId = settings.agentId.trim();
-       if (agentId.length === 0) return { status: "unconfigured" } as const;
-       const registry = yield* loadCachedRegistry();
-@@ -1713,6 +1750,34 @@ export const makeAcpRegistryCatalog = Effect.fn("AcpRegistryCatalog.make")(funct
++    // Keep run completion and provider-native diffs working without writing workspace snapshots.
+     const isGitCheckpointable = (cwd: string) =>
+-      checkpointStore.isGitRepository(cwd).pipe(Effect.orElseSucceed(() => false));
++      process.env.T3_DISABLE_CHECKPOINTS === "1"
++        ? Effect.succeed(false)
++        : checkpointStore.isGitRepository(cwd).pipe(Effect.orElseSucceed(() => false));
  
-   const resolve: AcpRegistryCatalog["Service"]["resolve"] = (settings, cwd, environment) =>
-     Effect.gen(function* () {
-+      if (settings.launchMode === "custom") {
-+        const env = { ...(environment ?? hostEnvironment), ...settings.env };
-+        const executable = settings.commandPath.trim();
-+        if (!executable) {
-+          return yield* new AcpRegistryError({
-+            reason: "agent_not_configured",
-+            detail: "Custom ACP requires an executable.",
-+          });
-+        }
-+        const command = resolveExecutable(executable, platform, env);
-+        if (command === undefined) {
-+          return yield* new AcpRegistryError({
-+            reason: "runner_unavailable",
-+            detail: "Custom ACP executable is not available on this provider instance's PATH.",
-+          });
-+        }
-+        return {
-+          agent: {
-+            id: acpLaunchIdentity(settings),
-+            name: executable,
-+            version: "custom",
-+            description: "Custom ACP command",
-+            distribution: {},
-+          },
-+          distribution: "binary",
-+          spawn: { command, args: settings.args, cwd, env },
-+        } satisfies ResolvedAcpRegistryAgent;
-+      }
-       const agentId = settings.agentId.trim();
-       if (agentId.length === 0) {
-         return yield* new AcpRegistryError({
+     const ensureScope: CheckpointServiceV2Shape["ensureScope"] = (scope) => Effect.succeed(scope);
+ 
 diff --git a/apps/server/src/provider/acp/MakiCustom.integration.test.ts b/apps/server/src/provider/acp/MakiCustom.integration.test.ts
 new file mode 100644
-index 0000000000..6ea1ef9133
+index 000000000..c5428bf1f
 --- /dev/null
 +++ b/apps/server/src/provider/acp/MakiCustom.integration.test.ts
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,132 @@
 +import * as NodeServices from "@effect/platform-node/NodeServices";
 +import { it, expect } from "@effect/vitest";
 +import { AcpRegistrySettings } from "@t3tools/contracts";
@@ -2271,11 +2092,12 @@ index 0000000000..6ea1ef9133
 +import * as Stream from "effect/Stream";
 +import * as Ref from "effect/Ref";
 +import * as Deferred from "effect/Deferred";
-+import { HttpClient } from "effect/unstable/http";
++import { HttpClient } from "effect/http";
 +import * as AcpRegistrySupport from "./AcpRegistrySupport.ts";
 +import * as AcpSessionRuntime from "./AcpSessionRuntime.ts";
 +import { probeAcpRegistryConfiguration } from "./AcpRegistryProbe.ts";
 +import { ProviderInstanceId } from "@t3tools/contracts";
++import * as ServerSettings from "../../serverSettings.ts";
 +
 +const encodeEvidence = Schema.encodeSync(Schema.fromJsonString(Schema.Unknown));
 +const decodeSettings = Schema.decodeEffect(AcpRegistrySettings);
@@ -2293,9 +2115,9 @@ index 0000000000..6ea1ef9133
 +        toolsDir: `${root}/tools`,
 +      });
 +      const settings = yield* decodeSettings({
-+        launchMode: "custom",
++        source: "local",
 +        commandPath: "nix",
-+        args: ["run", "github:tontinton/maki", "--", "acp"],
++        commandArgs: ["run", "github:tontinton/maki", "--", "acp"],
 +      });
 +      expect(yield* catalog.inspect(settings)).toMatchObject({ status: "ready" });
 +      const probe = yield* probeAcpRegistryConfiguration({
@@ -2388,29 +2210,117 @@ index 0000000000..6ea1ef9133
 +        HttpClient.HttpClient,
 +        HttpClient.make(() => Effect.die("Registry access forbidden")),
 +      ),
-+      Effect.provide(NodeServices.layer),
++      Effect.provide(Layer.mergeAll(NodeServices.layer, ServerSettings.layerTest())),
 +    ),
 +  240_000,
 +);
-diff --git a/apps/server/src/ws.ts b/apps/server/src/ws.ts
-index 7800603f28..f1011d4f93 100644
---- a/apps/server/src/ws.ts
-+++ b/apps/server/src/ws.ts
-@@ -2124,7 +2124,8 @@ const makeWsRpcLayer = (
-                       ) {
-                         return false;
-                       }
--                      return (instance.config as Record<string, unknown>).agentId === input.agentId;
-+                      const config = instance.config as Record<string, unknown>;
-+                      return config.launchMode !== "custom" && config.agentId === input.agentId;
-                     }),
-                   ),
-                 ),
+diff --git a/apps/server/src/serverSettings.test.ts b/apps/server/src/serverSettings.test.ts
+index 051f05331..d9e36917f 100644
+--- a/apps/server/src/serverSettings.test.ts
++++ b/apps/server/src/serverSettings.test.ts
+@@ -97,6 +97,45 @@ const recordProviderUsage = (provider: string, instanceId: string | null = provi
+   });
+ 
+ it.layer(NodeServices.layer)("server settings", (it) => {
++  it.effect("migrates saved custom ACP commands to native local configuration", () =>
++    Effect.gen(function* () {
++      const config = yield* ServerConfig.ServerConfig;
++      const fs = yield* FileSystem.FileSystem;
++      const service = yield* ServerSettingsModule.ServerSettingsService;
++      const instanceId = ProviderInstanceId.make("acp_maki");
++      yield* fs.writeFileString(
++        config.settingsPath,
++        JSON.stringify({
++          providerInstances: {
++            [instanceId]: {
++              driver: "acpRegistry",
++              environment: [{ name: "PROFILE", value: "original", sensitive: false }],
++              config: {
++                launchMode: "custom",
++                commandPath: "nix",
++                args: ["run", "maki", "--", "acp"],
++                env: { PROFILE: "custom" },
++              },
++            },
++          },
++        }),
++      );
++      const migrated = (yield* service.getSettings).providerInstances[instanceId]!;
++      assert.deepEqual(migrated.config, {
++        source: "local",
++        commandPath: "nix",
++        commandArgs: ["run", "maki", "--", "acp"],
++      });
++      assert.deepEqual(migrated.environment, [
++        { name: "PROFILE", value: "custom", sensitive: false },
++      ]);
++      yield* service.updateSettings({});
++      const persisted = yield* decodeServerSettingsJson(
++        yield* fs.readFileString(config.settingsPath),
++      );
++      assert.deepEqual(persisted.providerInstances[instanceId]?.config, migrated.config);
++    }).pipe(Effect.provide(layerServerSettings())),
++  );
+   it.effect("migrates saved token delivery to paragraph buffering without resetting settings", () =>
+     Effect.gen(function* () {
+       const config = yield* ServerConfig.ServerConfig;
+diff --git a/apps/server/src/serverSettings.ts b/apps/server/src/serverSettings.ts
+index 7cbcd895a..501866baf 100644
+--- a/apps/server/src/serverSettings.ts
++++ b/apps/server/src/serverSettings.ts
+@@ -83,8 +83,45 @@ const textDecoder = new TextDecoder();
+ const foldProviderInstanceEnabledFlags = (settings: ServerSettings): ServerSettings => {
+   let changed = false;
+   const providerInstances: Record<string, ProviderInstanceConfig> = {};
+-  for (const [instanceId, instance] of Object.entries(settings.providerInstances)) {
+-    const config = instance.config;
++  for (const [instanceId, originalInstance] of Object.entries(settings.providerInstances)) {
++    let instance = originalInstance;
++    let config = instance.config;
++    if (
++      instance.driver === "acpRegistry" &&
++      config !== null &&
++      typeof config === "object" &&
++      !Array.isArray(config)
++    ) {
++      const legacy = config as Record<string, unknown>;
++      if (legacy.launchMode === "custom" || legacy.launchMode === "registry") {
++        const { launchMode, args, env, ...rest } = legacy;
++        const environment = new Map(
++          (instance.environment ?? []).map((entry) => [entry.name, entry]),
++        );
++        if (
++          launchMode === "custom" &&
++          env !== null &&
++          typeof env === "object" &&
++          !Array.isArray(env)
++        ) {
++          for (const [name, value] of Object.entries(env)) {
++            if (typeof value === "string")
++              environment.set(name, {
++                name,
++                value,
++                sensitive: environment.get(name)?.sensitive ?? false,
++              });
++          }
++        }
++        config = {
++          ...rest,
++          source: rest.source ?? (launchMode === "custom" ? "local" : "registry"),
++          ...(launchMode === "custom" ? { commandArgs: rest.commandArgs ?? args ?? [] } : {}),
++        };
++        instance = { ...instance, config, environment: [...environment.values()] };
++        changed = true;
++      }
++    }
+     // Only fold boolean flags: a malformed `enabled` (e.g. `"false"`) must
+     // stay in the blob so driver schema validation flags it instead of the
+     // fold silently repairing the config.
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index 26b97c2471..18156b15f5 100644
+index 42a34d8b5..06faa0bff 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
-@@ -176,6 +176,10 @@ import { previewEnvironment } from "../state/preview";
+@@ -180,6 +180,10 @@ import { previewEnvironment } from "../state/preview";
  import { useAtomCommand } from "../state/use-atom-command";
  import { useAtomQueryRunner } from "../state/use-atom-query-runner";
  import { projectEnvironment } from "../state/projects";
@@ -2421,7 +2331,7 @@ index 26b97c2471..18156b15f5 100644
  import {
    claimWorkspaceBasenameLookup,
    needsWorkspaceBasenameLookup,
-@@ -2454,6 +2458,14 @@ function useChatMarkdownState({
+@@ -2521,6 +2525,14 @@ function useChatMarkdownState({
    const searchProjectEntries = useAtomQueryRunner(projectEnvironment.searchEntries, {
      reportFailure: false,
    });
@@ -2436,7 +2346,7 @@ index 26b97c2471..18156b15f5 100644
    const openPreview = useAtomCommand(previewEnvironment.open, {
      reportFailure: false,
    });
-@@ -2710,6 +2722,77 @@ function useChatMarkdownState({
+@@ -2791,6 +2803,77 @@ function useChatMarkdownState({
      },
      [cwd, environmentId, searchProjectEntries],
    );
@@ -2514,7 +2424,7 @@ index 26b97c2471..18156b15f5 100644
    // A bare filename resolves to the workspace root, which is rarely where the
    // file is, so ask the index before opening. Absolute host paths open as-is.
    const openFileInPanel = useCallback(
-@@ -2745,6 +2828,7 @@ function useChatMarkdownState({
+@@ -2826,6 +2909,7 @@ function useChatMarkdownState({
    );
    const fileLinkChip = useCallback(
      (fileLinkMeta: MarkdownFileLinkMeta, copyMarkdown: string, mediaSource?: string) => {
@@ -2522,7 +2432,7 @@ index 26b97c2471..18156b15f5 100644
        const parentSuffix = fileLinkParentSuffixByPath.get(
          fileLinkMeta.filePath.replaceAll("\\", "/"),
        );
-@@ -2816,6 +2900,7 @@ function useChatMarkdownState({
+@@ -2899,6 +2983,7 @@ function useChatMarkdownState({
        revealInFileManagerLabel,
        revealMarkdownFileInFileManager,
        threadRef,
@@ -2530,15 +2440,15 @@ index 26b97c2471..18156b15f5 100644
      ],
    );
  
-@@ -2850,6 +2935,7 @@ function useChatMarkdownState({
+@@ -2935,6 +3020,7 @@ function useChatMarkdownState({
        text,
        threadRef,
        updateThreadPullRequestLink,
 +      resolveWorkspaceBasename,
      }),
      [
-       cwd,
-@@ -2881,6 +2967,7 @@ function useChatMarkdownState({
+       canOperateHost,
+@@ -2968,6 +3054,7 @@ function useChatMarkdownState({
        text,
        threadRef,
        updateThreadPullRequestLink,
@@ -2546,7 +2456,7 @@ index 26b97c2471..18156b15f5 100644
      ],
    );
    return {
-@@ -2917,6 +3004,8 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
+@@ -3004,6 +3091,8 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
  }
  
  // Keep component types stable when streaming changes the message state.
@@ -2555,7 +2465,7 @@ index 26b97c2471..18156b15f5 100644
  const CHAT_MARKDOWN_COMPONENTS = {
    h1: markdownHeadingRenderer(1),
    h2: markdownHeadingRenderer(2),
-@@ -3284,6 +3373,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -3384,6 +3473,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
        imageBaseDir,
        threadRef,
        renderContextReference,
@@ -2563,7 +2473,7 @@ index 26b97c2471..18156b15f5 100644
      } = use(ChatMarkdownRendererContext);
      const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
      const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
-@@ -3308,7 +3398,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -3408,7 +3498,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
      const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
      const { className, style: _style, width, height, ...imageProps } = props;
      const authoredSizeStyle = authoredImageSizeStyle(width, height);
@@ -2577,10 +2487,10 @@ index 26b97c2471..18156b15f5 100644
      const directUri = imageSource._tag === "Direct" ? imageSource.uri : null;
      const githubMediaUrl =
 diff --git a/apps/web/src/components/ChatView.logic.test.ts b/apps/web/src/components/ChatView.logic.test.ts
-index 9e6b96b210..8cdccbfeac 100644
+index bf8d32f1d..cff9a1fc7 100644
 --- a/apps/web/src/components/ChatView.logic.test.ts
 +++ b/apps/web/src/components/ChatView.logic.test.ts
-@@ -1828,6 +1828,12 @@ describe("shouldRefocusComposerOnWindowFocus", () => {
+@@ -1848,6 +1848,12 @@ describe("shouldRefocusComposerOnWindowFocus", () => {
      ).toBe(false);
    });
  
@@ -2594,10 +2504,10 @@ index 9e6b96b210..8cdccbfeac 100644
      expect(shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "dialog" }))).toBe(false);
      expect(shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "-popup" }))).toBe(false);
 diff --git a/apps/web/src/components/ChatView.logic.ts b/apps/web/src/components/ChatView.logic.ts
-index 3323a8f3e0..a4a7c10c22 100644
+index f36e54d33..fbe95187b 100644
 --- a/apps/web/src/components/ChatView.logic.ts
 +++ b/apps/web/src/components/ChatView.logic.ts
-@@ -1292,10 +1292,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
+@@ -1280,10 +1280,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
    );
  }
  
@@ -2610,7 +2520,7 @@ index 3323a8f3e0..a4a7c10c22 100644
  export function shouldRefocusComposerOnWindowFocus(
    activeElement:
      | (Pick<Element, "tagName" | "closest" | "getAttribute"> & { isContentEditable?: boolean })
-@@ -1315,7 +1313,7 @@ export function shouldRefocusComposerOnWindowFocus(
+@@ -1303,7 +1301,7 @@ export function shouldRefocusComposerOnWindowFocus(
    }
    return (
      activeElement.closest(
@@ -2620,10 +2530,10 @@ index 3323a8f3e0..a4a7c10c22 100644
    );
  }
 diff --git a/apps/web/src/components/ChatView.tsx b/apps/web/src/components/ChatView.tsx
-index 78c5f11316..2ef9fd1852 100644
+index 3b08fa7e5..9dc15384d 100644
 --- a/apps/web/src/components/ChatView.tsx
 +++ b/apps/web/src/components/ChatView.tsx
-@@ -86,6 +86,14 @@ import {
+@@ -92,6 +92,14 @@ import {
  } from "@t3tools/client-runtime/errors";
  import { readPastedComposerContext } from "./composerInlineTokenPaste";
  import { isPasteAsTextShortcut } from "@t3tools/client-runtime/text-paste";
@@ -2638,7 +2548,7 @@ index 78c5f11316..2ef9fd1852 100644
  import { effectiveSnoozed, threadWokeAt } from "@t3tools/client-runtime/state/thread-settled";
  import { useAcknowledgeThreadWoke, useThreadActions } from "../hooks/useThreadActions";
  import {
-@@ -688,89 +696,12 @@ const DevicePanel = lazy(() =>
+@@ -705,94 +713,12 @@ const DevicePanel = lazy(() =>
  );
  const FilePreviewPanel = lazy(() => import("./files/FilePreviewPanel"));
  const EMPTY_PENDING_FILE_SURFACE_IDS: ReadonlySet<string> = new Set();
@@ -2692,6 +2602,8 @@ index 78c5f11316..2ef9fd1852 100644
 -  return path.some((target) => target instanceof Element && target.closest(selector));
 -}
 -
+-const SECRET_REQUEST_SELECTOR = '[data-v2-item-type="secret_request"]';
+-
 -/**
 - * Whether input that landed outside any editable or interactive element
 - * should be redirected into the composer. Shared by type-to-focus and
@@ -2699,6 +2611,9 @@ index 78c5f11316..2ef9fd1852 100644
 - */
 -function shouldRedirectInputToComposer(event: Event): boolean {
 -  if (event.defaultPrevented) return false;
+-  // Near a pending secret request, input is meant for its private field: it
+-  // must never land in the composer draft, which is persisted and sent.
+-  if (eventPathContainsSelector(event, SECRET_REQUEST_SELECTOR)) return false;
 -  if (eventPathContainsSelector(event, TYPE_TO_FOCUS_EDITABLE_SELECTOR)) return false;
 -  if (eventPathContainsSelector(event, TYPE_TO_FOCUS_INTERACTIVE_SELECTOR)) return false;
 -  if (document.querySelector(TYPE_TO_FOCUS_FLOATING_LAYER_SELECTOR)) return false;
@@ -2728,7 +2643,7 @@ index 78c5f11316..2ef9fd1852 100644
  const draftFanoutStateAtom = Atom.family((_routeKey: string) =>
    Atom.make({
      selections: null as ReadonlyArray<ModelSelection> | null,
-@@ -7594,6 +7525,7 @@ export default function ChatView(props: ChatViewProps) {
+@@ -7916,6 +7842,7 @@ export default function ChatView(props: ChatViewProps) {
        if (!activeThreadId || isCommandPaletteOpen()) {
          return;
        }
@@ -2738,7 +2653,7 @@ index 78c5f11316..2ef9fd1852 100644
          return;
 diff --git a/apps/web/src/components/chat/V2FileChangeDiffView.tsx b/apps/web/src/components/chat/V2FileChangeDiffView.tsx
 new file mode 100644
-index 0000000000..63745660f3
+index 000000000..63745660f
 --- /dev/null
 +++ b/apps/web/src/components/chat/V2FileChangeDiffView.tsx
 @@ -0,0 +1,43 @@
@@ -2786,10 +2701,10 @@ index 0000000000..63745660f3
 +  );
 +}
 diff --git a/apps/web/src/components/chat/V2ItemInspector.tsx b/apps/web/src/components/chat/V2ItemInspector.tsx
-index 0b82750655..76ee99880b 100644
+index 8f92a511d..f69f01929 100644
 --- a/apps/web/src/components/chat/V2ItemInspector.tsx
 +++ b/apps/web/src/components/chat/V2ItemInspector.tsx
-@@ -11,7 +11,7 @@ import {
+@@ -12,7 +12,7 @@ import {
    turnItemOutputText,
  } from "@t3tools/client-runtime/work-log/item-detail";
  import { ExternalLinkIcon, GitBranchIcon, RotateCcwIcon } from "lucide-react";
@@ -2798,9 +2713,9 @@ index 0b82750655..76ee99880b 100644
  
  import { useTheme } from "../../hooks/useTheme";
  import { cn } from "../../lib/utils";
-@@ -25,6 +25,78 @@ import ChatMarkdown from "../ChatMarkdown";
- import { RenderErrorBoundary } from "../RenderErrorBoundary";
- import { resolveExternalWebLinkHref } from "./externalLinkContextMenu";
+@@ -28,6 +28,78 @@ import { resolveExternalWebLinkHref } from "./externalLinkContextMenu";
+ import type { ExpandedImagePreview } from "./ExpandedImagePreview";
+ import { ShellCommandBlock } from "./ShellCommandBlock";
  
 +const V2FileChangeDiffView = lazy(() =>
 +  import("./V2FileChangeDiffView").then((module) => ({ default: module.V2FileChangeDiffView })),
@@ -2877,7 +2792,7 @@ index 0b82750655..76ee99880b 100644
  interface V2ItemInspectorProps {
    readonly projectedItem: OrchestrationV2ProjectedTurnItem;
    readonly environmentId: EnvironmentId;
-@@ -223,44 +295,12 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
+@@ -254,44 +326,12 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
        ) : null}
  
        {item.type === "file_change" ? (
@@ -2930,7 +2845,7 @@ index 0b82750655..76ee99880b 100644
        {item.type === "file_search" && item.pattern?.trim() ? (
 diff --git a/apps/web/src/components/chat/v2FileChangeDiff.test.ts b/apps/web/src/components/chat/v2FileChangeDiff.test.ts
 new file mode 100644
-index 0000000000..f5e096a5c4
+index 000000000..f5e096a5c
 --- /dev/null
 +++ b/apps/web/src/components/chat/v2FileChangeDiff.test.ts
 @@ -0,0 +1,36 @@
@@ -2972,7 +2887,7 @@ index 0000000000..f5e096a5c4
 +});
 diff --git a/apps/web/src/components/chat/v2FileChangeDiff.ts b/apps/web/src/components/chat/v2FileChangeDiff.ts
 new file mode 100644
-index 0000000000..5f2284e73d
+index 000000000..5f2284e73
 --- /dev/null
 +++ b/apps/web/src/components/chat/v2FileChangeDiff.ts
 @@ -0,0 +1,42 @@
@@ -3019,7 +2934,7 @@ index 0000000000..5f2284e73d
 +  return `${header}\n${body.join("\n")}`;
 +}
 diff --git a/apps/web/src/components/device/DeviceStreamView.test.tsx b/apps/web/src/components/device/DeviceStreamView.test.tsx
-index 7e03923401..7c57904c43 100644
+index 7e0392340..7c57904c4 100644
 --- a/apps/web/src/components/device/DeviceStreamView.test.tsx
 +++ b/apps/web/src/components/device/DeviceStreamView.test.tsx
 @@ -42,8 +42,13 @@ afterEach(async () => {
@@ -3110,7 +3025,7 @@ index 7e03923401..7c57904c43 100644
    await setup();
    await act(async () => {
 diff --git a/apps/web/src/components/device/DeviceStreamView.tsx b/apps/web/src/components/device/DeviceStreamView.tsx
-index 25c4c39dae..4b0effd28b 100644
+index 25c4c39da..4b0effd28 100644
 --- a/apps/web/src/components/device/DeviceStreamView.tsx
 +++ b/apps/web/src/components/device/DeviceStreamView.tsx
 @@ -395,13 +395,30 @@ export function DeviceStreamView(props: {
@@ -3144,69 +3059,11 @@ index 25c4c39dae..4b0effd28b 100644
          onKeyUp={(event) => {
            if (event.target !== event.currentTarget) return;
            clientRef.current?.sendKey(event.nativeEvent, "up");
-diff --git a/apps/web/src/components/settings/AddProviderInstanceDialog.logic.ts b/apps/web/src/components/settings/AddProviderInstanceDialog.logic.ts
-index 20d575c1cc..cebe84a00a 100644
---- a/apps/web/src/components/settings/AddProviderInstanceDialog.logic.ts
-+++ b/apps/web/src/components/settings/AddProviderInstanceDialog.logic.ts
-@@ -65,7 +65,8 @@ export function isConfiguredAcpRegistryAgent(
-     ) {
-       return false;
-     }
--    return (instance.config as Record<string, unknown>).agentId === agentId;
-+    const config = instance.config as Record<string, unknown>;
-+    return config.launchMode !== "custom" && config.agentId === agentId;
-   });
- }
- 
-diff --git a/apps/web/src/components/settings/AddProviderInstanceDialog.test.ts b/apps/web/src/components/settings/AddProviderInstanceDialog.test.ts
-index 71cac1f1c3..7e27090a73 100644
---- a/apps/web/src/components/settings/AddProviderInstanceDialog.test.ts
-+++ b/apps/web/src/components/settings/AddProviderInstanceDialog.test.ts
-@@ -91,6 +91,12 @@ describe("ACP Registry wizard", () => {
- 
-     expect(isConfiguredAcpRegistryAgent(instances, "gemini")).toBe(true);
-     expect(isConfiguredAcpRegistryAgent(instances, "codex")).toBe(false);
-+    expect(
-+      isConfiguredAcpRegistryAgent(
-+        { custom: { driver: "acpRegistry", config: { launchMode: "custom", agentId: "gemini" } } },
-+        "gemini",
-+      ),
-+    ).toBe(false);
-   });
- 
-   it("keeps registry-prefilled identity separate from other drivers", () => {
-diff --git a/apps/web/src/components/settings/AddProviderInstanceDialog.tsx b/apps/web/src/components/settings/AddProviderInstanceDialog.tsx
-index 1288d990b9..545656bffc 100644
---- a/apps/web/src/components/settings/AddProviderInstanceDialog.tsx
-+++ b/apps/web/src/components/settings/AddProviderInstanceDialog.tsx
-@@ -172,7 +172,11 @@ export function AddProviderInstanceDialog({
-   const configDraft = configByDriver[driver] ?? EMPTY_CONFIG_DRAFT;
-   const manualAgentId = typeof configDraft.agentId === "string" ? configDraft.agentId.trim() : "";
-   const acpSelectionError =
--    selectedAcp !== null || (isManualAcpConfiguration && manualAgentId.length > 0)
-+    selectedAcp !== null ||
-+    (isManualAcpConfiguration &&
-+      (configDraft.launchMode === "custom"
-+        ? typeof configDraft.commandPath === "string" && configDraft.commandPath.trim().length > 0
-+        : manualAgentId.length > 0))
-       ? null
-       : "Select an ACP or configure one manually.";
-   const wizardStepSummaries = isAcpRegistry
-@@ -436,7 +440,8 @@ export function AddProviderInstanceDialog({
-                         <div>
-                           <h3 className="text-sm font-medium text-foreground">Enter manually</h3>
-                           <p className="mt-0.5 text-xs text-muted-foreground">
--                            Enter an official registry ID and any local executable or auth override.
-+                            Choose registry mode with an official agent ID, or custom mode with your
-+                            own executable and arguments.
-                           </p>
-                         </div>
-                         <Button
 diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
-index 4a50af16ce..267169b4e5 100644
+index 5877f1bbd..301f16000 100644
 --- a/apps/web/src/components/settings/ConnectionsSettings.tsx
 +++ b/apps/web/src/components/settings/ConnectionsSettings.tsx
-@@ -1989,6 +1989,7 @@ export function ConnectionsSettings() {
+@@ -2245,6 +2245,7 @@ export function ConnectionsSettings() {
      useState<EnvironmentId | null>(null);
    const [isUpdatingDesktopServerExposure, setIsUpdatingDesktopServerExposure] = useState(false);
    const [isDesktopServerExposureDialogOpen, setIsDesktopServerExposureDialogOpen] = useState(false);
@@ -3214,7 +3071,7 @@ index 4a50af16ce..267169b4e5 100644
    const [isUpdatingTailscaleServe, setIsUpdatingTailscaleServe] = useState(false);
    const [isUpdatingWslBackend, setIsUpdatingWslBackend] = useState(false);
    const [desktopWslMutationError, setDesktopWslMutationError] = useState<string | null>(null);
-@@ -2620,6 +2621,48 @@ export function ConnectionsSettings() {
+@@ -2927,6 +2928,48 @@ export function ConnectionsSettings() {
      },
      [setDefaultAdvertisedEndpointKey],
    );
@@ -3263,7 +3120,7 @@ index 4a50af16ce..267169b4e5 100644
    const handleSavedBackendHostChange = useCallback((value: string) => {
      const parsedPairingUrl = parsePairingUrlFields(value);
      if (parsedPairingUrl) {
-@@ -3266,6 +3309,67 @@ export function ConnectionsSettings() {
+@@ -3628,6 +3671,67 @@ export function ConnectionsSettings() {
        control={renderNetworkAccessToggle()}
      />
    );
@@ -3331,7 +3188,7 @@ index 4a50af16ce..267169b4e5 100644
    const renderDisabledNetworkAccessRow = () => (
      <SettingsRow
        title={searchableSetting("network-access").title}
-@@ -3391,6 +3495,7 @@ export function ConnectionsSettings() {
+@@ -3760,6 +3864,7 @@ export function ConnectionsSettings() {
              {canManageLocalBackend && desktopBridge ? (
                <>
                  {renderNetworkAccessRow()}
@@ -3339,148 +3196,11 @@ index 4a50af16ce..267169b4e5 100644
                  {renderEndpointRows("endpoint-rail")}
                  {renderTailscaleRow()}
                  {renderWslRow()}
-diff --git a/apps/web/src/components/settings/ProviderInstanceCard.tsx b/apps/web/src/components/settings/ProviderInstanceCard.tsx
-index 415ebb97c0..0979e5d426 100644
---- a/apps/web/src/components/settings/ProviderInstanceCard.tsx
-+++ b/apps/web/src/components/settings/ProviderInstanceCard.tsx
-@@ -717,8 +717,16 @@ export function ProviderInstanceCard({
-       driverKind={driverKind ?? instance.driver}
-       displayName={displayName}
-       accentColor={accentColor}
--      acpRegistryAgentId={readConfigString(instance.config, "agentId") ?? undefined}
--      acpRegistryIconUrl={readConfigString(instance.config, "registryIconUrl") ?? undefined}
-+      acpRegistryAgentId={
-+        readConfigString(instance.config, "launchMode") === "custom"
-+          ? undefined
-+          : (readConfigString(instance.config, "agentId") ?? undefined)
-+      }
-+      acpRegistryIconUrl={
-+        readConfigString(instance.config, "launchMode") === "custom"
-+          ? undefined
-+          : (readConfigString(instance.config, "registryIconUrl") ?? undefined)
-+      }
-       showBadge={Boolean(accentColor)}
-       className="size-5"
-       iconClassName="size-4 text-foreground/80"
-diff --git a/apps/web/src/components/settings/ProviderSettingsForm.test.ts b/apps/web/src/components/settings/ProviderSettingsForm.test.ts
-index 5737e47f2a..48493c2a03 100644
---- a/apps/web/src/components/settings/ProviderSettingsForm.test.ts
-+++ b/apps/web/src/components/settings/ProviderSettingsForm.test.ts
-@@ -57,12 +57,29 @@ describe("ProviderSettingsForm helpers", () => {
-     expect(acpRegistry).toBeDefined();
-     expect(acpRegistry?.hasDefaultInstance).toBe(false);
-     expect(deriveProviderSettingsFields(acpRegistry!).map((field) => field.key)).toEqual([
-+      "launchMode",
-       "agentId",
-       "commandPath",
-+      "args",
-+      "env",
-       "authMethodId",
-     ]);
-   });
- 
-+  it("stores validated custom arguments and environment as JSON values", () => {
-+    const definition = DRIVER_OPTION_BY_VALUE[ProviderDriverKind.make("acpRegistry")]!;
-+    const fields = deriveProviderSettingsFields(definition);
-+    const args = fields.find((field) => field.key === "args")!;
-+    const env = fields.find((field) => field.key === "env")!;
-+    expect(nextProviderConfigWithFieldValue({}, args, '["acp", "with spaces", ""]')).toEqual({
-+      args: ["acp", "with spaces", ""],
-+    });
-+    expect(nextProviderConfigWithFieldValue({}, env, '{"PROFILE":"existing"}')).toEqual({
-+      env: { PROFILE: "existing" },
-+    });
-+    expect(nextProviderConfigWithFieldValue({}, args, "[1]")).toEqual({ args: "[1]" });
-+  });
-+
-   it("derives a select control with its choices for the Antigravity sign-in method", () => {
-     const antigravity = DRIVER_OPTION_BY_VALUE[ProviderDriverKind.make("antigravity")];
-     expect(antigravity).toBeDefined();
-diff --git a/apps/web/src/components/settings/ProviderSettingsForm.tsx b/apps/web/src/components/settings/ProviderSettingsForm.tsx
-index 94372b97c8..4bf4b55d1a 100644
---- a/apps/web/src/components/settings/ProviderSettingsForm.tsx
-+++ b/apps/web/src/components/settings/ProviderSettingsForm.tsx
-@@ -29,6 +29,7 @@ export interface ProviderSettingsFieldModel {
-   readonly defaultBooleanValue?: boolean | undefined;
-   /** Choices for a `select` control. The first entry is the default. */
-   readonly options?: ReadonlyArray<ProviderSettingsFormOption> | undefined;
-+  readonly decodeJson?: ((value: string) => Option.Option<unknown>) | undefined;
- }
- 
- function titleizeFieldKey(key: string): string {
-@@ -108,6 +109,13 @@ export function deriveProviderSettingsFields(
-             ? { placeholder: formAnnotation.placeholder }
-             : {}),
-           clearWhenEmpty: formAnnotation.clearWhenEmpty ?? "omit",
-+          ...(formAnnotation.control === "json"
-+            ? {
-+                decodeJson: Schema.decodeUnknownOption(
-+                  Schema.fromJsonString(fieldSchema as Schema.Decoder<unknown>),
-+                ),
-+              }
-+            : {}),
-           ...(formAnnotation.control === "switch"
-             ? { defaultBooleanValue: readFieldBooleanDefault(fieldSchema) }
-             : {}),
-@@ -122,7 +130,7 @@ export function deriveProviderSettingsFields(
- function readProviderConfigString(config: unknown, key: string): string {
-   if (config === null || typeof config !== "object") return "";
-   const value = (config as Record<string, unknown>)[key];
--  return typeof value === "string" ? value : "";
-+  return typeof value === "string" ? value : value === undefined ? "" : JSON.stringify(value);
- }
- 
- function readProviderConfigBoolean(config: unknown, key: string, defaultValue = false): boolean {
-@@ -153,7 +161,8 @@ export function nextProviderConfigWithFieldValue(
-   if (field.clearWhenEmpty === "omit" && trimmed.length === 0) {
-     delete base[field.key];
-   } else {
--    base[field.key] = value;
-+    const decoded = field.decodeJson?.(value);
-+    base[field.key] = decoded && Option.isSome(decoded) ? decoded.value : value;
-   }
-   return Object.keys(base).length > 0 ? base : undefined;
- }
-@@ -268,7 +277,7 @@ function ProviderSettingsFieldRow({
-           className="w-full max-w-full @min-[32rem]/settings-row:w-56"
-           onChange={onChange}
-         />
--      ) : field.control === "textarea" ? (
-+      ) : field.control === "textarea" || field.control === "json" ? (
-         <Textarea
-           id={inputId}
-           aria-describedby={descriptionId}
-@@ -347,7 +356,7 @@ function ProviderSettingsFieldRow({
-     );
-   }
- 
--  if (field.control === "textarea") {
-+  if (field.control === "textarea" || field.control === "json") {
-     return (
-       <FieldFrame variant={variant}>
-         <label htmlFor={inputId} className={cn(variant === "card" && "block")}>
-diff --git a/apps/web/src/components/settings/ProviderSettingsPanel.tsx b/apps/web/src/components/settings/ProviderSettingsPanel.tsx
-index 41fd9efb5d..83b7a244c2 100644
---- a/apps/web/src/components/settings/ProviderSettingsPanel.tsx
-+++ b/apps/web/src/components/settings/ProviderSettingsPanel.tsx
-@@ -921,7 +921,11 @@ export function EnvironmentProviderSettings({
-       return;
-     }
- 
--    if (row.driver !== ProviderDriverKind.make("acpRegistry")) return;
-+    if (
-+      row.driver !== ProviderDriverKind.make("acpRegistry") ||
-+      providerConfigString(row.instance.config, "launchMode") === "custom"
-+    )
-+      return;
-     const agentId = providerConfigString(row.instance.config, "agentId");
-     if (agentId === null) return;
- 
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index ae55a327d1..78deb3d0e9 100644
+index 81b2d1248..15c29481f 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
-@@ -798,6 +798,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+@@ -830,6 +830,14 @@ export const SETTINGS_SEARCH_ITEMS = [
      searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
      localBackendManagementOnly: true,
    },
@@ -3497,10 +3217,10 @@ index ae55a327d1..78deb3d0e9 100644
      title: "Tailscale HTTPS",
 diff --git a/apps/web/src/lib/composerInputFocus.test.ts b/apps/web/src/lib/composerInputFocus.test.ts
 new file mode 100644
-index 0000000000..eaff6c1493
+index 000000000..e16d96ffe
 --- /dev/null
 +++ b/apps/web/src/lib/composerInputFocus.test.ts
-@@ -0,0 +1,92 @@
+@@ -0,0 +1,98 @@
 +import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 +
 +import { pasteTextToFocusComposer, shouldTypeToFocusComposer } from "./composerInputFocus";
@@ -3551,6 +3271,12 @@ index 0000000000..eaff6c1493
 +    expect(pasteTextToFocusComposer(pasteEvent(body))).toBe("hello");
 +  });
 +
++  it("keeps secret request input out of the persisted composer", () => {
++    const target = new FakeElement("div", new FakeElement('[data-v2-item-type="secret_request"]'));
++    expect(shouldTypeToFocusComposer(keyEvent(target))).toBe(false);
++    expect(pasteTextToFocusComposer(pasteEvent(target))).toBeNull();
++  });
++
 +  it("leaves typing and paste on the focused device screen", () => {
 +    const screen = new FakeElement('[role="application"]');
 +    expect(shouldTypeToFocusComposer(keyEvent(screen))).toBe(false);
@@ -3595,10 +3321,10 @@ index 0000000000..eaff6c1493
 +});
 diff --git a/apps/web/src/lib/composerInputFocus.ts b/apps/web/src/lib/composerInputFocus.ts
 new file mode 100644
-index 0000000000..42376299c4
+index 000000000..e85df0192
 --- /dev/null
 +++ b/apps/web/src/lib/composerInputFocus.ts
-@@ -0,0 +1,83 @@
+@@ -0,0 +1,84 @@
 +export const TYPE_TO_FOCUS_EDITABLE_SELECTOR = [
 +  "input",
 +  "textarea",
@@ -3649,6 +3375,7 @@ index 0000000000..42376299c4
 + */
 +export function shouldRedirectInputToComposer(event: Event): boolean {
 +  if (event.defaultPrevented) return false;
++  if (eventPathContainsSelector(event, '[data-v2-item-type="secret_request"]')) return false;
 +  if (eventPathContainsSelector(event, TYPE_TO_FOCUS_EDITABLE_SELECTOR)) return false;
 +  if (eventPathContainsSelector(event, TYPE_TO_FOCUS_INTERACTIVE_SELECTOR)) return false;
 +  if (document.querySelector(TYPE_TO_FOCUS_FLOATING_LAYER_SELECTOR)) return false;
@@ -3683,7 +3410,7 @@ index 0000000000..42376299c4
 +  return text.length > 0 ? text : null;
 +}
 diff --git a/apps/web/src/state/desktopNetworkAccess.test.ts b/apps/web/src/state/desktopNetworkAccess.test.ts
-index 0dde5f7d7d..38e5ceaa7c 100644
+index 25c522522..8733e2fca 100644
 --- a/apps/web/src/state/desktopNetworkAccess.test.ts
 +++ b/apps/web/src/state/desktopNetworkAccess.test.ts
 @@ -10,6 +10,7 @@ const serverExposureState: DesktopServerExposureState = {
@@ -3696,7 +3423,7 @@ index 0dde5f7d7d..38e5ceaa7c 100644
  };
 diff --git a/apps/web/src/workspaceBasenameResolution.test.ts b/apps/web/src/workspaceBasenameResolution.test.ts
 new file mode 100644
-index 0000000000..0eb789aaef
+index 000000000..0eb789aae
 --- /dev/null
 +++ b/apps/web/src/workspaceBasenameResolution.test.ts
 @@ -0,0 +1,30 @@
@@ -3732,7 +3459,7 @@ index 0000000000..0eb789aaef
 +});
 diff --git a/apps/web/src/workspaceBasenameResolution.ts b/apps/web/src/workspaceBasenameResolution.ts
 new file mode 100644
-index 0000000000..671b6872b6
+index 000000000..671b6872b
 --- /dev/null
 +++ b/apps/web/src/workspaceBasenameResolution.ts
 @@ -0,0 +1,18 @@
@@ -3755,7 +3482,7 @@ index 0000000000..671b6872b6
 +  return result;
 +}
 diff --git a/docs/user/devices.md b/docs/user/devices.md
-index a87770853a..fabe4ae2b4 100644
+index a87770853..fabe4ae2b 100644
 --- a/docs/user/devices.md
 +++ b/docs/user/devices.md
 @@ -46,6 +46,11 @@ to the other screen switches the live display and touch input to that screen.
@@ -3771,7 +3498,7 @@ index a87770853a..fabe4ae2b4 100644
  ## Tools
  
 diff --git a/docs/user/mobile-notifications.md b/docs/user/mobile-notifications.md
-index 9c5e30ef76..d53c8f9702 100644
+index 9c5e30ef7..d53c8f970 100644
 --- a/docs/user/mobile-notifications.md
 +++ b/docs/user/mobile-notifications.md
 @@ -8,4 +8,4 @@ Ordinary alerts stay quiet while the mobile app is in the foreground. Ongoing ac
@@ -3780,47 +3507,8 @@ index 9c5e30ef76..d53c8f9702 100644
  
 -Notification permission and Android notification channels are controlled in system Settings. Background delivery requires T3 Connect; a direct or Tailscale connection alone does not enable push notifications. The mobile app does not need to maintain a connection to your environment. Force-stopping the Android app in system Settings prevents push delivery until you open it again.
 +Notification permission and Android notification channels are controlled in system Settings. Android can also configure device-local notifications without a T3 Connect account from **Settings → Notifications**. This does not use a relay or require an account, but delivery still requires a local sender configured with the Firebase project; the mobile app does not send notifications itself. Without that sender, notifications are not delivered. A direct or Tailscale connection alone does not enable push notifications. Force-stopping the Android app in system Settings prevents push delivery until you open it again.
-diff --git a/docs/user/providers-acp.md b/docs/user/providers-acp.md
-index adf4e17af6..e6856a5127 100644
---- a/docs/user/providers-acp.md
-+++ b/docs/user/providers-acp.md
-@@ -1,4 +1,4 @@
--# ACP Registry
-+# ACP agents
- 
- T3 Code can run coding agents from the official
- [ACP Registry](https://agentclientprotocol.com/get-started/registry). Registry agents bring their
-@@ -23,6 +23,28 @@ work through the same generic integration.
- Search only shows agents that can run on the connected server. Registry agents are third-party
- code; review an agent's source and license before adding it.
- 
-+## Run a custom command
-+
-+For an agent outside the Registry, choose **Configure manually** when adding an ACP provider,
-+then set **Launch mode** to **Custom command**. Set the executable and enter its arguments as a
-+JSON array. On mobile, use **Settings → Provider accounts → Custom ACP command**. Existing ACP
-+instances can switch between custom and registry mode without changing their instance ID.
-+
-+For Maki installed through Nix, use executable `nix` and these arguments:
-+
-+```json
-+["run", "github:tontinton/maki", "--", "acp"]
-+```
-+
-+Custom commands use the agent's existing configuration and credentials on the server. T3 Code
-+inherits its server environment, applies the instance's environment settings, then applies any
-+**Custom environment** JSON overrides. It does not add trust flags or start a login automatically
-+during discovery. Global CLI flags belong before `acp` in the argument array.
-+
-+Custom mode skips registry downloads and installation. Install the executable yourself and use
-+an absolute path if it is not on the server's PATH. Registry mode still uses registry arguments
-+and environment, even when you override its executable.
-+
- ## Where agents run
- 
- Registry agents always run on the machine that hosts your T3 Code server. That stays true when you
 diff --git a/packages/client-runtime/src/device/stream.test.ts b/packages/client-runtime/src/device/stream.test.ts
-index 7ea5aca27a..26a8f4a133 100644
+index 7ea5aca27..26a8f4a13 100644
 --- a/packages/client-runtime/src/device/stream.test.ts
 +++ b/packages/client-runtime/src/device/stream.test.ts
 @@ -158,6 +158,110 @@ describe("native device stream transport", () => {
@@ -3979,7 +3667,7 @@ index 7ea5aca27a..26a8f4a133 100644
      expect(events.onStatus).toHaveBeenLastCalledWith("error", expect.stringContaining("No video"));
      expect(vi.getTimerCount()).toBe(0);
 diff --git a/packages/client-runtime/src/device/stream.ts b/packages/client-runtime/src/device/stream.ts
-index 6b1ff61588..8e158e6e5e 100644
+index 6b1ff6158..8e158e6e5 100644
 --- a/packages/client-runtime/src/device/stream.ts
 +++ b/packages/client-runtime/src/device/stream.ts
 @@ -273,6 +273,8 @@ export interface DeviceStreamClient {
@@ -4107,10 +3795,10 @@ index 6b1ff61588..8e158e6e5e 100644
        if (platform === "ios") {
          const name =
 diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
-index db2cc2a36c..17ffd1c48e 100644
+index e661bc2b1..ff8263ef4 100644
 --- a/packages/contracts/src/ipc.ts
 +++ b/packages/contracts/src/ipc.ts
-@@ -494,6 +494,7 @@ export interface DesktopServerExposureState {
+@@ -485,6 +485,7 @@ export interface DesktopServerExposureState {
    mode: DesktopServerExposureMode;
    endpointUrl: string | null;
    advertisedHost: string | null;
@@ -4118,7 +3806,7 @@ index db2cc2a36c..17ffd1c48e 100644
    tailscaleServeEnabled: boolean;
    tailscaleServePort: number;
  }
-@@ -502,6 +503,7 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
+@@ -493,6 +494,7 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
    mode: DesktopServerExposureModeSchema,
    endpointUrl: Schema.NullOr(Schema.String),
    advertisedHost: Schema.NullOr(Schema.String),
@@ -4126,7 +3814,7 @@ index db2cc2a36c..17ffd1c48e 100644
    tailscaleServeEnabled: Schema.Boolean,
    tailscaleServePort: Schema.Number,
  });
-@@ -1189,6 +1191,7 @@ export interface DesktopBridge {
+@@ -1159,6 +1161,7 @@ export interface DesktopBridge {
    resolveSshPasswordPrompt: (requestId: string, password: string | null) => Promise<void>;
    getServerExposureState: () => Promise<DesktopServerExposureState>;
    setServerExposureMode: (mode: DesktopServerExposureMode) => Promise<DesktopServerExposureState>;
@@ -4135,7 +3823,7 @@ index db2cc2a36c..17ffd1c48e 100644
      readonly enabled: boolean;
      readonly port?: number;
 diff --git a/packages/contracts/src/remoteAccess.ts b/packages/contracts/src/remoteAccess.ts
-index e3de3c29e1..a603f3361d 100644
+index e3de3c29e..a603f3361 100644
 --- a/packages/contracts/src/remoteAccess.ts
 +++ b/packages/contracts/src/remoteAccess.ts
 @@ -63,6 +63,8 @@ export const AdvertisedEndpoint = Schema.Struct({
@@ -4147,83 +3835,8 @@ index e3de3c29e1..a603f3361d 100644
    description: Schema.optional(TrimmedNonEmptyString),
  });
  export type AdvertisedEndpoint = typeof AdvertisedEndpoint.Type;
-diff --git a/packages/contracts/src/settings.ts b/packages/contracts/src/settings.ts
-index 082459efc3..27f86d5bf5 100644
---- a/packages/contracts/src/settings.ts
-+++ b/packages/contracts/src/settings.ts
-@@ -532,7 +532,13 @@ const makeBinaryPathSetting = (fallback: string) =>
-     Schema.withDecodingDefault(Effect.succeed(fallback)),
-   );
- 
--export type ProviderSettingsFormControl = "text" | "password" | "textarea" | "switch" | "select";
-+export type ProviderSettingsFormControl =
-+  | "text"
-+  | "password"
-+  | "textarea"
-+  | "switch"
-+  | "select"
-+  | "json";
- 
- export interface ProviderSettingsFormOption {
-   readonly value: string;
-@@ -875,6 +881,37 @@ export const AcpRegistrySettings = makeProviderSettingsSchema(
-       Schema.withDecodingDefault(Effect.succeed(true)),
-       Schema.annotateKey({ providerSettingsForm: { hidden: true } }),
-     ),
-+    launchMode: Schema.Literals(["registry", "custom"]).pipe(
-+      Schema.withDecodingDefault(Effect.succeed("registry")),
-+      Schema.annotateKey({
-+        title: "Launch mode",
-+        providerSettingsForm: {
-+          control: "select",
-+          options: [
-+            { value: "registry", label: "ACP Registry" },
-+            { value: "custom", label: "Custom command" },
-+          ],
-+        },
-+      }),
-+    ),
-+    args: Schema.Array(Schema.String).pipe(
-+      Schema.withDecodingDefault(Effect.succeed([])),
-+      Schema.annotateKey({
-+        title: "Custom arguments",
-+        description:
-+          'JSON argument array, for example ["run", "github:tontinton/maki", "--", "acp"]. Used only in custom mode.',
-+        providerSettingsForm: { control: "json", placeholder: "[]" },
-+      }),
-+    ),
-+    env: Schema.Record(Schema.String, Schema.String).pipe(
-+      Schema.withDecodingDefault(Effect.succeed({})),
-+      Schema.annotateKey({
-+        title: "Custom environment",
-+        description:
-+          "JSON environment overrides. Custom mode inherits the server environment and provider instance overrides.",
-+        providerSettingsForm: { control: "json", placeholder: "{}" },
-+      }),
-+    ),
-     agentId: TrimmedString.pipe(
-       Schema.withDecodingDefault(Effect.succeed("")),
-       Schema.annotateKey({
-@@ -888,7 +925,7 @@ export const AcpRegistrySettings = makeProviderSettingsSchema(
-       Schema.annotateKey({
-         title: "Executable override",
-         description:
--          "Optional local executable to use instead of installing the registry distribution. Registry arguments and environment are still applied.",
-+          "Executable for custom mode, for example nix. In registry mode this overrides the executable but keeps registry arguments and environment.",
-         providerSettingsForm: { placeholder: "Registry default", clearWhenEmpty: "omit" },
-       }),
-     ),
-@@ -911,7 +948,7 @@ export const AcpRegistrySettings = makeProviderSettingsSchema(
-     ),
-   },
-   {
--    order: ["agentId", "commandPath", "authMethodId"],
-+    order: ["launchMode", "agentId", "commandPath", "args", "env", "authMethodId"],
-   },
- );
- export type AcpRegistrySettings = typeof AcpRegistrySettings.Type;
 diff --git a/packages/shared/src/advertisedEndpoint.ts b/packages/shared/src/advertisedEndpoint.ts
-index 314d8272c8..ef499b8fb3 100644
+index 314d8272c..ef499b8fb 100644
 --- a/packages/shared/src/advertisedEndpoint.ts
 +++ b/packages/shared/src/advertisedEndpoint.ts
 @@ -18,6 +18,8 @@ export interface CreateAdvertisedEndpointInput {
@@ -4243,88 +3856,3 @@ index 314d8272c8..ef499b8fb3 100644
      ...(input.description === undefined ? {} : { description: input.description }),
    };
  }
-diff --git a/apps/server/src/orchestration-v2/CheckpointService.test.ts b/apps/server/src/orchestration-v2/CheckpointService.test.ts
-index b03437700a..328cb64cba 100644
---- a/apps/server/src/orchestration-v2/CheckpointService.test.ts
-+++ b/apps/server/src/orchestration-v2/CheckpointService.test.ts
-@@ -17,6 +17,63 @@ import * as CheckpointStore from "../checkpointing/CheckpointStore.ts";
- import * as CheckpointService from "./CheckpointService.ts";
- import * as IdAllocator from "./IdAllocator.ts";
- 
-+it.effect("disables baseline and completion snapshots without invoking Git", () =>
-+  Effect.gen(function* () {
-+    const previous = process.env.T3_DISABLE_CHECKPOINTS;
-+    process.env.T3_DISABLE_CHECKPOINTS = "1";
-+    try {
-+      const scope: OrchestrationV2CheckpointScope = {
-+        id: CheckpointScopeId.make("scope:disabled"),
-+        threadId: ThreadId.make("thread:disabled"),
-+        runId: RunId.make("run:disabled"),
-+        nodeId: NodeId.make("node:disabled"),
-+        parentScopeId: null,
-+        providerThreadId: ProviderThreadId.make("provider:disabled"),
-+        kind: "root_run",
-+        ordinalWithinParent: 0,
-+        advancesAppRunCount: true,
-+        cwd: "/repo",
-+        createdAt: DateTime.makeUnsafe("2026-07-28T00:00:00.000Z"),
-+      };
-+      const testLayer = CheckpointService.layer.pipe(
-+        Layer.provide(
-+          Layer.mergeAll(
-+            IdAllocator.layer,
-+            Layer.mock(CheckpointStore.CheckpointStore)({
-+              isGitRepository: () => Effect.die("disabled checkpoints must not invoke Git"),
-+              hasCheckpointRef: () => Effect.die("disabled checkpoints must not look up refs"),
-+              captureCheckpoint: () => Effect.die("disabled checkpoints must not capture"),
-+              diffCheckpoints: () => Effect.die("disabled checkpoints must not diff"),
-+            }),
-+          ),
-+        ),
-+      );
-+      yield* Effect.gen(function* () {
-+        const checkpoints = yield* CheckpointService.CheckpointServiceV2;
-+        yield* checkpoints.captureBaseline({ scope, ordinalWithinScope: 0 });
-+        const baseline = yield* checkpoints.materializeBaselineCheckpoint({
-+          scope,
-+          ordinalWithinScope: 0,
-+        });
-+        const completion = yield* checkpoints.capture({
-+          scope,
-+          ordinalWithinScope: 1,
-+          runId: scope.runId!,
-+          nodeId: scope.nodeId!,
-+          appRunOrdinal: 1,
-+          capturedAt: scope.createdAt,
-+        });
-+        assert.equal(baseline.status, "missing");
-+        assert.equal(completion.status, "missing");
-+        assert.deepEqual(completion.files, []);
-+      }).pipe(Effect.provide(testLayer));
-+    } finally {
-+      if (previous === undefined) delete process.env.T3_DISABLE_CHECKPOINTS;
-+      else process.env.T3_DISABLE_CHECKPOINTS = previous;
-+    }
-+  }),
-+);
-+
- it.effect.each([false, true, "interrupt"] as const)(
-   "materializes baseline, lookup fails=%s",
-   (lookupFails) => {
-diff --git a/apps/server/src/orchestration-v2/CheckpointService.ts b/apps/server/src/orchestration-v2/CheckpointService.ts
-index 1471de7503..9046ff027e 100644
---- a/apps/server/src/orchestration-v2/CheckpointService.ts
-+++ b/apps/server/src/orchestration-v2/CheckpointService.ts
-@@ -273,8 +273,11 @@ export const layer: Layer.Layer<
-     const withWorkspaceLock = <A, E, R>(cwd: string, effect: Effect.Effect<A, E, R>) =>
-       Effect.flatMap(getWorkspaceSemaphore(cwd), (semaphore) => semaphore.withPermits(1)(effect));
- 
-+    // Keep run completion and provider-native diffs working without writing workspace snapshots.
-     const isGitCheckpointable = (cwd: string) =>
--      checkpointStore.isGitRepository(cwd).pipe(Effect.orElseSucceed(() => false));
-+      process.env.T3_DISABLE_CHECKPOINTS === "1"
-+        ? Effect.succeed(false)
-+        : checkpointStore.isGitRepository(cwd).pipe(Effect.orElseSucceed(() => false));
- 
-     const ensureScope: CheckpointServiceV2Shape["ensureScope"] = (scope) => Effect.succeed(scope);
- 

@@ -19,7 +19,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     t3code-source = {
-      url = "github:pingdotgg/t3code/4ee6bfd50ef4a089440d5c3662db2298da9cc50e";
+      url = "github:pingdotgg/t3code/611132c171f3a821bd2e32f22261135cef6330ac";
       flake = false;
     };
   };
@@ -162,6 +162,9 @@
         source-features = pkgs.runCommand "t3code-source-features" { } ''
           grep -a -q 'Pi started agent work outside an active T3 turn' ${sourceAssets}/apps/server/dist/binCli-*.mjs
           grep -a -q 'delegate_task' ${sourceAssets}/apps/server/dist/binCli-*.mjs
+          grep -a -q 'T3_DISABLE_CHECKPOINTS' ${sourceAssets}/apps/server/dist/binCli-*.mjs
+          grep -q 'T3_DISABLE_CHECKPOINTS' ${server}/bin/t3code-server
+          grep -q 'T3_DISABLE_CHECKPOINTS' ${t3code}/bin/.t3code-wrapped
           grep -q 'preferredLanInterfaceName' ${sourceAssets}/apps/desktop/dist-electron/main.cjs
           grep -R -q 'Show diff' ${sourceAssets}/apps/server/dist/client/assets
           touch "$out"
