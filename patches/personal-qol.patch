@@ -535,7 +535,7 @@ index e5bd11035..c7d88c1cf 100644
      getAdvertisedEndpoints,
    });
 diff --git a/apps/desktop/src/ipc/DesktopIpcHandlers.ts b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
-index a16535c4a..02bd6a6ee 100644
+index a67424a79..544d6c269 100644
 --- a/apps/desktop/src/ipc/DesktopIpcHandlers.ts
 +++ b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
 @@ -16,6 +16,7 @@ import {
@@ -546,7 +546,7 @@ index a16535c4a..02bd6a6ee 100644
    setServerExposureMode,
    setTailscaleServeEnabled,
  } from "./methods/serverExposure.ts";
-@@ -124,6 +125,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
+@@ -129,6 +130,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
  
    yield* ipc.handle(getServerExposureState);
    yield* ipc.handle(setServerExposureMode);
@@ -555,10 +555,10 @@ index a16535c4a..02bd6a6ee 100644
    yield* ipc.handle(getAdvertisedEndpoints);
  
 diff --git a/apps/desktop/src/ipc/channels.ts b/apps/desktop/src/ipc/channels.ts
-index 9ae71cab1..893d301aa 100644
+index 5b078314a..4c7d29e52 100644
 --- a/apps/desktop/src/ipc/channels.ts
 +++ b/apps/desktop/src/ipc/channels.ts
-@@ -60,6 +60,7 @@ export const ISSUE_SSH_WEBSOCKET_TOKEN_CHANNEL = "desktop:issue-ssh-websocket-to
+@@ -63,6 +63,7 @@ export const ISSUE_SSH_WEBSOCKET_TOKEN_CHANNEL = "desktop:issue-ssh-websocket-to
  export const SSH_PASSWORD_PROMPT_CHANNEL = "desktop:ssh-password-prompt";
  export const RESOLVE_SSH_PASSWORD_PROMPT_CHANNEL = "desktop:resolve-ssh-password-prompt";
  export const GET_SERVER_EXPOSURE_STATE_CHANNEL = "desktop:get-server-exposure-state";
@@ -591,7 +591,7 @@ index 9a9ce7689..b69c1e76c 100644
    channel: IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL,
    payload: SetTailscaleServeEnabledInput,
 diff --git a/apps/desktop/src/preload.ts b/apps/desktop/src/preload.ts
-index a97f224a1..536de518a 100644
+index 0dd9604f9..412d785e9 100644
 --- a/apps/desktop/src/preload.ts
 +++ b/apps/desktop/src/preload.ts
 @@ -177,6 +177,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
@@ -2317,10 +2317,10 @@ index 7cbcd895a..501866baf 100644
      // stay in the blob so driver schema validation flags it instead of the
      // fold silently repairing the config.
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index 42a34d8b5..06faa0bff 100644
+index 42b4a0618..64b5563cb 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
-@@ -180,6 +180,10 @@ import { previewEnvironment } from "../state/preview";
+@@ -186,6 +186,10 @@ import { previewEnvironment } from "../state/preview";
  import { useAtomCommand } from "../state/use-atom-command";
  import { useAtomQueryRunner } from "../state/use-atom-query-runner";
  import { projectEnvironment } from "../state/projects";
@@ -2331,7 +2331,7 @@ index 42a34d8b5..06faa0bff 100644
  import {
    claimWorkspaceBasenameLookup,
    needsWorkspaceBasenameLookup,
-@@ -2521,6 +2525,14 @@ function useChatMarkdownState({
+@@ -2263,6 +2267,14 @@ function useChatMarkdownState({
    const searchProjectEntries = useAtomQueryRunner(projectEnvironment.searchEntries, {
      reportFailure: false,
    });
@@ -2346,7 +2346,7 @@ index 42a34d8b5..06faa0bff 100644
    const openPreview = useAtomCommand(previewEnvironment.open, {
      reportFailure: false,
    });
-@@ -2791,6 +2803,77 @@ function useChatMarkdownState({
+@@ -2533,6 +2545,77 @@ function useChatMarkdownState({
      },
      [cwd, environmentId, searchProjectEntries],
    );
@@ -2424,15 +2424,15 @@ index 42a34d8b5..06faa0bff 100644
    // A bare filename resolves to the workspace root, which is rarely where the
    // file is, so ask the index before opening. Absolute host paths open as-is.
    const openFileInPanel = useCallback(
-@@ -2826,6 +2909,7 @@ function useChatMarkdownState({
+@@ -2568,6 +2651,7 @@ function useChatMarkdownState({
    );
    const fileLinkChip = useCallback(
      (fileLinkMeta: MarkdownFileLinkMeta, copyMarkdown: string, mediaSource?: string) => {
 +      fileLinkMeta = resolvedFileLinkMeta(fileLinkMeta);
-       const parentSuffix = fileLinkParentSuffixByPath.get(
-         fileLinkMeta.filePath.replaceAll("\\", "/"),
-       );
-@@ -2899,6 +2983,7 @@ function useChatMarkdownState({
+       const mediaPath = mediaSource ?? fileLinkMeta.filePath;
+       const canPreviewMedia =
+         mediaMimeTypeFromExtension(
+@@ -2636,6 +2720,7 @@ function useChatMarkdownState({
        revealInFileManagerLabel,
        revealMarkdownFileInFileManager,
        threadRef,
@@ -2440,7 +2440,7 @@ index 42a34d8b5..06faa0bff 100644
      ],
    );
  
-@@ -2935,6 +3020,7 @@ function useChatMarkdownState({
+@@ -2672,6 +2757,7 @@ function useChatMarkdownState({
        text,
        threadRef,
        updateThreadPullRequestLink,
@@ -2448,7 +2448,7 @@ index 42a34d8b5..06faa0bff 100644
      }),
      [
        canOperateHost,
-@@ -2968,6 +3054,7 @@ function useChatMarkdownState({
+@@ -2705,6 +2791,7 @@ function useChatMarkdownState({
        text,
        threadRef,
        updateThreadPullRequestLink,
@@ -2456,7 +2456,7 @@ index 42a34d8b5..06faa0bff 100644
      ],
    );
    return {
-@@ -3004,6 +3091,8 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
+@@ -2741,6 +2828,8 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
  }
  
  // Keep component types stable when streaming changes the message state.
@@ -2465,7 +2465,7 @@ index 42a34d8b5..06faa0bff 100644
  const CHAT_MARKDOWN_COMPONENTS = {
    h1: markdownHeadingRenderer(1),
    h2: markdownHeadingRenderer(2),
-@@ -3384,6 +3473,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -3125,6 +3214,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
        imageBaseDir,
        threadRef,
        renderContextReference,
@@ -2473,7 +2473,7 @@ index 42a34d8b5..06faa0bff 100644
      } = use(ChatMarkdownRendererContext);
      const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
      const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
-@@ -3408,7 +3498,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -3149,7 +3239,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
      const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
      const { className, style: _style, width, height, ...imageProps } = props;
      const authoredSizeStyle = authoredImageSizeStyle(width, height);
@@ -2487,7 +2487,7 @@ index 42a34d8b5..06faa0bff 100644
      const directUri = imageSource._tag === "Direct" ? imageSource.uri : null;
      const githubMediaUrl =
 diff --git a/apps/web/src/components/ChatView.logic.test.ts b/apps/web/src/components/ChatView.logic.test.ts
-index bf8d32f1d..cff9a1fc7 100644
+index f870182b1..7647feb86 100644
 --- a/apps/web/src/components/ChatView.logic.test.ts
 +++ b/apps/web/src/components/ChatView.logic.test.ts
 @@ -1848,6 +1848,12 @@ describe("shouldRefocusComposerOnWindowFocus", () => {
@@ -2504,7 +2504,7 @@ index bf8d32f1d..cff9a1fc7 100644
      expect(shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "dialog" }))).toBe(false);
      expect(shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "-popup" }))).toBe(false);
 diff --git a/apps/web/src/components/ChatView.logic.ts b/apps/web/src/components/ChatView.logic.ts
-index f36e54d33..fbe95187b 100644
+index 1e79964ca..de9bdb4a7 100644
 --- a/apps/web/src/components/ChatView.logic.ts
 +++ b/apps/web/src/components/ChatView.logic.ts
 @@ -1280,10 +1280,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
@@ -2530,10 +2530,10 @@ index f36e54d33..fbe95187b 100644
    );
  }
 diff --git a/apps/web/src/components/ChatView.tsx b/apps/web/src/components/ChatView.tsx
-index 3b08fa7e5..9dc15384d 100644
+index 5b70ffb17..476c95fff 100644
 --- a/apps/web/src/components/ChatView.tsx
 +++ b/apps/web/src/components/ChatView.tsx
-@@ -92,6 +92,14 @@ import {
+@@ -93,6 +93,14 @@ import {
  } from "@t3tools/client-runtime/errors";
  import { readPastedComposerContext } from "./composerInlineTokenPaste";
  import { isPasteAsTextShortcut } from "@t3tools/client-runtime/text-paste";
@@ -2548,7 +2548,7 @@ index 3b08fa7e5..9dc15384d 100644
  import { effectiveSnoozed, threadWokeAt } from "@t3tools/client-runtime/state/thread-settled";
  import { useAcknowledgeThreadWoke, useThreadActions } from "../hooks/useThreadActions";
  import {
-@@ -705,94 +713,12 @@ const DevicePanel = lazy(() =>
+@@ -706,94 +714,12 @@ const DevicePanel = lazy(() =>
  );
  const FilePreviewPanel = lazy(() => import("./files/FilePreviewPanel"));
  const EMPTY_PENDING_FILE_SURFACE_IDS: ReadonlySet<string> = new Set();
@@ -2643,7 +2643,7 @@ index 3b08fa7e5..9dc15384d 100644
  const draftFanoutStateAtom = Atom.family((_routeKey: string) =>
    Atom.make({
      selections: null as ReadonlyArray<ModelSelection> | null,
-@@ -7916,6 +7842,7 @@ export default function ChatView(props: ChatViewProps) {
+@@ -7963,6 +7889,7 @@ export default function ChatView(props: ChatViewProps) {
        if (!activeThreadId || isCommandPaletteOpen()) {
          return;
        }
@@ -3060,10 +3060,10 @@ index 25c4c39da..4b0effd28 100644
            if (event.target !== event.currentTarget) return;
            clientRef.current?.sendKey(event.nativeEvent, "up");
 diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
-index 5877f1bbd..301f16000 100644
+index 625efb562..ffd201527 100644
 --- a/apps/web/src/components/settings/ConnectionsSettings.tsx
 +++ b/apps/web/src/components/settings/ConnectionsSettings.tsx
-@@ -2245,6 +2245,7 @@ export function ConnectionsSettings() {
+@@ -2244,6 +2244,7 @@ export function ConnectionsSettings() {
      useState<EnvironmentId | null>(null);
    const [isUpdatingDesktopServerExposure, setIsUpdatingDesktopServerExposure] = useState(false);
    const [isDesktopServerExposureDialogOpen, setIsDesktopServerExposureDialogOpen] = useState(false);
@@ -3071,7 +3071,7 @@ index 5877f1bbd..301f16000 100644
    const [isUpdatingTailscaleServe, setIsUpdatingTailscaleServe] = useState(false);
    const [isUpdatingWslBackend, setIsUpdatingWslBackend] = useState(false);
    const [desktopWslMutationError, setDesktopWslMutationError] = useState<string | null>(null);
-@@ -2927,6 +2928,48 @@ export function ConnectionsSettings() {
+@@ -2926,6 +2927,48 @@ export function ConnectionsSettings() {
      },
      [setDefaultAdvertisedEndpointKey],
    );
@@ -3120,7 +3120,7 @@ index 5877f1bbd..301f16000 100644
    const handleSavedBackendHostChange = useCallback((value: string) => {
      const parsedPairingUrl = parsePairingUrlFields(value);
      if (parsedPairingUrl) {
-@@ -3628,6 +3671,67 @@ export function ConnectionsSettings() {
+@@ -3627,6 +3670,67 @@ export function ConnectionsSettings() {
        control={renderNetworkAccessToggle()}
      />
    );
@@ -3188,7 +3188,7 @@ index 5877f1bbd..301f16000 100644
    const renderDisabledNetworkAccessRow = () => (
      <SettingsRow
        title={searchableSetting("network-access").title}
-@@ -3760,6 +3864,7 @@ export function ConnectionsSettings() {
+@@ -3759,6 +3863,7 @@ export function ConnectionsSettings() {
              {canManageLocalBackend && desktopBridge ? (
                <>
                  {renderNetworkAccessRow()}
@@ -3197,10 +3197,10 @@ index 5877f1bbd..301f16000 100644
                  {renderTailscaleRow()}
                  {renderWslRow()}
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index 81b2d1248..15c29481f 100644
+index 853886d81..26bffc3e8 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
-@@ -830,6 +830,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+@@ -837,6 +837,14 @@ export const SETTINGS_SEARCH_ITEMS = [
      searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
      localBackendManagementOnly: true,
    },
@@ -3795,10 +3795,10 @@ index 6b1ff6158..8e158e6e5 100644
        if (platform === "ios") {
          const name =
 diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
-index e661bc2b1..ff8263ef4 100644
+index 149f28219..6c355c76e 100644
 --- a/packages/contracts/src/ipc.ts
 +++ b/packages/contracts/src/ipc.ts
-@@ -485,6 +485,7 @@ export interface DesktopServerExposureState {
+@@ -496,6 +496,7 @@ export interface DesktopServerExposureState {
    mode: DesktopServerExposureMode;
    endpointUrl: string | null;
    advertisedHost: string | null;
@@ -3806,7 +3806,7 @@ index e661bc2b1..ff8263ef4 100644
    tailscaleServeEnabled: boolean;
    tailscaleServePort: number;
  }
-@@ -493,6 +494,7 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
+@@ -504,6 +505,7 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
    mode: DesktopServerExposureModeSchema,
    endpointUrl: Schema.NullOr(Schema.String),
    advertisedHost: Schema.NullOr(Schema.String),
@@ -3814,7 +3814,7 @@ index e661bc2b1..ff8263ef4 100644
    tailscaleServeEnabled: Schema.Boolean,
    tailscaleServePort: Schema.Number,
  });
-@@ -1159,6 +1161,7 @@ export interface DesktopBridge {
+@@ -1170,6 +1172,7 @@ export interface DesktopBridge {
    resolveSshPasswordPrompt: (requestId: string, password: string | null) => Promise<void>;
    getServerExposureState: () => Promise<DesktopServerExposureState>;
    setServerExposureMode: (mode: DesktopServerExposureMode) => Promise<DesktopServerExposureState>;

@@ -27,7 +27,7 @@ stdenvNoCC.mkDerivation {
     fetcherVersion = 4;
     # Unfiltered: filtered fetches skip packages the sandboxed install
     # resolves (observed with the Sep 13 lockfile and @effect/platform-bun).
-    hash = "sha256-0rEzuHMN4onDFAQqGPw9edktanrpC8AXhvMbjRlqD2s=";
+    hash = "sha256-4+x6jpiUfDCXR3tog9WedhLdN0qQsnZIc3IkgV8XOVg=";
   };
 
   pnpmWorkspaces = [
@@ -95,6 +95,18 @@ stdenvNoCC.mkDerivation {
     # @ff-labs/fff-node. Preserve the filtered server workspace dependencies so
     # package-server.nix can run dist/bin.mjs without the published launcher.
     cp -rL apps/server/node_modules "$out/apps/server/"
+    fffContext="$(find node_modules/.pnpm -maxdepth 1 -type d -name '@ff-labs+fff-node@*' -print -quit)"
+    if [ -n "$fffContext" ]; then
+      cp -rL "$fffContext/node_modules/ffi-rs" "$out/apps/server/node_modules/"
+      ffiContext="$(find node_modules/.pnpm -maxdepth 1 -type d -name 'ffi-rs@*' -print -quit)"
+      mkdir -p "$out/apps/server/node_modules/ffi-rs/node_modules"
+      cp -rL "$ffiContext/node_modules/@yuuang" "$out/apps/server/node_modules/ffi-rs/node_modules/"
+      for binary in "$fffContext"/node_modules/@ff-labs/fff-bin-*; do
+        if [ -d "$binary" ]; then
+          cp -rL "$binary" "$out/apps/server/node_modules/@ff-labs/"
+        fi
+      done
+    fi
     # The server CLI externalizes Cursor SDK dependencies whose pnpm peer
     # context sits beside (not inside) the SDK package directory.
     cursorContext="$(find node_modules/.pnpm -maxdepth 1 -type d -name '@cursor+sdk@1.0.35*' -print -quit)"
