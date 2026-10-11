@@ -124,6 +124,17 @@ USB debugging enabled and the host key authorized; it appears once `adb devices`
 reports it as `device` rather than `unauthorized`. Verify the bundled tooling
 with `nix build .#checks.x86_64-linux.android-tooling`.
 
+## Browser previews
+
+T3 Code renders HTML previews and server browser tabs with a pinned Chrome for
+Testing headless shell. Upstream downloads it into T3 home, but that build
+cannot find its libraries on NixOS, and `t3 browser setup` only knows how to
+install Debian packages. The flake builds the same pinned version, patched to
+use Nix libraries, and both launchers point T3's install location at it. The
+version and checksum are read from the pinned T3 source, so they follow T3
+updates. Restart T3 Code after updating the flake so the launcher replaces an
+earlier download.
+
 ## Platform
 
 Currently packaged for `x86_64-linux`, matching the upstream Linux AppImage.

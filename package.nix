@@ -7,7 +7,7 @@
   pkgs,
   runCommand,
   sourceAssets,
-  seedDeviceHub,
+  seedTools,
   androidSdk,
   androidPlatformTools,
   androidEmulator,
@@ -157,7 +157,7 @@ runCommand "${pname}-${version}"
       --set ANDROID_SDK_ROOT "${androidHome}" \
       --set JAVA_HOME "${androidJdk.home}" \
       --prefix PATH : "${runtimePath}" \
-      --run '${seedDeviceHub}'
+      --run '${seedTools}'
 
     if [ -n "$desktop_file" ]; then
       wrapProgram "$out/bin/${pname}" \

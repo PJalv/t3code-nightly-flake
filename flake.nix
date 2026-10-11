@@ -42,6 +42,31 @@
       deviceHub = pkgs.callPackage ./package-device-hub.nix { inherit scrcpyServer; };
       seedDeviceHub = pkgs.writeShellScript "t3code-seed-device-hub"
         (import ./seed-device-hub.nix { inherit deviceHub; });
+      # Read T3's pinned headless-browser build from its source so the Nix build
+      # always matches what T3 would download.
+      previewBrowserPin =
+        let
+          lines = lib.splitString "\n" (builtins.readFile "${t3code-source}/apps/server/src/preview/PreviewBrowser.ts");
+          capture = pattern: lib.findFirst (m: m != null) null (map (builtins.match pattern) lines);
+          linux64Index = lib.lists.findFirstIndex (line: builtins.match " *linux64: \\{" line != null) null lines;
+          linux64 = if linux64Index == null then [ ] else lib.sublist (linux64Index + 1) 3 lines;
+          version = capture ''const VERSION = "([0-9.]+)";'';
+          sha256 = lib.findFirst (m: m != null) null (map (builtins.match "[ ]*sha256: \"([0-9a-f]{64})\",") linux64);
+        in
+        assert lib.assertMsg (version != null && sha256 != null)
+          "Could not read the linux64 headless-browser pin from PreviewBrowser.ts; update the parser in flake.nix.";
+        { version = builtins.head version; sha256 = builtins.head sha256; };
+      chromeHeadlessShell = pkgs.callPackage ./package-chrome-headless-shell.nix {
+        inherit (previewBrowserPin) version sha256;
+      };
+      seedChromeHeadlessShell = pkgs.writeShellScript "t3code-seed-chrome-headless-shell"
+        (import ./seed-chrome-headless-shell.nix { inherit chromeHeadlessShell; });
+      # Each launcher runs this before T3 starts, so neither falls back to an
+      # npm or Chrome download at runtime.
+      seedTools = pkgs.writeShellScript "t3code-seed-tools" ''
+        ${seedDeviceHub}
+        ${seedChromeHeadlessShell}
+      '';
       androidComposition = (pkgs.androidenv.override { licenseAccepted = true; }).composeAndroidPackages {
         platformVersions = [ "35" ];
         includeEmulator = "if-supported";
@@ -70,10 +95,10 @@
       '';
       androidHome = "${androidSdk}/libexec/android-sdk";
       t3code = pkgs.callPackage ./package.nix {
-        inherit sourceAssets seedDeviceHub androidSdk androidPlatformTools androidEmulator androidJdk;
+        inherit sourceAssets seedTools androidSdk androidPlatformTools androidEmulator androidJdk;
       };
       server = pkgs.callPackage ./package-server.nix {
-        inherit sourceAssets seedDeviceHub androidSdk androidPlatformTools androidEmulator androidJdk;
+        inherit sourceAssets seedTools androidSdk androidPlatformTools androidEmulator androidJdk;
       };
     in
     {
@@ -86,6 +111,7 @@
         source-assets = sourceAssets;
         device-hub = deviceHub;
         scrcpy-server = scrcpyServer;
+        chrome-headless-shell = chromeHeadlessShell;
       };
 
       apps.${system} = {
@@ -158,8 +184,9 @@
           # otherwise downloads from GitHub at runtime.
           test -f ${deviceHub}/lib/node_modules/expo-device-hub/vendor/serve-emu/vendor/scrcpy-server-v${scrcpyServer.version}
           test -f ${deviceHub}/lib/node_modules/expo-device-hub/dist/server/cli.mjs
-          grep -q 't3code-seed-device-hub' ${server}/bin/t3code-server
-          grep -q 't3code-seed-device-hub' ${t3code}/bin/.t3code-wrapped
+          grep -q 't3code-seed-tools' ${server}/bin/t3code-server
+          grep -q 't3code-seed-tools' ${t3code}/bin/.t3code-wrapped
+          grep -q 't3code-seed-device-hub' ${seedTools}
           # A version-matched npm install must also be replaced: it has the
           # sentinel but lacks the bundled scrcpy entry and runtime deps.
           testHome="$(mktemp -d)"
@@ -171,6 +198,30 @@
           test -f "$hubDir/node_modules/expo-device-hub/dist/server/cli-real.mjs"
           test -f "$hubDir/node_modules/expo-device-hub/vendor/serve-emu/vendor/scrcpy-server-v${scrcpyServer.version}"
           T3CODE_HOME="$testHome" ${seedDeviceHub}
+          touch "$out"
+        '';
+        headless-browser = pkgs.runCommand "t3code-headless-browser" { } ''
+          browser=${chromeHeadlessShell}/chrome-headless-shell
+          # Every library resolves from the Nix store, not from an FHS path.
+          ! ${pkgs.glibc.bin}/bin/ldd "$browser" | grep -q 'not found'
+          "$browser" --version | grep -q '${previewBrowserPin.version}'
+          # It renders a page (T3 launches it the same way, plus a sandbox).
+          export HOME="$(mktemp -d)"
+          "$browser" --headless=new --no-sandbox --disable-gpu --no-first-run \
+            --user-data-dir="$HOME/profile" \
+            --dump-dom 'data:text/html,<p id="t3">rendered</p>' > dom.html
+          grep -q '<p id="t3">rendered</p>' dom.html
+          # Seeding replaces an earlier unpatched download at T3's install path.
+          grep -q 't3code-seed-chrome-headless-shell' ${seedTools}
+          testHome="$(mktemp -d)"
+          dir="$testHome/tools/chrome-headless-shell/linux64/${previewBrowserPin.version}"
+          mkdir -p "$dir"
+          touch "$dir/chrome-headless-shell"
+          T3CODE_HOME="$testHome" ${seedChromeHeadlessShell}
+          test "$(readlink "$dir")" = '${chromeHeadlessShell}'
+          test -x "$dir/chrome-headless-shell"
+          T3CODE_HOME="$testHome" ${seedChromeHeadlessShell}
+          ! ls -A "$testHome/tools/chrome-headless-shell/linux64" | grep -q '^\.install-'
           touch "$out"
         '';
       };

@@ -8,7 +8,7 @@
 , openssh
 , lsof
 , sourceAssets
-, seedDeviceHub
+, seedTools
 , androidSdk
 , androidPlatformTools
 , androidEmulator
@@ -114,7 +114,7 @@ buildNpmPackage {
       --set ANDROID_SDK_ROOT "${androidHome}" \
       --set JAVA_HOME "${androidJdk.home}" \
       --prefix PATH : "${runtimePath}" \
-      --run '${seedDeviceHub}'
+      --run '${seedTools}'
 
     makeWrapper ${nodejs_24}/bin/node "$out/bin/t3code-server" \
       --add-flags "$out/lib/node_modules/t3/${binPath}" \
@@ -124,7 +124,7 @@ buildNpmPackage {
       --set ANDROID_SDK_ROOT "${androidHome}" \
       --set JAVA_HOME "${androidJdk.home}" \
       --prefix PATH : "${runtimePath}" \
-      --run '${seedDeviceHub}'
+      --run '${seedTools}'
 
     runHook postInstall
   '';
