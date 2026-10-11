@@ -7,7 +7,6 @@
 , nodejs_24
 , openssh
 , lsof
-, pi
 , sourceAssets
 , seedDeviceHub
 , androidSdk
@@ -34,8 +33,9 @@ let
     hash = platformPackage.integrity;
   };
   androidHome = "${androidSdk}/libexec/android-sdk";
+  # Agent CLIs (Pi, Codex, ...) come from the user's PATH, which the wrapper
+  # preserves; only T3's own runtime tools are pinned here.
   runtimePath = lib.makeBinPath [
-    pi
     git
     openssh
     lsof
@@ -130,12 +130,12 @@ buildNpmPackage {
   '';
 
   passthru = {
-    inherit pi sourceAssets;
+    inherit sourceAssets;
     release = source;
   };
 
   meta = {
-    description = "Headless T3 Code nightly server with bundled Pi agent CLIs";
+    description = "Headless T3 Code nightly server with Android device tooling";
     homepage = "https://github.com/pingdotgg/t3code";
     license = lib.licenses.mit;
     mainProgram = "t3code-server";

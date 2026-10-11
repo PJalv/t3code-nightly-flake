@@ -6,7 +6,6 @@
   makeWrapper,
   pkgs,
   runCommand,
-  pi,
   sourceAssets,
   seedDeviceHub,
   androidSdk,
@@ -20,8 +19,9 @@ let
   pname = "t3code";
   inherit (source) version;
   androidHome = "${androidSdk}/libexec/android-sdk";
+  # Agent CLIs (Pi, Codex, ...) come from the user's PATH, which the wrapper
+  # preserves; only T3's own runtime tools are pinned here.
   runtimePath = lib.makeBinPath [
-    pi
     pkgs.lsof
     androidSdk
     androidPlatformTools
@@ -94,7 +94,6 @@ runCommand "${pname}-${version}"
 
     passthru = {
       inherit
-        pi
         sourceAppimageContents
         sourceAssets
         ;
@@ -102,7 +101,7 @@ runCommand "${pname}-${version}"
     };
 
     meta = {
-      description = "Latest T3 Code nightly with bundled Pi agent CLIs";
+      description = "Latest T3 Code nightly with Android device tooling";
       homepage = "https://github.com/pingdotgg/t3code";
       changelog = "https://github.com/pingdotgg/t3code/releases/tag/v${version}";
       license = lib.licenses.mit;

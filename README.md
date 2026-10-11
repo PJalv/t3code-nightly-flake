@@ -1,7 +1,7 @@
 # t3code-nightly-flake
 
-The latest T3 Code nightly runtime for Nix, bundled with Pi from the
-`git.pjalv.com/PJalv/pi-copilot` fork.
+The latest T3 Code nightly runtime for Nix, with the Android tooling its Device
+panel needs. Agent CLIs such as Pi and Codex are not bundled.
 
 The web, server, and desktop JavaScript bundles are built from the pinned
 [`pingdotgg/t3code`](https://github.com/pingdotgg/t3code) source revision, then
@@ -60,25 +60,10 @@ Use the full upstream CLI with:
 nix run .#t3 -- --help
 ```
 
-Codex and other provider CLIs are not bundled. Install them separately and
-make them available on your `PATH`. The launcher preserves that path and keeps
-Pi on the runtime path. Pi includes the fork's OpenCode-aligned Copilot provider and T3
-RPC compaction fixes. MCP uses Pi's built-in support. Configure servers in
-`~/.pi/agent/mcp.json` or in a trusted project's `.pi/mcp.json`, and manage them
-with `pi mcp` or `/mcp`. T3 registers its authenticated `t3-code` server for
-each session without rewriting either config file. Do not add a separate
-`t3-code` entry unless you intend to override T3's session connection; native
-Pi gives configured servers precedence over extension registrations.
-
-The adapter is no longer bundled. If you installed `pi-mcp-adapter` yourself,
-remove it with `pi remove npm:pi-mcp-adapter`; otherwise it disables Pi's native
-MCP extension. The wrapper warns about installed copies but does not edit your
-settings. Existing adapter-only options, such as `directTools` and `lifecycle`,
-are not native MCP settings. Use `exposure: "direct"` for directly declared
-tools; native MCP defaults to calling server tools through codemode.
-
-Standalone `nix run .#pi` retains the pinned `@tintinweb/pi-subagents` extension.
-The Pi runtime bundled into T3 desktop/server does not inject that extension.
+Agent CLIs, including Pi and Codex, are not bundled. Install them separately,
+for example from your NixOS or Home Manager configuration, and make them
+available on your `PATH`. The launchers preserve that path; T3 Code runs the
+`pi` it finds there unless a binary path is set in its provider settings.
 
 The flake pins `nixpkgs` directly. It does not depend on `llm-agents.nix` or
 advertise Numtide's cache.
@@ -111,8 +96,8 @@ The daily GitHub Actions workflow opens an update PR. It also refreshes the
 pinned `nixpkgs`, even when the selected T3 Code nightly has not changed. The
 delay can be overridden when running the workflow manually.
 
-Update the bundled Pi runtime through its pinned flake input, not T3 Code's
-npm update action for the Nix-store binary.
+Do not use T3 Code's npm update action for the Nix-store binary; update the
+flake input instead.
 
 ## Android device control
 

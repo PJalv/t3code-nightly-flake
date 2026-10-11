@@ -1,24 +1,15 @@
 {
-  description = "Latest T3 Code nightly with the T3 Pi Copilot runtime";
+  description = "Latest T3 Code nightly with its Android device tooling";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    # Pi 1.1.0 with the opencode-aligned GitHub Copilot port and T3's
-    # RPC compaction fixes. Pi is packaged directly from its npm release.
-    pi-copilot = {
-      url = "git+ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git?ref=pi-1.1.0-copilot";
-      inputs.nixpkgs.follows = "nixpkgs";
-      # Pi declares this input but does not use it. An empty follows path
-      # points it at this flake, so Nix never fetches llm-agents.nix.
-      inputs.llm-agents_nix.follows = "";
-    };
     t3code-source = {
       url = "github:pingdotgg/t3code/ed0f7b908b2e7b3a22e6fd82a73794c2fe6ee06e";
       flake = false;
     };
   };
 
-  outputs = { self, nixpkgs, pi-copilot, t3code-source }:
+  outputs = { self, nixpkgs, t3code-source }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -47,22 +38,10 @@
         pnpm_11 = pnpmPinned;
         inherit spdxLicenseData;
       };
-      piSubagents = pkgs.callPackage ./package-pi-subagents.nix { };
       scrcpyServer = pkgs.callPackage ./package-scrcpy-server.nix { };
       deviceHub = pkgs.callPackage ./package-device-hub.nix { inherit scrcpyServer; };
       seedDeviceHub = pkgs.writeShellScript "t3code-seed-device-hub"
         (import ./seed-device-hub.nix { inherit deviceHub; });
-      piRuntime = pkgs.callPackage ./package-pi-runtime.nix {
-        # Standalone Pi keeps the user's pinned subagent extension.
-        pi = pi-copilot.packages.${system}.pi;
-        inherit piSubagents;
-      };
-      t3PiRuntime = pkgs.callPackage ./package-pi-runtime.nix {
-        # T3 must not load the custom Pi subagent extension.
-        pi = pi-copilot.packages.${system}.pi;
-        inherit piSubagents;
-        enableSubagents = false;
-      };
       androidComposition = (pkgs.androidenv.override { licenseAccepted = true; }).composeAndroidPackages {
         platformVersions = [ "35" ];
         includeEmulator = "if-supported";
@@ -91,11 +70,9 @@
       '';
       androidHome = "${androidSdk}/libexec/android-sdk";
       t3code = pkgs.callPackage ./package.nix {
-        pi = t3PiRuntime;
         inherit sourceAssets seedDeviceHub androidSdk androidPlatformTools androidEmulator androidJdk;
       };
       server = pkgs.callPackage ./package-server.nix {
-        pi = t3PiRuntime;
         inherit sourceAssets seedDeviceHub androidSdk androidPlatformTools androidEmulator androidJdk;
       };
     in
@@ -107,8 +84,6 @@
         t3code-server = server;
         t3 = server;
         source-assets = sourceAssets;
-        pi = piRuntime;
-        pi-subagents = piSubagents;
         device-hub = deviceHub;
         scrcpy-server = scrcpyServer;
       };
@@ -136,35 +111,24 @@
         inherit t3code;
         provider-path = pkgs.runCommand "t3code-provider-path" { } ''
           mkdir -p providers
-          printf '#!${pkgs.runtimeShell}\nexit 0\n' > providers/codex
-          chmod +x providers/codex
+          for provider in codex pi; do
+            printf '#!${pkgs.runtimeShell}\nexit 0\n' > "providers/$provider"
+            chmod +x "providers/$provider"
+          done
           providerPath="$PWD/providers"
           for wrapper in \
             ${server}/bin/t3 \
             ${server}/bin/t3code-server \
             ${t3code}/bin/.t3code-wrapped
           do
-            ! grep -q 'codex' "$wrapper"
+            ! grep -q -e 'codex' -e 'pi-coding-agent' -e 't3code-pi-runtime' "$wrapper"
             grep -E '^(PATH=|export PATH$)' "$wrapper" > provider-path.sh
             test -s provider-path.sh
             PATH="$providerPath" ${pkgs.bash}/bin/bash -c \
-              '. "$1"; test "$(command -v codex)" = "$2/codex"' \
+              '. "$1"; test "$(command -v codex)" = "$2/codex"; test "$(command -v pi)" = "$2/pi"' \
               -- "$PWD/provider-path.sh" "$providerPath"
           done
           touch "$out"
-        '';
-        bundled-pi = pkgs.runCommand "t3code-bundled-pi" { } ''
-          test -x ${t3code.passthru.pi}/bin/pi
-          ! grep -q -- '--mcp-config' ${t3code.passthru.pi}/bin/pi
-          ! grep -q 'pi-subagents' ${t3code.passthru.pi}/bin/pi
-          grep -q -- '--extension' ${piRuntime}/bin/pi
-          test -f ${piRuntime.passthru.pi}/lib/node_modules/@earendil-works/pi-coding-agent/dist/extensions/mcp/index.js
-          ${t3code.passthru.pi}/bin/pi --version > "$out"
-          test "$(cat "$out")" = '${t3PiRuntime.version}'
-          export HOME="$(mktemp -d)"
-          export PI_CODING_AGENT_DIR="$HOME/.pi/agent"
-          ${t3code.passthru.pi}/bin/pi mcp list > mcp-list.txt
-          grep -q 'No MCP servers configured' mcp-list.txt
         '';
         source-features = pkgs.runCommand "t3code-source-features" { } ''
           grep -a -q 'Pi started agent work outside an active T3 turn' ${sourceAssets}/apps/server/dist/binCli-*.mjs
