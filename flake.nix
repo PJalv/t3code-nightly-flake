@@ -1,30 +1,24 @@
 {
-  description = "Latest T3 Code nightly, bundled with Codex and the T3 Pi Copilot runtime";
-
-  nixConfig = {
-    extra-substituters = [ "https://cache.numtide.com" ];
-    extra-trusted-public-keys = [
-      "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
-    ];
-  };
+  description = "Latest T3 Code nightly with the T3 Pi Copilot runtime";
 
   inputs = {
-    llm-agents.url = "github:numtide/llm-agents.nix";
-    nixpkgs.follows = "llm-agents/nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     # Pi 1.1.0 with the opencode-aligned GitHub Copilot port and T3's
-    # RPC compaction fixes. Pi is packaged directly from its npm release;
-    # llm-agents remains the source of the separately bundled Codex runtime.
+    # RPC compaction fixes. Pi is packaged directly from its npm release.
     pi-copilot = {
       url = "git+ssh://git@git.pjalv.com:2221/PJalv/pi-copilot.git?ref=pi-1.1.0-copilot";
       inputs.nixpkgs.follows = "nixpkgs";
+      # Pi declares this input but does not use it. An empty follows path
+      # points it at this flake, so Nix never fetches llm-agents.nix.
+      inputs.llm-agents_nix.follows = "";
     };
     t3code-source = {
-      url = "github:pingdotgg/t3code/ec80933ac8cd02fec5c97b342462ccc9567cdb1e";
+      url = "github:pingdotgg/t3code/ed0f7b908b2e7b3a22e6fd82a73794c2fe6ee06e";
       flake = false;
     };
   };
 
-  outputs = { self, nixpkgs, llm-agents, pi-copilot, t3code-source }:
+  outputs = { self, nixpkgs, pi-copilot, t3code-source }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -97,12 +91,10 @@
       '';
       androidHome = "${androidSdk}/libexec/android-sdk";
       t3code = pkgs.callPackage ./package.nix {
-        codex = llm-agents.packages.${system}.codex;
         pi = t3PiRuntime;
         inherit sourceAssets seedDeviceHub androidSdk androidPlatformTools androidEmulator androidJdk;
       };
       server = pkgs.callPackage ./package-server.nix {
-        codex = llm-agents.packages.${system}.codex;
         pi = t3PiRuntime;
         inherit sourceAssets seedDeviceHub androidSdk androidPlatformTools androidEmulator androidJdk;
       };
@@ -142,9 +134,24 @@
 
       checks.${system} = {
         inherit t3code;
-        bundled-codex = pkgs.runCommand "t3code-bundled-codex" { } ''
-          test -x ${t3code.passthru.codex}/bin/codex
-          ${t3code.passthru.codex}/bin/codex --version > "$out"
+        provider-path = pkgs.runCommand "t3code-provider-path" { } ''
+          mkdir -p providers
+          printf '#!${pkgs.runtimeShell}\nexit 0\n' > providers/codex
+          chmod +x providers/codex
+          providerPath="$PWD/providers"
+          for wrapper in \
+            ${server}/bin/t3 \
+            ${server}/bin/t3code-server \
+            ${t3code}/bin/.t3code-wrapped
+          do
+            ! grep -q 'codex' "$wrapper"
+            grep -E '^(PATH=|export PATH$)' "$wrapper" > provider-path.sh
+            test -s provider-path.sh
+            PATH="$providerPath" ${pkgs.bash}/bin/bash -c \
+              '. "$1"; test "$(command -v codex)" = "$2/codex"' \
+              -- "$PWD/provider-path.sh" "$providerPath"
+          done
+          touch "$out"
         '';
         bundled-pi = pkgs.runCommand "t3code-bundled-pi" { } ''
           test -x ${t3code.passthru.pi}/bin/pi

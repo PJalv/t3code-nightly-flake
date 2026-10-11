@@ -7,7 +7,6 @@
 , nodejs_24
 , openssh
 , lsof
-, codex
 , pi
 , sourceAssets
 , seedDeviceHub
@@ -25,9 +24,17 @@ let
   # The published package's bin is now a platform launcher. This derivation
   # replaces dist with our source build, so invoke that bundle directly.
   binPath = "dist/bin.mjs";
+  # The source-built bundle externalizes only native/disk-backed packages
+  # (scripts/lib/cli-external-packages.ts). Upstream's matching Linux platform
+  # package bundles exactly that closure. npm skips this optional dependency in
+  # the sandbox, so fetch the locked tarball directly.
+  platformPackage = packageLockJson.packages."node_modules/@t3code/t3-linux-x64";
+  platformTarball = fetchurl {
+    url = platformPackage.resolved;
+    hash = platformPackage.integrity;
+  };
   androidHome = "${androidSdk}/libexec/android-sdk";
   runtimePath = lib.makeBinPath [
-    codex
     pi
     git
     openssh
@@ -91,15 +98,11 @@ buildNpmPackage {
   installPhase = ''
     runHook preInstall
 
-    # Overlay the source workspace dependencies after npm has finished, since
-    # the source-built bundle externalizes packages absent from the launcher.
-    cp -r ${sourceAssets}/apps/server/node_modules/. ./node_modules/
-    # The published launcher keeps native dependencies under its Linux platform
-    # package. Hoist them for the source-built dist/bin.mjs bundle.
-    if [ -d node_modules/@t3code/t3-linux-x64/node_modules ]; then
-      chmod -R u+w node_modules
-      cp -r node_modules/@t3code/t3-linux-x64/node_modules/. ./node_modules/
-    fi
+    # Unpack only the runtime dependency closure; dist/bin.mjs resolves it from
+    # ./node_modules.
+    tar -xzf ${platformTarball} --strip-components=1 package/node_modules
+    test -f node_modules/node-pty/prebuilds/linux-x64/pty.node
+    test -f node_modules/@ff-labs/fff-bin-linux-x64-gnu/libfff_c.so
 
     mkdir -p "$out/lib/node_modules/t3" "$out/bin"
     cp -r . "$out/lib/node_modules/t3"
@@ -127,12 +130,12 @@ buildNpmPackage {
   '';
 
   passthru = {
-    inherit codex pi sourceAssets;
+    inherit pi sourceAssets;
     release = source;
   };
 
   meta = {
-    description = "Headless T3 Code nightly server with bundled Codex and Pi agent CLIs";
+    description = "Headless T3 Code nightly server with bundled Pi agent CLIs";
     homepage = "https://github.com/pingdotgg/t3code";
     license = lib.licenses.mit;
     mainProgram = "t3code-server";

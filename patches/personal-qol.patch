@@ -1,5 +1,5 @@
 diff --git a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
-index 3b282c1c1..b870795a6 100644
+index 090f6e0ed..0717a9247 100644
 --- a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
 +++ b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
 @@ -48,6 +48,7 @@ const layerServerExposure = Layer.succeed(DesktopServerExposure.DesktopServerExp
@@ -535,7 +535,7 @@ index e5bd11035..c7d88c1cf 100644
      getAdvertisedEndpoints,
    });
 diff --git a/apps/desktop/src/ipc/DesktopIpcHandlers.ts b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
-index a67424a79..544d6c269 100644
+index caed223e9..d1fb71f95 100644
 --- a/apps/desktop/src/ipc/DesktopIpcHandlers.ts
 +++ b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
 @@ -16,6 +16,7 @@ import {
@@ -546,7 +546,7 @@ index a67424a79..544d6c269 100644
    setServerExposureMode,
    setTailscaleServeEnabled,
  } from "./methods/serverExposure.ts";
-@@ -129,6 +130,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
+@@ -131,6 +132,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
  
    yield* ipc.handle(getServerExposureState);
    yield* ipc.handle(setServerExposureMode);
@@ -555,10 +555,10 @@ index a67424a79..544d6c269 100644
    yield* ipc.handle(getAdvertisedEndpoints);
  
 diff --git a/apps/desktop/src/ipc/channels.ts b/apps/desktop/src/ipc/channels.ts
-index e6b936c10..0076c4ad2 100644
+index a6b617385..569255418 100644
 --- a/apps/desktop/src/ipc/channels.ts
 +++ b/apps/desktop/src/ipc/channels.ts
-@@ -63,6 +63,7 @@ export const ISSUE_SSH_WEBSOCKET_TOKEN_CHANNEL = "desktop:issue-ssh-websocket-to
+@@ -65,6 +65,7 @@ export const ISSUE_SSH_WEBSOCKET_TOKEN_CHANNEL = "desktop:issue-ssh-websocket-to
  export const SSH_PASSWORD_PROMPT_CHANNEL = "desktop:ssh-password-prompt";
  export const RESOLVE_SSH_PASSWORD_PROMPT_CHANNEL = "desktop:resolve-ssh-password-prompt";
  export const GET_SERVER_EXPOSURE_STATE_CHANNEL = "desktop:get-server-exposure-state";
@@ -591,7 +591,7 @@ index 9a9ce7689..b69c1e76c 100644
    channel: IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL,
    payload: SetTailscaleServeEnabledInput,
 diff --git a/apps/desktop/src/preload.ts b/apps/desktop/src/preload.ts
-index 12b68f186..8eab33234 100644
+index efd49ffa3..d3bee0860 100644
 --- a/apps/desktop/src/preload.ts
 +++ b/apps/desktop/src/preload.ts
 @@ -178,6 +178,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
@@ -1068,10 +1068,10 @@ index 9d4556af4..d7e8f77da 100644
            setUpdateChannel: (channel) =>
              setUpdateChannelError
 diff --git a/apps/desktop/src/window/DesktopWindow.test.ts b/apps/desktop/src/window/DesktopWindow.test.ts
-index 10c3cb8ad..24117e618 100644
+index c9a49b1d7..ac23b9146 100644
 --- a/apps/desktop/src/window/DesktopWindow.test.ts
 +++ b/apps/desktop/src/window/DesktopWindow.test.ts
-@@ -183,6 +183,7 @@ const layerDesktopServerExposure = Layer.succeed(DesktopServerExposure.DesktopSe
+@@ -184,6 +184,7 @@ const layerDesktopServerExposure = Layer.succeed(DesktopServerExposure.DesktopSe
    }),
    configureFromSettings: () => Effect.die("unexpected configureFromSettings"),
    setMode: () => Effect.die("unexpected setMode"),
@@ -1079,7 +1079,7 @@ index 10c3cb8ad..24117e618 100644
    setTailscaleServeEnabled: () => Effect.die("unexpected setTailscaleServeEnabled"),
    getAdvertisedEndpoints: Effect.die("unexpected getAdvertisedEndpoints"),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
-@@ -258,6 +259,7 @@ function layerTest(input: {
+@@ -259,6 +260,7 @@ function layerTest(input: {
          return { settings: desktopSettings, changed };
        }),
      setServerExposureMode: () => Effect.die("unexpected server exposure update"),
@@ -1313,7 +1313,7 @@ index 7ed7ddc8b..a7fdd8815 100644
      pushTokenSubscription = null;
      appStateSubscription?.remove();
 diff --git a/apps/mobile/src/features/devices/device-stream.browser.test.ts b/apps/mobile/src/features/devices/device-stream.browser.test.ts
-index 5aeefdac0..135912b61 100644
+index 24766242b..ec51295ab 100644
 --- a/apps/mobile/src/features/devices/device-stream.browser.test.ts
 +++ b/apps/mobile/src/features/devices/device-stream.browser.test.ts
 @@ -11,15 +11,22 @@ class Element extends EventTarget {
@@ -1341,7 +1341,7 @@ index 5aeefdac0..135912b61 100644
    const elements: Element[] = [];
    vi.stubGlobal("document", {
      documentElement: { style: {} },
-@@ -46,7 +53,7 @@ async function setup() {
+@@ -47,7 +54,7 @@ async function setup() {
    }
    vi.stubGlobal("WebSocket", Socket);
    const configuration = {
@@ -1350,7 +1350,7 @@ index 5aeefdac0..135912b61 100644
      deviceId: "fixture-device",
      access: {
        httpBase: "https://device.test",
-@@ -82,6 +89,30 @@ afterEach(() => {
+@@ -83,6 +90,30 @@ afterEach(() => {
    vi.unstubAllGlobals();
  });
  
@@ -1885,10 +1885,10 @@ index 000000000..e6bf819fa
 +  );
 +}
 diff --git a/apps/mobile/src/persistence/mobile-preferences.ts b/apps/mobile/src/persistence/mobile-preferences.ts
-index ee96bce2d..08e3d0cf7 100644
+index c5b41fa5a..da6cf9c4d 100644
 --- a/apps/mobile/src/persistence/mobile-preferences.ts
 +++ b/apps/mobile/src/persistence/mobile-preferences.ts
-@@ -18,6 +18,9 @@ const PREFERENCES_FALLBACK_KEY = "t3code.preferences.fallback";
+@@ -19,6 +19,9 @@ const PREFERENCES_FALLBACK_KEY = "t3code.preferences.fallback";
  
  export interface Preferences {
    readonly liveActivitiesEnabled?: boolean;
@@ -1898,7 +1898,7 @@ index ee96bce2d..08e3d0cf7 100644
    readonly themeId?: MobileThemeId;
    readonly lightThemeId?: MobileThemeId;
    readonly darkThemeId?: MobileThemeId;
-@@ -94,6 +97,8 @@ export class MobilePreferencesStore extends Context.Service<
+@@ -97,6 +100,8 @@ export class MobilePreferencesStore extends Context.Service<
  function sanitizePreferences(parsed: Preferences): Preferences {
    const preferences: {
      liveActivitiesEnabled?: boolean;
@@ -1907,7 +1907,7 @@ index ee96bce2d..08e3d0cf7 100644
      themeId?: MobileThemeId;
      lightThemeId?: MobileThemeId;
      darkThemeId?: MobileThemeId;
-@@ -120,6 +125,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
+@@ -124,6 +129,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
    if (typeof parsed.liveActivitiesEnabled === "boolean") {
      preferences.liveActivitiesEnabled = parsed.liveActivitiesEnabled;
    }
@@ -1921,7 +1921,7 @@ index ee96bce2d..08e3d0cf7 100644
      typeof parsed.themeId === "string" &&
      (MOBILE_THEME_IDS as readonly string[]).includes(parsed.themeId)
 diff --git a/apps/server/src/orchestration-v2/CheckpointService.test.ts b/apps/server/src/orchestration-v2/CheckpointService.test.ts
-index 3bb6d0be8..e5aab6d75 100644
+index 3bb6d0be8..8c57d0cb5 100644
 --- a/apps/server/src/orchestration-v2/CheckpointService.test.ts
 +++ b/apps/server/src/orchestration-v2/CheckpointService.test.ts
 @@ -1,5 +1,8 @@
@@ -1934,7 +1934,7 @@ index 3bb6d0be8..e5aab6d75 100644
  import {
    CheckpointScopeId,
    NodeId,
-@@ -18,6 +21,125 @@ import * as CheckpointStore from "../checkpointing/CheckpointStore.ts";
+@@ -18,6 +21,127 @@ import * as CheckpointStore from "../checkpointing/CheckpointStore.ts";
  import * as CheckpointService from "./CheckpointService.ts";
  import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
  
@@ -1966,6 +1966,7 @@ index 3bb6d0be8..e5aab6d75 100644
 +              hasCheckpointRef: () => Effect.die("disabled checkpoints must not look up refs"),
 +              captureCheckpoint: () => Effect.die("disabled checkpoints must not capture"),
 +              diffCheckpoints: () => Effect.die("disabled checkpoints must not diff"),
++              listAuthoredPaths: () => Effect.die("disabled checkpoints must not list paths"),
 +            }),
 +          ),
 +        ),
@@ -2028,6 +2029,7 @@ index 3bb6d0be8..e5aab6d75 100644
 +            hasCheckpointRef: (input) => Effect.succeed(refs.has(input.checkpointRef)),
 +            captureCheckpoint,
 +            diffCheckpoints: () => Effect.succeed("2\t1\tsrc/example.ts\0"),
++            listAuthoredPaths: () => Effect.succeed(null),
 +          }),
 +        ),
 +      ),
@@ -2061,7 +2063,7 @@ index 3bb6d0be8..e5aab6d75 100644
    "materializes baseline, lookup fails=%s",
    (lookupFails) => {
 diff --git a/apps/server/src/orchestration-v2/CheckpointService.ts b/apps/server/src/orchestration-v2/CheckpointService.ts
-index c0bf30311..f65f35b80 100644
+index ee3316311..9fbb441ca 100644
 --- a/apps/server/src/orchestration-v2/CheckpointService.ts
 +++ b/apps/server/src/orchestration-v2/CheckpointService.ts
 @@ -259,8 +259,11 @@ export const layer: Layer.Layer<
@@ -2079,7 +2081,7 @@ index c0bf30311..f65f35b80 100644
  
 diff --git a/apps/server/src/provider/acp/MakiCustom.integration.test.ts b/apps/server/src/provider/acp/MakiCustom.integration.test.ts
 new file mode 100644
-index 000000000..1b139ce6a
+index 000000000..4f92ccd68
 --- /dev/null
 +++ b/apps/server/src/provider/acp/MakiCustom.integration.test.ts
 @@ -0,0 +1,132 @@
@@ -2098,7 +2100,7 @@ index 000000000..1b139ce6a
 +import * as AcpSessionRuntime from "@t3tools/provider-acp/server/AcpSessionRuntime";
 +import { probeAcpRegistryConfiguration } from "@t3tools/provider-acp-registry/testing";
 +import { ProviderInstanceId } from "@t3tools/contracts";
-+import { layerTestProviderHost } from "@t3tools/provider-testing/host";
++import * as TestProviderHost from "@t3tools/provider-testing/TestProviderHost";
 +
 +const encodeEvidence = Schema.encodeSync(Schema.fromJsonString(Schema.Unknown));
 +const decodeSettings = Schema.decodeEffect(AcpRegistrySettings);
@@ -2211,18 +2213,18 @@ index 000000000..1b139ce6a
 +        HttpClient.HttpClient,
 +        HttpClient.make(() => Effect.die("Registry access forbidden")),
 +      ),
-+      Effect.provide(layerTestProviderHost().pipe(Layer.provideMerge(NodeServices.layer))),
++      Effect.provide(TestProviderHost.layer().pipe(Layer.provideMerge(NodeServices.layer))),
 +    ),
 +  240_000,
 +);
 diff --git a/apps/server/src/serverSettings.test.ts b/apps/server/src/serverSettings.test.ts
-index 4444a7851..e04f4cf16 100644
+index 5c7466b47..3bf34d8b1 100644
 --- a/apps/server/src/serverSettings.test.ts
 +++ b/apps/server/src/serverSettings.test.ts
-@@ -97,6 +97,45 @@ const recordProviderUsage = (provider: string, instanceId: string | null = provi
-   });
- 
- it.layer(NodeServices.layer)("server settings", (it) => {
+@@ -180,6 +180,45 @@ it.layer(NodeServices.layer)("server settings", (it) => {
+       }),
+     ).pipe(Effect.provide(layerServerSettings())),
+   );
 +  it.effect("migrates saved custom ACP commands to native local configuration", () =>
 +    Effect.gen(function* () {
 +      const config = yield* ServerConfig.ServerConfig;
@@ -2266,10 +2268,10 @@ index 4444a7851..e04f4cf16 100644
      Effect.gen(function* () {
        const config = yield* ServerConfig.ServerConfig;
 diff --git a/apps/server/src/serverSettings.ts b/apps/server/src/serverSettings.ts
-index 7536a74d6..9affb6720 100644
+index 0d39ee4ee..eeb3c9775 100644
 --- a/apps/server/src/serverSettings.ts
 +++ b/apps/server/src/serverSettings.ts
-@@ -85,8 +85,45 @@ const textDecoder = new TextDecoder();
+@@ -95,8 +95,45 @@ const textDecoder = new TextDecoder();
  const foldProviderInstanceEnabledFlags = (settings: ServerSettings): ServerSettings => {
    let changed = false;
    const providerInstances: Record<string, ProviderInstanceConfig> = {};
@@ -2318,10 +2320,10 @@ index 7536a74d6..9affb6720 100644
      // stay in the blob so driver schema validation flags it instead of the
      // fold silently repairing the config.
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index 4c7123654..b33376dc9 100644
+index a7a2b0c4e..370ed3d8c 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
-@@ -186,6 +186,10 @@ import { previewEnvironment } from "../state/preview";
+@@ -187,6 +187,10 @@ import { previewEnvironment } from "../state/preview";
  import { useAtomCommand } from "../state/use-atom-command";
  import { useAtomQueryRunner } from "../state/use-atom-query-runner";
  import { projectEnvironment } from "../state/projects";
@@ -2332,7 +2334,7 @@ index 4c7123654..b33376dc9 100644
  import {
    claimWorkspaceBasenameLookup,
    needsWorkspaceBasenameLookup,
-@@ -2324,6 +2328,14 @@ function useChatMarkdownState({
+@@ -2338,6 +2342,14 @@ function useChatMarkdownState({
    const searchProjectEntries = useAtomQueryRunner(projectEnvironment.searchEntries, {
      reportFailure: false,
    });
@@ -2347,7 +2349,7 @@ index 4c7123654..b33376dc9 100644
    const openPreview = useAtomCommand(previewEnvironment.open, {
      reportFailure: false,
    });
-@@ -2594,6 +2606,77 @@ function useChatMarkdownState({
+@@ -2608,6 +2620,77 @@ function useChatMarkdownState({
      },
      [cwd, environmentId, searchProjectEntries],
    );
@@ -2425,7 +2427,7 @@ index 4c7123654..b33376dc9 100644
    // A bare filename resolves to the workspace root, which is rarely where the
    // file is, so ask the index before opening. Absolute host paths open as-is.
    const openFileInPanel = useCallback(
-@@ -2629,6 +2712,7 @@ function useChatMarkdownState({
+@@ -2643,6 +2726,7 @@ function useChatMarkdownState({
    );
    const fileLinkChip = useCallback(
      (fileLinkMeta: MarkdownFileLinkMeta, copyMarkdown: string, mediaSource?: string) => {
@@ -2433,7 +2435,7 @@ index 4c7123654..b33376dc9 100644
        const mediaPath = mediaSource ?? fileLinkMeta.filePath;
        const canPreviewMedia =
          mediaMimeTypeFromExtension(
-@@ -2697,6 +2781,7 @@ function useChatMarkdownState({
+@@ -2713,6 +2797,7 @@ function useChatMarkdownState({
        revealInFileManagerLabel,
        revealMarkdownFileInFileManager,
        threadRef,
@@ -2441,7 +2443,7 @@ index 4c7123654..b33376dc9 100644
      ],
    );
  
-@@ -2733,6 +2818,7 @@ function useChatMarkdownState({
+@@ -2749,6 +2834,7 @@ function useChatMarkdownState({
        text,
        threadRef,
        updateThreadPullRequestLink,
@@ -2449,7 +2451,7 @@ index 4c7123654..b33376dc9 100644
      }),
      [
        canOperateHost,
-@@ -2766,6 +2852,7 @@ function useChatMarkdownState({
+@@ -2782,6 +2868,7 @@ function useChatMarkdownState({
        text,
        threadRef,
        updateThreadPullRequestLink,
@@ -2457,7 +2459,7 @@ index 4c7123654..b33376dc9 100644
      ],
    );
    return {
-@@ -2802,6 +2889,8 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
+@@ -2818,6 +2905,8 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
  }
  
  // Keep component types stable when streaming changes the message state.
@@ -2466,7 +2468,7 @@ index 4c7123654..b33376dc9 100644
  const CHAT_MARKDOWN_COMPONENTS = {
    h1: markdownHeadingRenderer(1),
    h2: markdownHeadingRenderer(2),
-@@ -3186,6 +3275,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -3204,6 +3293,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
        imageBaseDir,
        threadRef,
        renderContextReference,
@@ -2474,7 +2476,7 @@ index 4c7123654..b33376dc9 100644
      } = use(ChatMarkdownRendererContext);
      const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
      const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
-@@ -3210,7 +3300,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -3228,7 +3318,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
      const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
      const { className, style: _style, width, height, ...imageProps } = props;
      const authoredSizeStyle = authoredImageSizeStyle(width, height);
@@ -2531,7 +2533,7 @@ index 1e79964ca..de9bdb4a7 100644
    );
  }
 diff --git a/apps/web/src/components/ChatView.tsx b/apps/web/src/components/ChatView.tsx
-index 69a204ccd..e68388bb1 100644
+index 84f5b476a..d220944ba 100644
 --- a/apps/web/src/components/ChatView.tsx
 +++ b/apps/web/src/components/ChatView.tsx
 @@ -93,6 +93,14 @@ import {
@@ -2549,7 +2551,7 @@ index 69a204ccd..e68388bb1 100644
  import { effectiveSnoozed, threadWokeAt } from "@t3tools/client-runtime/state/thread-settled";
  import { useAcknowledgeThreadWoke, useThreadActions } from "../hooks/useThreadActions";
  import {
-@@ -707,94 +715,12 @@ const DevicePanel = lazy(() =>
+@@ -711,94 +719,12 @@ const DevicePanel = lazy(() =>
  );
  const FilePreviewPanel = lazy(() => import("./files/FilePreviewPanel"));
  const EMPTY_PENDING_FILE_SURFACE_IDS: ReadonlySet<string> = new Set();
@@ -2644,7 +2646,7 @@ index 69a204ccd..e68388bb1 100644
  const draftFanoutStateAtom = Atom.family((_routeKey: string) =>
    Atom.make({
      selections: null as ReadonlyArray<ModelSelection> | null,
-@@ -7977,6 +7903,7 @@ export default function ChatView(props: ChatViewProps) {
+@@ -8023,6 +7949,7 @@ export default function ChatView(props: ChatViewProps) {
        if (!activeThreadId || isCommandPaletteOpen()) {
          return;
        }
@@ -2702,19 +2704,19 @@ index 000000000..63745660f
 +  );
 +}
 diff --git a/apps/web/src/components/chat/V2ItemInspector.tsx b/apps/web/src/components/chat/V2ItemInspector.tsx
-index 8f92a511d..f69f01929 100644
+index 93befc5c7..aa6280466 100644
 --- a/apps/web/src/components/chat/V2ItemInspector.tsx
 +++ b/apps/web/src/components/chat/V2ItemInspector.tsx
-@@ -12,7 +12,7 @@ import {
-   turnItemOutputText,
+@@ -13,7 +13,7 @@ import {
  } from "@t3tools/client-runtime/work-log/item-detail";
+ import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
  import { ExternalLinkIcon, GitBranchIcon, RotateCcwIcon } from "lucide-react";
 -import { memo, Suspense, use, useMemo } from "react";
 +import { lazy, memo, Suspense, use, useMemo, useState } from "react";
  
  import { useTheme } from "../../hooks/useTheme";
  import { cn } from "../../lib/utils";
-@@ -28,6 +28,78 @@ import { resolveExternalWebLinkHref } from "./externalLinkContextMenu";
+@@ -29,6 +29,78 @@ import { resolveExternalWebLinkHref } from "./externalLinkContextMenu";
  import type { ExpandedImagePreview } from "./ExpandedImagePreview";
  import { ShellCommandBlock } from "./ShellCommandBlock";
  
@@ -2741,8 +2743,8 @@ index 8f92a511d..f69f01929 100644
 +        </span>
 +        {item.additions !== undefined || item.deletions !== undefined ? (
 +          <span>
-+            <span className="text-success">+{item.additions ?? 0}</span>{" "}
-+            <span className="text-destructive">-{item.deletions ?? 0}</span>
++            <span className="text-success">+{formatDiffCount(item.additions ?? 0)}</span>{" "}
++            <span className="text-destructive">-{formatDiffCount(item.deletions ?? 0)}</span>
 +          </span>
 +        ) : null}
 +        {hasDiff ? (
@@ -2793,7 +2795,7 @@ index 8f92a511d..f69f01929 100644
  interface V2ItemInspectorProps {
    readonly projectedItem: OrchestrationV2ProjectedTurnItem;
    readonly environmentId: EnvironmentId;
-@@ -254,44 +326,12 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
+@@ -255,44 +327,12 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
        ) : null}
  
        {item.type === "file_change" ? (
@@ -2804,8 +2806,8 @@ index 8f92a511d..f69f01929 100644
 -            </span>
 -            {item.additions !== undefined || item.deletions !== undefined ? (
 -              <span>
--                <span className="text-success">+{item.additions ?? 0}</span>{" "}
--                <span className="text-destructive">-{item.deletions ?? 0}</span>
+-                <span className="text-success">+{formatDiffCount(item.additions ?? 0)}</span>{" "}
+-                <span className="text-destructive">-{formatDiffCount(item.deletions ?? 0)}</span>
 -              </span>
 -            ) : null}
 -            {item.runId !== null ? (
@@ -2935,28 +2937,29 @@ index 000000000..5f2284e73
 +  return `${header}\n${body.join("\n")}`;
 +}
 diff --git a/apps/web/src/components/device/DeviceStreamView.test.tsx b/apps/web/src/components/device/DeviceStreamView.test.tsx
-index 7e0392340..7c57904c4 100644
+index a7f4079b5..6af09fe9b 100644
 --- a/apps/web/src/components/device/DeviceStreamView.test.tsx
 +++ b/apps/web/src/components/device/DeviceStreamView.test.tsx
-@@ -42,8 +42,13 @@ afterEach(async () => {
+@@ -58,9 +58,14 @@ afterEach(async () => {
    vi.unstubAllGlobals();
  });
  
--async function setup() {
-+async function setup(platform: "ios" | "android" = "ios") {
+-async function setup(h264 = false) {
++async function setup(platform: "ios" | "android" = "ios", h264 = false) {
    vi.useFakeTimers();
+   vi.stubGlobal("window", globalThis);
 +  if (platform === "android") {
 +    vi.stubGlobal("VideoDecoder", vi.fn());
 +    vi.stubGlobal("EncodedVideoChunk", vi.fn());
 +  }
 +  const messages: Array<string | Uint8Array> = [];
    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-   vi.stubGlobal("fetch", () => {
-     primes++;
-@@ -54,7 +59,9 @@ async function setup() {
-     class {
-       static OPEN = 1;
-       readyState = 1;
+   let videoBody: ReadableStreamDefaultController<Uint8Array> | undefined;
+   let output: VideoFrameOutputCallback | undefined;
+@@ -109,7 +114,9 @@ async function setup(h264 = false) {
+         sockets.push(this);
+       }
+       onmessage?: (event: { data: ArrayBuffer }) => void;
 -      send() {}
 +      send(message: string | Uint8Array) {
 +        messages.push(message);
@@ -2964,25 +2967,24 @@ index 7e0392340..7c57904c4 100644
        close() {}
      },
    );
-@@ -71,7 +78,7 @@ async function setup() {
+@@ -126,7 +133,7 @@ async function setup(h264 = false) {
        hostId="local"
        environmentId={EnvironmentId.make("test")}
        deviceId="test"
 -      platform="ios"
 +      platform={platform}
        visible={visible}
+       allowPhoneView={h264}
      />
-   );
-@@ -90,7 +97,7 @@ async function setup() {
-       },
-     });
-   });
--  return { images, view };
-+  return { images, view, messages };
- }
- 
- it("removes MJPEG requests while hidden and reconnects when shown", async () => {
-@@ -126,6 +133,42 @@ it("offers Reconnect after the shared timeout and receives a frame after retry w
+@@ -150,6 +157,7 @@ async function setup(h264 = false) {
+   return {
+     images,
+     view,
++    messages,
+     configure() {
+       const json = new TextEncoder().encode(
+         JSON.stringify({ width: 400, height: 800, orientation: "portrait" }),
+@@ -199,6 +207,42 @@ it("offers Reconnect after the shared timeout and receives a frame after retry w
    expect(vi.getTimerCount()).toBe(0);
  });
  
@@ -3025,8 +3027,17 @@ index 7e0392340..7c57904c4 100644
  it("starts exactly one new stream per Reconnect press", async () => {
    await setup();
    await act(async () => {
+@@ -210,7 +254,7 @@ it("starts exactly one new stream per Reconnect press", async () => {
+ });
+ 
+ it("keeps the 3D viewer mounted across iOS video recovery and releases it when hidden", async () => {
+-  const { configure, frame, view } = await setup(true);
++  const { configure, frame, view } = await setup("ios", true);
+   await act(async () => configure());
+   expect(viewerMounts).toBe(0);
+   await act(async () => frame());
 diff --git a/apps/web/src/components/device/DeviceStreamView.tsx b/apps/web/src/components/device/DeviceStreamView.tsx
-index 25c4c39da..4b0effd28 100644
+index 42bb69ccc..a7cde7869 100644
 --- a/apps/web/src/components/device/DeviceStreamView.tsx
 +++ b/apps/web/src/components/device/DeviceStreamView.tsx
 @@ -395,13 +395,30 @@ export function DeviceStreamView(props: {
@@ -3061,7 +3072,7 @@ index 25c4c39da..4b0effd28 100644
            if (event.target !== event.currentTarget) return;
            clientRef.current?.sendKey(event.nativeEvent, "up");
 diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
-index a8d9d961a..b44c99ea9 100644
+index 443ac6e02..caa213ef1 100644
 --- a/apps/web/src/components/settings/ConnectionsSettings.tsx
 +++ b/apps/web/src/components/settings/ConnectionsSettings.tsx
 @@ -2186,6 +2186,7 @@ export function ConnectionsSettings() {
@@ -3198,10 +3209,10 @@ index a8d9d961a..b44c99ea9 100644
                  {renderTailscaleRow()}
                  {renderWslRow()}
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index 853886d81..26bffc3e8 100644
+index 0ee55ef37..cf115fa0f 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
-@@ -837,6 +837,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+@@ -924,6 +924,14 @@ export const SETTINGS_SEARCH_ITEMS = [
      searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
      localBackendManagementOnly: true,
    },
@@ -3509,7 +3520,7 @@ index 9c5e30ef7..d53c8f970 100644
 -Notification permission and Android notification channels are controlled in system Settings. Background delivery requires T3 Connect; a direct or Tailscale connection alone does not enable push notifications. The mobile app does not need to maintain a connection to your environment. Force-stopping the Android app in system Settings prevents push delivery until you open it again.
 +Notification permission and Android notification channels are controlled in system Settings. Android can also configure device-local notifications without a T3 Connect account from **Settings → Notifications**. This does not use a relay or require an account, but delivery still requires a local sender configured with the Firebase project; the mobile app does not send notifications itself. Without that sender, notifications are not delivered. A direct or Tailscale connection alone does not enable push notifications. Force-stopping the Android app in system Settings prevents push delivery until you open it again.
 diff --git a/packages/client-runtime/src/device/stream.test.ts b/packages/client-runtime/src/device/stream.test.ts
-index 7ea5aca27..26a8f4a13 100644
+index f29484eb0..300ac54ea 100644
 --- a/packages/client-runtime/src/device/stream.test.ts
 +++ b/packages/client-runtime/src/device/stream.test.ts
 @@ -158,6 +158,110 @@ describe("native device stream transport", () => {
@@ -3623,16 +3634,7 @@ index 7ea5aca27..26a8f4a13 100644
    it("renews an expired Android ticket when the HTTP upgrade is rejected instead of retrying it forever", async () => {
      const { client, opened, events } = setup("android");
      client.start();
-@@ -388,7 +492,7 @@ function recoveryFixture(platform: "ios" | "android" = "ios", preferMjpeg = true
-     close() {
-       this.state = "closed";
-     }
--    decode() {}
-+    decode = vi.fn();
-     readonly callbacks: { output: (frame: VideoFrame) => void; error: () => void };
-     constructor(callbacks: { output: (frame: VideoFrame) => void; error: () => void }) {
-       this.callbacks = callbacks;
-@@ -619,16 +723,32 @@ describe("shared device stream readiness and recovery", () => {
+@@ -710,16 +814,32 @@ describe("shared device stream readiness and recovery", () => {
      expect(vi.getTimerCount()).toBe(0);
    });
  
@@ -3668,10 +3670,10 @@ index 7ea5aca27..26a8f4a13 100644
      expect(events.onStatus).toHaveBeenLastCalledWith("error", expect.stringContaining("No video"));
      expect(vi.getTimerCount()).toBe(0);
 diff --git a/packages/client-runtime/src/device/stream.ts b/packages/client-runtime/src/device/stream.ts
-index 6b1ff6158..8e158e6e5 100644
+index 27ab7c93b..1ceba15c8 100644
 --- a/packages/client-runtime/src/device/stream.ts
 +++ b/packages/client-runtime/src/device/stream.ts
-@@ -273,6 +273,8 @@ export interface DeviceStreamClient {
+@@ -275,6 +275,8 @@ export interface DeviceStreamClient {
    /** Normalized 0..1 coordinates in the displayed frame. */
    readonly sendTouch: (phase: "begin" | "move" | "end", x: number, y: number) => void;
    readonly sendKey: (event: KeyboardEvent, phase: "down" | "up") => void;
@@ -3680,15 +3682,15 @@ index 6b1ff6158..8e158e6e5 100644
    readonly pressButton: (button: DeviceHardwareButton) => void;
    readonly rotate: () => void;
    readonly setOrientation: (orientation: DeviceScreenSize["orientation"]) => void;
-@@ -364,6 +366,7 @@ export function createDeviceStreamClient(
-   const retryTimers = new Map<"video" | "input", ReturnType<typeof setTimeout>>();
-   let primeController: AbortController | null = null;
-   let videoDecoder: VideoDecoder | null = null;
+@@ -369,6 +371,7 @@ export function createDeviceStreamClient(
+   let decoderConfig: VideoDecoderConfig | null = null;
+   let decodedVideoGeneration: number | null = null;
+   let iosInputUnavailable = false;
 +  let awaitingSessionAck = false;
    let timestamp = 0;
    let awaitingKeyframe = true;
    let screen: DeviceScreenSize | null = null;
-@@ -603,10 +606,16 @@ export function createDeviceStreamClient(
+@@ -626,10 +629,16 @@ export function createDeviceStreamClient(
      }
    };
  
@@ -3709,7 +3711,7 @@ index 6b1ff6158..8e158e6e5 100644
    };
  
    const scheduleRetry = (channel: "video" | "input", run: () => void) => {
-@@ -871,6 +880,8 @@ export function createDeviceStreamClient(
+@@ -906,6 +915,8 @@ export function createDeviceStreamClient(
    // Android: one socket for video and input.
    const connectAndroid = () => {
      if (stopped) return;
@@ -3718,7 +3720,7 @@ index 6b1ff6158..8e158e6e5 100644
      const ws = new WebSocket(wsUrl(`/ws?device=${device}&frame-meta=1`));
      ws.binaryType = "arraybuffer";
      socket = ws;
-@@ -882,13 +893,16 @@ export function createDeviceStreamClient(
+@@ -917,13 +928,16 @@ export function createDeviceStreamClient(
      ws.onmessage = (event) => {
        if (stopped || socket !== ws) return;
        if (typeof event.data === "string") {
@@ -3738,7 +3740,7 @@ index 6b1ff6158..8e158e6e5 100644
          }
          return;
        }
-@@ -909,7 +923,11 @@ export function createDeviceStreamClient(
+@@ -944,7 +958,11 @@ export function createDeviceStreamClient(
              if (!isCurrent() || epoch !== decoderEpoch) return;
              configuring = false;
              awaitingKeyframe = true;
@@ -3751,7 +3753,7 @@ index 6b1ff6158..8e158e6e5 100644
            },
          );
          return;
-@@ -1048,12 +1066,40 @@ export function createDeviceStreamClient(
+@@ -1085,12 +1103,40 @@ export function createDeviceStreamClient(
        }
        if (phase !== "down") return;
        if (event.key === "Escape") return send(JSON.stringify({ type: "back" }));
@@ -3796,7 +3798,7 @@ index 6b1ff6158..8e158e6e5 100644
        if (platform === "ios") {
          const name =
 diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
-index 19e404423..a059ded58 100644
+index e521c4c37..e3c58b065 100644
 --- a/packages/contracts/src/ipc.ts
 +++ b/packages/contracts/src/ipc.ts
 @@ -501,6 +501,7 @@ export interface DesktopServerExposureState {

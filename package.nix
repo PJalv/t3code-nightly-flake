@@ -6,7 +6,6 @@
   makeWrapper,
   pkgs,
   runCommand,
-  codex,
   pi,
   sourceAssets,
   seedDeviceHub,
@@ -22,7 +21,6 @@ let
   inherit (source) version;
   androidHome = "${androidSdk}/libexec/android-sdk";
   runtimePath = lib.makeBinPath [
-    codex
     pi
     pkgs.lsof
     androidSdk
@@ -96,7 +94,6 @@ runCommand "${pname}-${version}"
 
     passthru = {
       inherit
-        codex
         pi
         sourceAppimageContents
         sourceAssets
@@ -105,7 +102,7 @@ runCommand "${pname}-${version}"
     };
 
     meta = {
-      description = "Latest T3 Code nightly with bundled Codex and Pi agent CLIs";
+      description = "Latest T3 Code nightly with bundled Pi agent CLIs";
       homepage = "https://github.com/pingdotgg/t3code";
       changelog = "https://github.com/pingdotgg/t3code/releases/tag/v${version}";
       license = lib.licenses.mit;

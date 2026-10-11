@@ -38,7 +38,7 @@ usage() {
 Usage: scripts/update.sh [--delay-hours HOURS] [--check]
 
 Selects the newest T3 Code nightly. Use --delay-hours HOURS to require a
-minimum release age. Updates source.json and refreshes the Nix inputs.
+minimum release age. Updates source.json and refreshes the pinned nixpkgs.
 EOF
 }
 
@@ -153,7 +153,7 @@ fi
 
 (
   cd "$root"
-  nix flake update llm-agents
+  nix flake update nixpkgs
 )
 
-echo "refreshed llm-agents and its nixpkgs input"
+echo "refreshed pinned nixpkgs"

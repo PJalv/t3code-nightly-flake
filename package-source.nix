@@ -27,7 +27,7 @@ stdenvNoCC.mkDerivation {
     fetcherVersion = 4;
     # Unfiltered: filtered fetches skip packages the sandboxed install
     # resolves (observed with the Sep 13 lockfile and @effect/platform-bun).
-    hash = "sha256-gUUfALMaAb94QA7dZSDJPbhZEi5OiswdUT81vrkg9ik=";
+    hash = "sha256-UKTxKPDeF6pTPoAVlqTn041IZaF+AyfBLAtTXeu8UXM=";
   };
 
   pnpmWorkspaces = [
@@ -90,37 +90,13 @@ stdenvNoCC.mkDerivation {
     runHook preInstall
 
     mkdir -p "$out/apps/server" "$out/apps/desktop"
+    # Ship only the compiled bundles. The server bundle inlines its JavaScript
+    # dependencies; its few native/disk-backed externals come from the matching
+    # upstream platform package in package-server.nix (and from the AppImage for
+    # the desktop app). Copying the pnpm workspace with `cp -rL` dereferenced
+    # every workspace symlink and duplicated the dependency graph ~1M files
+    # deep, which made every fixup hook crawl the output for minutes.
     cp -r apps/server/dist "$out/apps/server/"
-    # The source-built CLI externalizes native/runtime packages such as
-    # @ff-labs/fff-node. Preserve the filtered server workspace dependencies so
-    # package-server.nix can run dist/bin.mjs without the published launcher.
-    cp -rL apps/server/node_modules "$out/apps/server/"
-    fffContext="$(find node_modules/.pnpm -maxdepth 1 -type d -name '@ff-labs+fff-node@*' -print -quit)"
-    if [ -n "$fffContext" ]; then
-      cp -rL "$fffContext/node_modules/ffi-rs" "$out/apps/server/node_modules/"
-      ffiContext="$(find node_modules/.pnpm -maxdepth 1 -type d -name 'ffi-rs@*' -print -quit)"
-      mkdir -p "$out/apps/server/node_modules/ffi-rs/node_modules"
-      cp -rL "$ffiContext/node_modules/@yuuang" "$out/apps/server/node_modules/ffi-rs/node_modules/"
-      for binary in "$fffContext"/node_modules/@ff-labs/fff-bin-*; do
-        if [ -d "$binary" ]; then
-          cp -rL "$binary" "$out/apps/server/node_modules/@ff-labs/"
-        fi
-      done
-    fi
-    # The server CLI externalizes Cursor SDK dependencies whose pnpm peer
-    # context sits beside (not inside) the SDK package directory.
-    cursorContext="$(find node_modules/.pnpm -maxdepth 1 -type d -name '@cursor+sdk@1.0.35*' -print -quit)"
-    if [ -n "$cursorContext" ]; then
-      mkdir -p "$out/apps/server/node_modules/@cursor/sdk/node_modules"
-      for scope in @bufbuild @connectrpc @statsig; do
-        if [ -d "$cursorContext/node_modules/$scope" ]; then
-          cp -rL "$cursorContext/node_modules/$scope" "$out/apps/server/node_modules/@cursor/sdk/node_modules/"
-        fi
-      done
-      if [ -d "$cursorContext/node_modules/zod" ]; then
-        cp -rL "$cursorContext/node_modules/zod" "$out/apps/server/node_modules/@cursor/sdk/node_modules/"
-      fi
-    fi
     cp -r apps/desktop/dist-electron "$out/apps/desktop/"
 
     test -f "$out/apps/server/dist/bin.mjs"

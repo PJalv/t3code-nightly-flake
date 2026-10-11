@@ -1,8 +1,7 @@
 # t3code-nightly-flake
 
-The latest T3 Code nightly runtime for Nix, bundled with Codex from
-[`numtide/llm-agents.nix`](https://github.com/numtide/llm-agents.nix) and Pi
-from the `git.pjalv.com/PJalv/pi-copilot` fork.
+The latest T3 Code nightly runtime for Nix, bundled with Pi from the
+`git.pjalv.com/PJalv/pi-copilot` fork.
 
 The web, server, and desktop JavaScript bundles are built from the pinned
 [`pingdotgg/t3code`](https://github.com/pingdotgg/t3code) source revision, then
@@ -51,7 +50,6 @@ The matching nightly npm server is exposed as `server`, `t3code-server`, and
 nix run .#server -- --host 0.0.0.0 --port 13773
 ```
 
-
 Then open the URL printed by the server from a browser. Binding to `0.0.0.0`
 makes it reachable from other machines, so use a firewall or trusted network
 and follow the pairing/authentication details printed at startup.
@@ -62,15 +60,15 @@ Use the full upstream CLI with:
 nix run .#t3 -- --help
 ```
 
-The launcher prepends the pinned Codex and Pi packages to `PATH`, so T3 Code
-consistently sees the bundled CLIs rather than host installations. Pi includes
-the fork's OpenCode-aligned Copilot provider and T3 RPC compaction fixes.
-MCP uses Pi's built-in support. Configure servers in `~/.pi/agent/mcp.json` or
-in a trusted project's `.pi/mcp.json`, and manage them with `pi mcp` or `/mcp`.
-T3 registers its authenticated `t3-code` server for each session without
-rewriting either config file. Do not add a separate `t3-code` entry unless you
-intend to override T3's session connection; native Pi gives configured servers
-precedence over extension registrations.
+Codex and other provider CLIs are not bundled. Install them separately and
+make them available on your `PATH`. The launcher preserves that path and keeps
+Pi on the runtime path. Pi includes the fork's OpenCode-aligned Copilot provider and T3
+RPC compaction fixes. MCP uses Pi's built-in support. Configure servers in
+`~/.pi/agent/mcp.json` or in a trusted project's `.pi/mcp.json`, and manage them
+with `pi mcp` or `/mcp`. T3 registers its authenticated `t3-code` server for
+each session without rewriting either config file. Do not add a separate
+`t3-code` entry unless you intend to override T3's session connection; native
+Pi gives configured servers precedence over extension registrations.
 
 The adapter is no longer bundled. If you installed `pi-mcp-adapter` yourself,
 remove it with `pi remove npm:pi-mcp-adapter`; otherwise it disables Pi's native
@@ -82,9 +80,8 @@ tools; native MCP defaults to calling server tools through codemode.
 Standalone `nix run .#pi` retains the pinned `@tintinweb/pi-subagents` extension.
 The Pi runtime bundled into T3 desktop/server does not inject that extension.
 
-The flake follows the `nixpkgs` revision used by `llm-agents.nix` and advertises
-Numtide's binary cache, allowing the agent CLIs to be substituted instead of
-rebuilt when the local Nix daemon trusts that cache.
+The flake pins `nixpkgs` directly. It does not depend on `llm-agents.nix` or
+advertise Numtide's cache.
 
 The launcher also passes Electron's `--ignore-certificate-errors` flag for
 development environments that use untrusted HTTPS certificates. This disables
@@ -110,16 +107,12 @@ Optionally require a stabilization delay:
 ./scripts/update.sh --delay-hours 72
 ```
 
-The daily GitHub Actions workflow opens an update PR. It also refreshes
-`nixpkgs` and `llm-agents`, even when the selected T3 Code nightly has not
-changed, so the bundled Codex does not unnecessarily fall behind npm. The
+The daily GitHub Actions workflow opens an update PR. It also refreshes the
+pinned `nixpkgs`, even when the selected T3 Code nightly has not changed. The
 delay can be overridden when running the workflow manually.
 
-T3 Code compares the installed Codex version with the latest npm release. If
-`llm-agents.nix` briefly trails npm, T3 Code may show an update notice even
-though the bundled CLI is working. Do not use T3 Code's npm update action for
-the Nix-store binary; either wait for the next automated input refresh or turn
-off **provider update checks** in T3 Code's settings.
+Update the bundled Pi runtime through its pinned flake input, not T3 Code's
+npm update action for the Nix-store binary.
 
 ## Android device control
 
