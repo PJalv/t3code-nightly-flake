@@ -728,7 +728,7 @@ index a98aa9607..666c0b1ab 100644
            tailscaleServePort: 443,
            updateChannel: "latest",
 diff --git a/apps/desktop/src/settings/DesktopAppSettings.ts b/apps/desktop/src/settings/DesktopAppSettings.ts
-index efd9fbfbf..dc8dd8f8c 100644
+index a8dbc8e63..39a9158bc 100644
 --- a/apps/desktop/src/settings/DesktopAppSettings.ts
 +++ b/apps/desktop/src/settings/DesktopAppSettings.ts
 @@ -31,6 +31,13 @@ export interface DesktopSettings {
@@ -1055,10 +1055,10 @@ index 000000000..f6309dcb8
 +  }
 +}
 diff --git a/apps/desktop/src/updates/updatesTestHarness.ts b/apps/desktop/src/updates/updatesTestHarness.ts
-index 9d4556af4..d7e8f77da 100644
+index c3701280a..67ab8071a 100644
 --- a/apps/desktop/src/updates/updatesTestHarness.ts
 +++ b/apps/desktop/src/updates/updatesTestHarness.ts
-@@ -182,6 +182,8 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
+@@ -184,6 +184,8 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
            load: Effect.sync(() => testSettings),
            setMainWindowBounds: () => Effect.die("unexpected main window bounds update"),
            setServerExposureMode: () => Effect.die("unexpected server exposure update"),
@@ -1088,7 +1088,7 @@ index c9a49b1d7..ac23b9146 100644
      setUpdateChannel: () => Effect.die("unexpected update channel change"),
      setWslBackendEnabled: () => Effect.die("unexpected WSL backend toggle"),
 diff --git a/apps/desktop/src/wsl/DesktopWslBackend.test.ts b/apps/desktop/src/wsl/DesktopWslBackend.test.ts
-index 8afc1bdd9..4809f9fcf 100644
+index e6dcb7bd7..ba6e98649 100644
 --- a/apps/desktop/src/wsl/DesktopWslBackend.test.ts
 +++ b/apps/desktop/src/wsl/DesktopWslBackend.test.ts
 @@ -61,6 +61,7 @@ const layerServerExposure = Layer.succeed(DesktopServerExposure.DesktopServerExp
@@ -2218,7 +2218,7 @@ index 000000000..4f92ccd68
 +  240_000,
 +);
 diff --git a/apps/server/src/serverSettings.test.ts b/apps/server/src/serverSettings.test.ts
-index 1cbd6c7bf..96972b697 100644
+index 26ae1dbc4..317db66e9 100644
 --- a/apps/server/src/serverSettings.test.ts
 +++ b/apps/server/src/serverSettings.test.ts
 @@ -181,6 +181,45 @@ it.layer(NodeServices.layer)("server settings", (it) => {
@@ -2320,10 +2320,10 @@ index 44e645858..ac8b5632d 100644
      // stay in the blob so driver schema validation flags it instead of the
      // fold silently repairing the config.
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index 34dc23858..6d70e0633 100644
+index e959f76a2..f71827682 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
-@@ -188,6 +188,10 @@ import { previewEnvironment } from "../state/preview";
+@@ -189,6 +189,10 @@ import { previewEnvironment } from "../state/preview";
  import { useAtomCommand } from "../state/use-atom-command";
  import { useAtomQueryRunner } from "../state/use-atom-query-runner";
  import { projectEnvironment } from "../state/projects";
@@ -2334,7 +2334,7 @@ index 34dc23858..6d70e0633 100644
  import {
    claimWorkspaceBasenameLookup,
    needsWorkspaceBasenameLookup,
-@@ -2339,6 +2343,14 @@ function useChatMarkdownState({
+@@ -2353,6 +2357,14 @@ function useChatMarkdownState({
    const searchProjectEntries = useAtomQueryRunner(projectEnvironment.searchEntries, {
      reportFailure: false,
    });
@@ -2349,7 +2349,7 @@ index 34dc23858..6d70e0633 100644
    const openPreview = useAtomCommand(previewEnvironment.open, {
      reportFailure: false,
    });
-@@ -2609,6 +2621,77 @@ function useChatMarkdownState({
+@@ -2623,6 +2635,77 @@ function useChatMarkdownState({
      },
      [cwd, environmentId, searchProjectEntries],
    );
@@ -2427,7 +2427,7 @@ index 34dc23858..6d70e0633 100644
    // A bare filename resolves to the workspace root, which is rarely where the
    // file is, so ask the index before opening. Absolute host paths open as-is.
    const openFileInPanel = useCallback(
-@@ -2644,6 +2727,7 @@ function useChatMarkdownState({
+@@ -2658,6 +2741,7 @@ function useChatMarkdownState({
    );
    const fileLinkChip = useCallback(
      (fileLinkMeta: MarkdownFileLinkMeta, copyMarkdown: string, mediaSource?: string) => {
@@ -2435,7 +2435,7 @@ index 34dc23858..6d70e0633 100644
        const mediaPath = mediaSource ?? fileLinkMeta.filePath;
        const canPreviewMedia =
          mediaMimeTypeFromExtension(
-@@ -2714,6 +2798,7 @@ function useChatMarkdownState({
+@@ -2728,6 +2812,7 @@ function useChatMarkdownState({
        revealInFileManagerLabel,
        revealMarkdownFileInFileManager,
        threadRef,
@@ -2443,7 +2443,7 @@ index 34dc23858..6d70e0633 100644
      ],
    );
  
-@@ -2750,6 +2835,7 @@ function useChatMarkdownState({
+@@ -2764,6 +2849,7 @@ function useChatMarkdownState({
        text,
        threadRef,
        updateThreadPullRequestLink,
@@ -2451,7 +2451,7 @@ index 34dc23858..6d70e0633 100644
      }),
      [
        canOperateHost,
-@@ -2783,6 +2869,7 @@ function useChatMarkdownState({
+@@ -2797,6 +2883,7 @@ function useChatMarkdownState({
        text,
        threadRef,
        updateThreadPullRequestLink,
@@ -2459,7 +2459,7 @@ index 34dc23858..6d70e0633 100644
      ],
    );
    return {
-@@ -2819,6 +2906,8 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
+@@ -2833,6 +2920,8 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
  }
  
  // Keep component types stable when streaming changes the message state.
@@ -2468,7 +2468,7 @@ index 34dc23858..6d70e0633 100644
  const CHAT_MARKDOWN_COMPONENTS = {
    h1: markdownHeadingRenderer(1),
    h2: markdownHeadingRenderer(2),
-@@ -3220,6 +3309,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -3234,6 +3323,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
        imageBaseDir,
        threadRef,
        renderContextReference,
@@ -2476,7 +2476,7 @@ index 34dc23858..6d70e0633 100644
      } = use(ChatMarkdownRendererContext);
      const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
      const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
-@@ -3244,7 +3334,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -3258,7 +3348,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
      const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
      const { className, style: _style, width, height, ...imageProps } = props;
      const authoredSizeStyle = authoredImageSizeStyle(width, height);
@@ -2533,7 +2533,7 @@ index 1e79964ca..de9bdb4a7 100644
    );
  }
 diff --git a/apps/web/src/components/ChatView.tsx b/apps/web/src/components/ChatView.tsx
-index 249ce9286..bee7fa1cb 100644
+index 270f1f26a..627a54d3e 100644
 --- a/apps/web/src/components/ChatView.tsx
 +++ b/apps/web/src/components/ChatView.tsx
 @@ -94,6 +94,14 @@ import {
@@ -2551,7 +2551,7 @@ index 249ce9286..bee7fa1cb 100644
  import { effectiveSnoozed, threadWokeAt } from "@t3tools/client-runtime/state/thread-settled";
  import { useAcknowledgeThreadWoke, useThreadActions } from "../hooks/useThreadActions";
  import {
-@@ -713,94 +721,12 @@ const DevicePanel = lazy(() =>
+@@ -716,94 +724,12 @@ const DevicePanel = lazy(() =>
  );
  const FilePreviewPanel = lazy(() => import("./files/FilePreviewPanel"));
  const EMPTY_PENDING_FILE_SURFACE_IDS: ReadonlySet<string> = new Set();
@@ -2646,7 +2646,7 @@ index 249ce9286..bee7fa1cb 100644
  const draftFanoutStateAtom = Atom.family((_routeKey: string) =>
    Atom.make({
      selections: null as ReadonlyArray<ModelSelection> | null,
-@@ -8048,6 +7974,7 @@ export default function ChatView(props: ChatViewProps) {
+@@ -8071,6 +7997,7 @@ export default function ChatView(props: ChatViewProps) {
        if (!activeThreadId || isCommandPaletteOpen()) {
          return;
        }
@@ -3799,10 +3799,10 @@ index ae83bf935..26f3ee0b9 100644
        if (platform === "ios") {
          const name =
 diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
-index e521c4c37..e3c58b065 100644
+index bea353c2b..d45f59a6b 100644
 --- a/packages/contracts/src/ipc.ts
 +++ b/packages/contracts/src/ipc.ts
-@@ -501,6 +501,7 @@ export interface DesktopServerExposureState {
+@@ -508,6 +508,7 @@ export interface DesktopServerExposureState {
    mode: DesktopServerExposureMode;
    endpointUrl: string | null;
    advertisedHost: string | null;
@@ -3810,7 +3810,7 @@ index e521c4c37..e3c58b065 100644
    tailscaleServeEnabled: boolean;
    tailscaleServePort: number;
  }
-@@ -509,6 +510,7 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
+@@ -516,6 +517,7 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
    mode: DesktopServerExposureModeSchema,
    endpointUrl: Schema.NullOr(Schema.String),
    advertisedHost: Schema.NullOr(Schema.String),
@@ -3818,7 +3818,7 @@ index e521c4c37..e3c58b065 100644
    tailscaleServeEnabled: Schema.Boolean,
    tailscaleServePort: Schema.Number,
  });
-@@ -1183,6 +1185,7 @@ export interface DesktopBridge {
+@@ -1190,6 +1192,7 @@ export interface DesktopBridge {
    resolveSshPasswordPrompt: (requestId: string, password: string | null) => Promise<void>;
    getServerExposureState: () => Promise<DesktopServerExposureState>;
    setServerExposureMode: (mode: DesktopServerExposureMode) => Promise<DesktopServerExposureState>;

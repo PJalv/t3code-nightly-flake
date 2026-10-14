@@ -1,13 +1,13 @@
 {
-  "version": "0.0.46-nightly.20261013.3042",
-  "tag": "v0.0.46-nightly.20261013.3042",
-  "publishedAt": "2026-10-13T01:37:04Z",
-  "sourceRevision": "5d6e4192bfcf9eca09741605e12c72b5970025e4",
-  "personalRevision": "f74691abd4f3e4db89d78ab30609dde7d3fb802d",
+  "version": "0.0.46-nightly.20261014.3105",
+  "tag": "v0.0.46-nightly.20261014.3105",
+  "publishedAt": "2026-10-14T10:16:56Z",
+  "sourceRevision": "3417bc3856a25fa772f969faeaf8428a58010d47",
+  "personalRevision": "ab6b2414c36f48e35c3e44d8350d7ced7be436ce",
   "personalPatch": "patches/personal-qol.patch",
-  "personalPatchSha256": "6f9598f0e6c9906f850c1f4888a5c7d8b1202a4fc92974d5ab2b1dec19785d9b",
-  "url": "https://github.com/pingdotgg/t3code/releases/download/v0.0.46-nightly.20261013.3042/T3-Code-0.0.46-nightly.20261013.3042-x86_64.AppImage",
-  "hash": "sha256-w7vEEc0/Z8SXDBJhHR12MyZzfIsJJT0lFgdFURMK6v0=",
-  "npmUrl": "https://registry.npmjs.org/t3/-/t3-0.0.46-nightly.20261013.3042.tgz",
-  "npmHash": "sha512-gn2kSK+OZ76uVWbyb5rR05xUxqnYgsiIGFl/s2aYT4hgwmrRwFg37zScKNOyWxe2Mk2tt4YhdpODUW4z+YXdJw=="
+  "personalPatchSha256": "59249f17381bb7c2ca91ad95476b603b5120e45c890978b8f754267aae6bc4ff",
+  "url": "https://github.com/pingdotgg/t3code/releases/download/v0.0.46-nightly.20261014.3105/T3-Code-0.0.46-nightly.20261014.3105-x86_64.AppImage",
+  "hash": "sha256-ndnyyorx4vUjVosPt4OMH13pVXZMQTxxlDSaSzvGCi8=",
+  "npmUrl": "https://registry.npmjs.org/t3/-/t3-0.0.46-nightly.20261014.3105.tgz",
+  "npmHash": "sha512-vwRf+4XpINbRaQTR5PpUKkf0dReW5TKT+svB3rpXRqXvDpx2ZEvhioEPNKiPVUsz8aRvkX3jA/gqqfjC5P7gyg=="
 }
