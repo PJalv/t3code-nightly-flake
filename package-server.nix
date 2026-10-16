@@ -1,8 +1,8 @@
 { lib
-, buildNpmPackage
+, stdenv
+, autoPatchelfHook
 , fetchurl
 , git
-, importNpmLock
 , makeWrapper
 , nodejs_24
 , openssh
@@ -17,21 +17,7 @@
 
 let
   source = lib.importJSON ./source.json;
-  packageJson = lib.importJSON ./npm/package.json;
-  packageJsonForNpm = builtins.removeAttrs packageJson [ "overrides" ];
-  packageLockJson = lib.importJSON ./npm/package-lock.json;
-  # The published package's bin is now a platform launcher. This derivation
-  # replaces dist with our source build, so invoke that bundle directly.
   binPath = "dist/bin.mjs";
-  # The source-built bundle externalizes only native/disk-backed packages
-  # (scripts/lib/cli-external-packages.ts). Upstream's matching Linux platform
-  # package bundles exactly that closure. npm skips this optional dependency in
-  # the sandbox, so fetch the locked tarball directly.
-  platformPackage = packageLockJson.packages."node_modules/@t3code/t3-linux-x64";
-  platformTarball = fetchurl {
-    url = platformPackage.resolved;
-    hash = platformPackage.integrity;
-  };
   androidHome = "${androidSdk}/libexec/android-sdk";
   # Agent CLIs (Pi, Codex, ...) come from the user's PATH, which the wrapper
   # preserves; only T3's own runtime tools are pinned here.
@@ -45,67 +31,31 @@ let
     androidJdk
   ];
 in
-assert lib.assertMsg (
-  packageJson.version == source.version
-  && packageLockJson.version == source.version
-  && packageLockJson.packages."node_modules/@t3code/t3-linux-x64".version == source.version
-) "Refresh npm/package.json and npm/package-lock.json to match source.json before building the server.";
-buildNpmPackage {
+stdenv.mkDerivation {
   pname = "t3code-server";
   inherit (source) version;
-  nodejs = nodejs_24;
 
   src = fetchurl {
-    url = source.npmUrl;
-    hash = source.npmHash;
+    url = source.serverUrl;
+    hash = source.serverHash;
   };
 
-  sourceRoot = "package";
-
-  npmDeps = importNpmLock {
-    package = packageJsonForNpm;
-    packageLock = packageLockJson;
-    fetcherOpts = {
-      "node_modules/@effect/platform-node" = { name = "platform-node.tgz"; };
-      "node_modules/@effect/platform-node-shared" = { name = "platform-node-shared.tgz"; };
-      "node_modules/@effect/sql-sqlite-bun" = { name = "sql-sqlite-bun.tgz"; };
-      "node_modules/effect" = { name = "effect.tgz"; };
-    };
-  };
-
-  npmConfigHook = importNpmLock.npmConfigHook;
-  npmFlags = [ "--legacy-peer-deps" ];
-  nativeBuildInputs = [ makeWrapper ];
-  dontNpmBuild = true;
-
-  postPatch = ''
-    cp ${./npm/package.json} package.json
-    cp ${./npm/package-lock.json} package-lock.json
-
-    node -e '
-      const fs = require("fs");
-      const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
-      delete pkg.overrides;
-      fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
-    '
-
-    rm -rf dist
-    cp -r ${sourceAssets}/apps/server/dist ./dist
-
-    test -f ${lib.escapeShellArg binPath}
-  '';
+  nativeBuildInputs = [ makeWrapper autoPatchelfHook ];
+  buildInputs = [ stdenv.cc.cc.lib ];
+  dontBuild = true;
 
   installPhase = ''
     runHook preInstall
 
-    # Unpack only the runtime dependency closure; dist/bin.mjs resolves it from
-    # ./node_modules.
-    tar -xzf ${platformTarball} --strip-components=1 package/node_modules
-    test -f node_modules/node-pty/prebuilds/linux-x64/pty.node
-    test -f node_modules/@ff-labs/fff-bin-linux-x64-gnu/libfff_c.so
-
     mkdir -p "$out/lib/node_modules/t3" "$out/bin"
-    cp -r . "$out/lib/node_modules/t3"
+    cp -r ${sourceAssets}/apps/server/dist "$out/lib/node_modules/t3/dist"
+    cp -r node_modules "$out/lib/node_modules/t3/node_modules"
+    chmod u+w "$out/lib/node_modules/t3/dist"
+    cp -r resource-monitor "$out/lib/node_modules/t3/dist/resource-monitor"
+    rm -rf "$out/lib/node_modules/t3/node_modules/@ff-labs/fff-bin-linux-x64-musl"
+    test -f "$out/lib/node_modules/t3/node_modules/node-pty/prebuilds/linux-x64/pty.node"
+    test -f "$out/lib/node_modules/t3/node_modules/@ff-labs/fff-bin-linux-x64-gnu/libfff_c.so"
+    test -f "$out/lib/node_modules/t3/${binPath}"
 
     makeWrapper ${nodejs_24}/bin/node "$out/bin/t3" \
       --add-flags "$out/lib/node_modules/t3/${binPath}" \

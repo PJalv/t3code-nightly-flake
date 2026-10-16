@@ -43,8 +43,9 @@ inputs.t3code-nightly.packages.${pkgs.system}.t3code
 
 ## Headless server
 
-The matching nightly npm server is exposed as `server`, `t3code-server`, and
-`t3`. Run it without opening a local browser with:
+The matching nightly server is exposed as `server`, `t3code-server`, and `t3`.
+Its native runtime dependencies come from the hash-pinned upstream Linux CLI
+archive, not the npm launcher. Run it without opening a local browser with:
 
 ```sh
 nix run .#server -- --host 0.0.0.0 --port 13773

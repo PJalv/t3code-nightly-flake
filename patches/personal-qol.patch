@@ -1,8 +1,8 @@
 diff --git a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
-index 090f6e0ed..0717a9247 100644
+index c0ef57ae9..afa71cb5d 100644
 --- a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
 +++ b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
-@@ -48,6 +48,7 @@ const layerServerExposure = Layer.succeed(DesktopServerExposure.DesktopServerExp
+@@ -57,6 +57,7 @@ const layerServerExposure = Layer.succeed(DesktopServerExposure.DesktopServerExp
    }),
    configureFromSettings: () => Effect.die("unexpected configureFromSettings"),
    setMode: () => Effect.die("unexpected setMode"),
@@ -11,7 +11,7 @@ index 090f6e0ed..0717a9247 100644
    getAdvertisedEndpoints: Effect.succeed([]),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 diff --git a/apps/desktop/src/backend/DesktopServerExposure.test.ts b/apps/desktop/src/backend/DesktopServerExposure.test.ts
-index b4d0a0626..615a9caa5 100644
+index d280a82c7..809573914 100644
 --- a/apps/desktop/src/backend/DesktopServerExposure.test.ts
 +++ b/apps/desktop/src/backend/DesktopServerExposure.test.ts
 @@ -40,6 +40,30 @@ const tailnetNetworkInterfaces: DesktopNetworkInterfaces.NetworkInterfaces = {
@@ -221,7 +221,7 @@ index b4d0a0626..615a9caa5 100644
        setTailscaleServe: () => Effect.fail(settingsFailure),
        setUpdateChannel: () => Effect.die("unexpected update channel change"),
        setWslBackendEnabled: () => Effect.die("unexpected WSL backend toggle"),
-@@ -477,6 +656,7 @@ describe("DesktopServerExposure", () => {
+@@ -473,6 +652,7 @@ describe("DesktopServerExposure", () => {
            {
              id: "desktop-lan:http://192.168.1.20:3773",
              label: "Local network",
@@ -230,7 +230,7 @@ index b4d0a0626..615a9caa5 100644
                id: "desktop-core",
                label: "Desktop",
 diff --git a/apps/desktop/src/backend/DesktopServerExposure.ts b/apps/desktop/src/backend/DesktopServerExposure.ts
-index e5bd11035..c7d88c1cf 100644
+index f8f872147..8ce78cf28 100644
 --- a/apps/desktop/src/backend/DesktopServerExposure.ts
 +++ b/apps/desktop/src/backend/DesktopServerExposure.ts
 @@ -44,6 +44,9 @@ interface DesktopAdvertisedEndpointInput {
@@ -388,7 +388,7 @@ index e5bd11035..c7d88c1cf 100644
    }
  
    for (const customEndpointUrl of input.customHttpsEndpointUrls ?? []) {
-@@ -248,10 +325,22 @@ export const DesktopServerExposureSetModeError = Schema.Union([
+@@ -246,10 +323,22 @@ export const DesktopServerExposureSetModeError = Schema.Union([
  ]);
  export type DesktopServerExposureSetModeError = typeof DesktopServerExposureSetModeError.Type;
  
@@ -411,7 +411,7 @@ index e5bd11035..c7d88c1cf 100644
  ]);
  export type DesktopServerExposureError = typeof DesktopServerExposureError.Type;
  
-@@ -279,6 +368,12 @@ export class DesktopServerExposure extends Context.Service<
+@@ -277,6 +366,12 @@ export class DesktopServerExposure extends Context.Service<
      readonly setMode: (
        mode: DesktopServerExposureMode,
      ) => Effect.Effect<DesktopServerExposureChange, DesktopServerExposureSetModeError>;
@@ -424,7 +424,7 @@ index e5bd11035..c7d88c1cf 100644
      readonly setTailscaleServeEnabled: (input: {
        readonly enabled: boolean;
        readonly port?: number;
-@@ -297,6 +392,7 @@ interface RuntimeState {
+@@ -295,6 +390,7 @@ interface RuntimeState {
    readonly httpBaseUrl: URL;
    readonly endpointUrl: Option.Option<string>;
    readonly advertisedHost: Option.Option<string>;
@@ -432,7 +432,7 @@ index e5bd11035..c7d88c1cf 100644
    readonly tailscaleServeEnabled: boolean;
    readonly tailscaleServePort: number;
  }
-@@ -322,6 +418,7 @@ const toContractState = (state: RuntimeState): DesktopServerExposureState => ({
+@@ -320,6 +416,7 @@ const toContractState = (state: RuntimeState): DesktopServerExposureState => ({
    mode: state.mode,
    endpointUrl: Option.getOrNull(state.endpointUrl),
    advertisedHost: Option.getOrNull(state.advertisedHost),
@@ -440,7 +440,7 @@ index e5bd11035..c7d88c1cf 100644
    tailscaleServeEnabled: state.tailscaleServeEnabled,
    tailscaleServePort: state.tailscaleServePort,
  });
-@@ -359,6 +456,7 @@ function runtimeStateFromResolvedExposure(input: {
+@@ -357,6 +454,7 @@ function runtimeStateFromResolvedExposure(input: {
      httpBaseUrl: new URL(input.exposure.localHttpUrl),
      endpointUrl: Option.fromNullishOr(input.exposure.endpointUrl),
      advertisedHost: Option.fromNullishOr(input.exposure.advertisedHost),
@@ -448,7 +448,7 @@ index e5bd11035..c7d88c1cf 100644
      tailscaleServeEnabled: input.settings.tailscaleServeEnabled,
      tailscaleServePort: input.settings.tailscaleServePort,
    };
-@@ -377,6 +475,7 @@ function resolveRuntimeState(input: {
+@@ -375,6 +473,7 @@ function resolveRuntimeState(input: {
      port: input.port,
      networkInterfaces: input.networkInterfaces,
      ...(advertisedHostOverride ? { advertisedHostOverride } : {}),
@@ -456,7 +456,7 @@ index e5bd11035..c7d88c1cf 100644
    });
    const unavailable =
      input.requestedMode === "network-accessible" &&
-@@ -535,13 +634,68 @@ export const make = Effect.gen(function* () {
+@@ -533,13 +632,68 @@ export const make = Effect.gen(function* () {
      changePermit.withPermit,
    );
  
@@ -526,7 +526,7 @@ index e5bd11035..c7d88c1cf 100644
      });
  
      // Don't spawn the Tailscale CLI when the user hasn't opted into any
-@@ -569,6 +723,7 @@ export const make = Effect.gen(function* () {
+@@ -567,6 +721,7 @@ export const make = Effect.gen(function* () {
      backendConfig,
      configureFromSettings,
      setMode,
@@ -591,10 +591,10 @@ index 9a9ce7689..b69c1e76c 100644
    channel: IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL,
    payload: SetTailscaleServeEnabledInput,
 diff --git a/apps/desktop/src/preload.ts b/apps/desktop/src/preload.ts
-index efd49ffa3..d3bee0860 100644
+index 2e046b7f2..88d4f6b9b 100644
 --- a/apps/desktop/src/preload.ts
 +++ b/apps/desktop/src/preload.ts
-@@ -178,6 +178,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
+@@ -176,6 +176,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
    getServerExposureState: () => ipcRenderer.invoke(IpcChannels.GET_SERVER_EXPOSURE_STATE_CHANNEL),
    setServerExposureMode: (mode) =>
      ipcRenderer.invoke(IpcChannels.SET_SERVER_EXPOSURE_MODE_CHANNEL, mode),
@@ -728,7 +728,7 @@ index a98aa9607..666c0b1ab 100644
            tailscaleServePort: 443,
            updateChannel: "latest",
 diff --git a/apps/desktop/src/settings/DesktopAppSettings.ts b/apps/desktop/src/settings/DesktopAppSettings.ts
-index a8dbc8e63..39a9158bc 100644
+index 1c1316812..621f65546 100644
 --- a/apps/desktop/src/settings/DesktopAppSettings.ts
 +++ b/apps/desktop/src/settings/DesktopAppSettings.ts
 @@ -31,6 +31,13 @@ export interface DesktopSettings {
@@ -745,7 +745,7 @@ index a8dbc8e63..39a9158bc 100644
    readonly tailscaleServeEnabled: boolean;
    readonly tailscaleServePort: number;
    readonly updateChannel: DesktopUpdateChannel;
-@@ -80,6 +87,7 @@ export const DEFAULT_DESKTOP_SETTINGS: DesktopSettings = {
+@@ -70,6 +77,7 @@ export const DEFAULT_DESKTOP_SETTINGS: DesktopSettings = {
    mainWindowBounds: null,
    mainWindowMaximized: false,
    serverExposureMode: "local-only",
@@ -753,7 +753,7 @@ index a8dbc8e63..39a9158bc 100644
    tailscaleServeEnabled: false,
    tailscaleServePort: DEFAULT_TAILSCALE_SERVE_PORT,
    updateChannel: "latest",
-@@ -102,6 +110,7 @@ const DesktopSettingsDocument = Schema.Struct({
+@@ -92,6 +100,7 @@ const DesktopSettingsDocument = Schema.Struct({
    mainWindowBounds: Schema.optionalKey(Schema.NullOr(DesktopWindowBoundsDocument)),
    mainWindowMaximized: Schema.optionalKey(Schema.Boolean),
    serverExposureMode: Schema.optionalKey(DesktopServerExposureModeSchema),
@@ -761,7 +761,7 @@ index a8dbc8e63..39a9158bc 100644
    tailscaleServeEnabled: Schema.optionalKey(Schema.Boolean),
    tailscaleServePort: Schema.optionalKey(Schema.Number),
    updateChannel: Schema.optionalKey(DesktopUpdateChannelSchema),
-@@ -167,6 +176,9 @@ export class DesktopAppSettings extends Context.Service<
+@@ -154,6 +163,9 @@ export class DesktopAppSettings extends Context.Service<
      readonly setServerExposureMode: (
        mode: DesktopServerExposureMode,
      ) => Effect.Effect<DesktopSettingsChange, DesktopSettingsWriteError>;
@@ -771,7 +771,7 @@ index a8dbc8e63..39a9158bc 100644
      readonly setTailscaleServe: (input: {
        readonly enabled: boolean;
        readonly port: Option.Option<number>;
-@@ -238,6 +250,11 @@ function normalizeDesktopSettingsDocument(
+@@ -222,6 +234,11 @@ function normalizeDesktopSettingsDocument(
      mainWindowMaximized: mainWindowBounds !== null && parsed.mainWindowMaximized === true,
      serverExposureMode:
        parsed.serverExposureMode === "network-accessible" ? "network-accessible" : "local-only",
@@ -783,7 +783,7 @@ index a8dbc8e63..39a9158bc 100644
      tailscaleServeEnabled: parsed.tailscaleServeEnabled === true,
      tailscaleServePort: normalizeTailscaleServePort(parsed.tailscaleServePort),
      updateChannel: updateChannelConfiguredByUser
-@@ -269,6 +286,9 @@ function toDesktopSettingsDocument(
+@@ -253,6 +270,9 @@ function toDesktopSettingsDocument(
    if (settings.mainWindowMaximized) {
      document.mainWindowMaximized = true;
    }
@@ -793,7 +793,7 @@ index a8dbc8e63..39a9158bc 100644
    if (settings.serverExposureMode !== defaults.serverExposureMode) {
      document.serverExposureMode = settings.serverExposureMode;
    }
-@@ -309,6 +329,18 @@ function setServerExposureMode(
+@@ -293,6 +313,18 @@ function setServerExposureMode(
        };
  }
  
@@ -812,7 +812,7 @@ index a8dbc8e63..39a9158bc 100644
  function setMainWindowBounds(
    settings: DesktopSettings,
    bounds: DesktopWindowBounds,
-@@ -554,6 +586,10 @@ export const make = Effect.gen(function* () {
+@@ -539,6 +571,10 @@ export const make = Effect.gen(function* () {
        persist((settings) => setServerExposureMode(settings, mode)).pipe(
          Effect.withSpan("desktop.settings.setServerExposureMode", { attributes: { mode } }),
        ),
@@ -823,7 +823,7 @@ index a8dbc8e63..39a9158bc 100644
      setTailscaleServe: (input) =>
        persist((settings) => setTailscaleServe(settings, input)).pipe(
          Effect.withSpan("desktop.settings.setTailscaleServe", { attributes: input }),
-@@ -615,6 +651,8 @@ export const layerTest = (initialSettings: DesktopSettings = DEFAULT_DESKTOP_SET
+@@ -600,6 +636,8 @@ export const layerTest = (initialSettings: DesktopSettings = DEFAULT_DESKTOP_SET
            update((settings) => setMainWindowBounds(settings, bounds, isMaximized)),
          setServerExposureMode: (mode) =>
            update((settings) => setServerExposureMode(settings, mode)),
@@ -833,10 +833,10 @@ index a8dbc8e63..39a9158bc 100644
          setUpdateChannel: (channel) => update((settings) => setUpdateChannel(settings, channel)),
          setWslBackendEnabled: (enabled) =>
 diff --git a/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts b/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
-index a8c0e0f79..f45c0244b 100644
+index 78f41968b..557bf1612 100644
 --- a/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
 +++ b/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
-@@ -6,6 +6,7 @@ import { SNAP_SHOT_MODIFIERS, type SnapShotModifier } from "@t3tools/contracts";
+@@ -3,6 +3,7 @@ import { SNAP_SHOT_MODIFIERS, type SnapShotModifier } from "@t3tools/contracts";
  
  import { loadWindowsForegroundApi } from "../electron/WindowsForeground.ts";
  import { WINDOWS_MODIFIER_PAIR_VIRTUAL_KEYS } from "./snapShot.ts";
@@ -844,7 +844,7 @@ index a8c0e0f79..f45c0244b 100644
  
  const POLL_INTERVAL_MS = 50;
  
-@@ -18,13 +19,11 @@ const [left, right] = WINDOWS_MODIFIER_PAIR_VIRTUAL_KEYS[requested as SnapShotMo
+@@ -15,13 +16,11 @@ const [left, right] = WINDOWS_MODIFIER_PAIR_VIRTUAL_KEYS[requested as SnapShotMo
  async function poll() {
    const api = await loadWindowsForegroundApi();
    let active = false;
@@ -861,12 +861,12 @@ index a8c0e0f79..f45c0244b 100644
      active = pressed;
    }, POLL_INTERVAL_MS);
 diff --git a/apps/desktop/src/snapShot/RegionSnapShotWorker.ts b/apps/desktop/src/snapShot/RegionSnapShotWorker.ts
-index fcc7b5625..24df9695f 100644
+index 374745c96..3eac9f964 100644
 --- a/apps/desktop/src/snapShot/RegionSnapShotWorker.ts
 +++ b/apps/desktop/src/snapShot/RegionSnapShotWorker.ts
 @@ -1,13 +1,14 @@
- // Windows region capture. Runs in a forked Node-mode child so the native
- // screenshot call cannot crash or stall the main process. One request per child.
+ // Runs in a forked Node-mode child so the native screenshot call cannot crash
+ // or stall the main process.
  import type { RegionSnapShotRequest, RegionSnapShotResult } from "./RegionSnapShot.ts";
 +import { sendWorkerMessage } from "./WorkerIpc.ts";
  
@@ -1055,10 +1055,10 @@ index 000000000..f6309dcb8
 +  }
 +}
 diff --git a/apps/desktop/src/updates/updatesTestHarness.ts b/apps/desktop/src/updates/updatesTestHarness.ts
-index c3701280a..67ab8071a 100644
+index d356506e9..b42736a51 100644
 --- a/apps/desktop/src/updates/updatesTestHarness.ts
 +++ b/apps/desktop/src/updates/updatesTestHarness.ts
-@@ -184,6 +184,8 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
+@@ -178,6 +178,8 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
            load: Effect.sync(() => testSettings),
            setMainWindowBounds: () => Effect.die("unexpected main window bounds update"),
            setServerExposureMode: () => Effect.die("unexpected server exposure update"),
@@ -1068,7 +1068,7 @@ index c3701280a..67ab8071a 100644
            setUpdateChannel: (channel) =>
              setUpdateChannelError
 diff --git a/apps/desktop/src/window/DesktopWindow.test.ts b/apps/desktop/src/window/DesktopWindow.test.ts
-index c9a49b1d7..ac23b9146 100644
+index d17b530a8..59caaef5a 100644
 --- a/apps/desktop/src/window/DesktopWindow.test.ts
 +++ b/apps/desktop/src/window/DesktopWindow.test.ts
 @@ -184,6 +184,7 @@ const layerDesktopServerExposure = Layer.succeed(DesktopServerExposure.DesktopSe
@@ -1293,7 +1293,7 @@ index 000000000..be0b72484
 +  );
 +}
 diff --git a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
-index 7ed7ddc8b..a7fdd8815 100644
+index 8212b0296..cb40ef9fa 100644
 --- a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 +++ b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 @@ -3,6 +3,7 @@ import {
@@ -1304,7 +1304,7 @@ index 7ed7ddc8b..a7fdd8815 100644
  import Constants from "expo-constants";
  import * as Notifications from "expo-notifications";
  import * as Effect from "effect/Effect";
-@@ -198,6 +199,7 @@ export function setAgentAwarenessRelayTokenProvider(
+@@ -187,6 +188,7 @@ export function setAgentAwarenessRelayTokenProvider(
    relayTokenProviderIdentity = provider ? (identity ?? null) : null;
    if (!provider) {
      clearAndroidAgentNotifications();
@@ -1382,10 +1382,10 @@ index 24766242b..ec51295ab 100644
    const { elements, messages, sockets, configuration } = await setup();
    sockets[0]!.onopen?.();
 diff --git a/apps/mobile/src/features/devices/device-stream.browser.ts b/apps/mobile/src/features/devices/device-stream.browser.ts
-index 0b9e98a51..95d0c9642 100644
+index d1ec539b8..41402a4b2 100644
 --- a/apps/mobile/src/features/devices/device-stream.browser.ts
 +++ b/apps/mobile/src/features/devices/device-stream.browser.ts
-@@ -179,9 +179,22 @@ export function start(configuration: DeviceStreamConfiguration) {
+@@ -178,9 +178,22 @@ export function start(configuration: DeviceStreamConfiguration) {
    frame.addEventListener("pointercancel", endTouch);
    frame.addEventListener("lostpointercapture", endTouch);
    frame.addEventListener("keydown", (event) => {
@@ -1409,18 +1409,18 @@ index 0b9e98a51..95d0c9642 100644
    window.addEventListener("pagehide", stop, { once: true });
    post({ type: "input", connected: false });
 diff --git a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
-index 25c2e03d4..1428a6c7b 100644
+index eceefbda0..c29a32569 100644
 --- a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
-@@ -12,6 +12,7 @@ import { Alert, AppState, Linking, Platform } from "react-native";
+@@ -13,6 +13,7 @@ import { AppState, Linking, Platform } from "react-native";
  import { useSafeAreaInsets } from "react-native-safe-area-context";
  
- import { AppText as Text } from "../../components/AppText";
+ import { AppText as Text } from "../../components/ui/AppText";
 +import { tryCopyTextWithHaptic } from "../../lib/copyTextWithHaptic";
  import {
    isAtomCommandInterrupted,
    reportAtomCommandResult,
-@@ -25,6 +26,12 @@ import {
+@@ -26,6 +27,12 @@ import {
    supportsAndroidLiveUpdateSettings,
  } from "../agent-awareness/androidNotifications";
  import { setLiveActivityUpdatesEnabled } from "../agent-awareness/liveActivityPreferences";
@@ -1433,7 +1433,7 @@ index 25c2e03d4..1428a6c7b 100644
  import { requestAgentNotificationPermission } from "../agent-awareness/notificationPermissions";
  import {
    getAgentAwarenessRegistrationStatus,
-@@ -60,6 +67,7 @@ function useDeviceRegistered(): boolean {
+@@ -57,6 +64,7 @@ function useDeviceRegistered(): boolean {
  
  export function SettingsNotificationsRouteScreen() {
    if (!hasCloudPublicConfig()) {
@@ -1441,7 +1441,7 @@ index 25c2e03d4..1428a6c7b 100644
      return (
        <SettingsScreen title="Notifications">
          <ScrollView
-@@ -77,6 +85,106 @@ export function SettingsNotificationsRouteScreen() {
+@@ -74,6 +82,106 @@ export function SettingsNotificationsRouteScreen() {
    return <ConfiguredSettingsNotificationsRouteScreen />;
  }
  
@@ -1458,10 +1458,10 @@ index 25c2e03d4..1428a6c7b 100644
 +          const copied = await tryCopyTextWithHaptic(
 +            JSON.stringify({ token, deviceId, userId: `local:${deviceId}` }, null, 2),
 +          );
-+          if (!copied) Alert.alert("Could not copy", "Try again.");
-+          else Alert.alert("Copied", "Sender configuration copied. Keep the push token private.");
++          if (!copied) Dialog.alert("Could not copy", "Try again.");
++          else Dialog.alert("Copied", "Sender configuration copied. Keep the push token private.");
 +        })().catch(() =>
-+          Alert.alert("Could not get push token", "Enable notifications and try again."),
++          Dialog.alert("Could not get push token", "Enable notifications and try again."),
 +        );
 +      }}
 +    />
@@ -1486,14 +1486,14 @@ index 25c2e03d4..1428a6c7b 100644
 +    try {
 +      const permission = await runtime.runPromiseExit(requestAgentNotificationPermission);
 +      if (permission._tag !== "Success" || permission.value.type !== "granted") {
-+        Alert.alert("Notifications unavailable", "Notification permission is required.");
++        Dialog.alert("Notifications unavailable", "Notification permission is required.");
 +        return;
 +      }
 +      await enableLocalAgentNotifications(withOngoing);
 +      setEnabled(true);
 +      setOngoing(withOngoing);
 +    } catch {
-+      Alert.alert("Notifications unavailable", "Could not enable local notifications.");
++      Dialog.alert("Notifications unavailable", "Could not enable local notifications.");
 +    } finally {
 +      setBusy(false);
 +    }
@@ -1517,7 +1517,7 @@ index 25c2e03d4..1428a6c7b 100644
 +                    setOngoing(false);
 +                  })
 +                  .catch(() =>
-+                    Alert.alert("Notifications unavailable", "Could not save the setting."),
++                    Dialog.alert("Notifications unavailable", "Could not save the setting."),
 +                  );
 +            }}
 +          />
@@ -1530,7 +1530,7 @@ index 25c2e03d4..1428a6c7b 100644
 +              void setLocalAgentOngoing(value)
 +                .then(() => setOngoing(value))
 +                .catch(() =>
-+                  Alert.alert("Notifications unavailable", "Could not update ongoing activity."),
++                  Dialog.alert("Notifications unavailable", "Could not update ongoing activity."),
 +                );
 +            }}
 +          />
@@ -1548,7 +1548,7 @@ index 25c2e03d4..1428a6c7b 100644
  function ConfiguredSettingsNotificationsRouteScreen() {
    const preferencesResult = useAtomValue(mobilePreferencesAtom);
    const savePreferences = useAtomSet(updateMobilePreferencesAtom);
-@@ -92,6 +200,8 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -89,6 +197,8 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    const { savedConnectionsById } = useSavedRemoteConnections();
    const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>("checking");
    const [liveActivityStatus, setLiveActivityStatus] = useState<LiveActivityStatus>("checking");
@@ -1557,7 +1557,7 @@ index 25c2e03d4..1428a6c7b 100644
    const liveActivityWriteInFlight = useRef(false);
    const deviceRegistered = useDeviceRegistered();
    const liveActivitiesPreferenceEnabled = AsyncResult.isSuccess(preferencesResult)
-@@ -118,6 +228,20 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -115,6 +225,20 @@ function ConfiguredSettingsNotificationsRouteScreen() {
      setNotificationStatus(result.value.granted ? "enabled" : "disabled");
    }, []);
  
@@ -1578,7 +1578,7 @@ index 25c2e03d4..1428a6c7b 100644
    useEffect(() => {
      void refreshNotifications();
      const subscription = AppState.addEventListener("change", (state) => {
-@@ -132,7 +256,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -129,7 +253,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
        return;
      }
      if (!isSignedIn) {
@@ -1587,7 +1587,7 @@ index 25c2e03d4..1428a6c7b 100644
        return;
      }
      if (!AsyncResult.isSuccess(preferencesResult)) {
-@@ -147,7 +271,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -144,7 +268,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
      setLiveActivityStatus(
        preferencesResult.value.liveActivitiesEnabled === false ? "disabled" : "enabled",
      );
@@ -1596,7 +1596,7 @@ index 25c2e03d4..1428a6c7b 100644
  
    const requestNotifications = useCallback(async () => {
      const result = await settleAsyncResult(() =>
-@@ -328,6 +452,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -323,6 +447,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    const handleDeviceNotificationsChange = useCallback(
      (enabled: boolean) => {
        if (enabled) {
@@ -1606,46 +1606,46 @@ index 25c2e03d4..1428a6c7b 100644
 +              runtime.runPromiseExit(requestAgentNotificationPermission),
 +            );
 +            if (permission._tag !== "Success" || permission.value.type !== "granted") {
-+              Alert.alert("Notifications unavailable", "Notification permission is required.");
++              Dialog.alert("Notifications unavailable", "Notification permission is required.");
 +              return;
 +            }
 +            await enableLocalAgentNotifications(false);
 +            setLocalNotificationsEnabled(true);
 +            setNotificationStatus("enabled");
-+            Alert.alert(
++            Dialog.alert(
 +              "Notifications enabled",
 +              "Local notifications are enabled. A local Firebase sender is required for delivery.",
 +            );
 +          })().catch(() =>
-+            Alert.alert("Notifications unavailable", "Could not enable local notifications."),
++            Dialog.alert("Notifications unavailable", "Could not enable local notifications."),
 +          );
 +          return;
 +        }
          if (!isSignedIn) {
            promptSignIn();
            return;
-@@ -336,6 +481,14 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -331,6 +476,14 @@ function ConfiguredSettingsNotificationsRouteScreen() {
          return;
        }
  
 +      if (!isSignedIn && Platform.OS === "android") {
 +        void disableLocalAgentNotifications().catch(() => {
-+          Alert.alert("Notifications unavailable", "Could not save the notification setting.");
++          Dialog.alert("Notifications unavailable", "Could not save the notification setting.");
 +        });
 +        setLocalNotificationsEnabled(false);
 +        setLocalOngoingEnabled(false);
 +        return;
 +      }
-       Alert.alert(
+       Dialog.alert(
          "Disable notifications",
          "Open system Settings to disable notifications for T3 Code.",
-@@ -351,6 +504,24 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -346,6 +499,24 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    const handleLiveActivitiesChange = useCallback(
      (enabled: boolean) => {
        if (liveActivityWriteInFlight.current) return;
 +      if (!isSignedIn && Platform.OS === "android") {
 +        if (!localNotificationsEnabled && enabled) {
-+          Alert.alert(
++          Dialog.alert(
 +            "Enable notifications first",
 +            "Turn on Device Notifications before enabling ongoing activity.",
 +          );
@@ -1657,14 +1657,14 @@ index 25c2e03d4..1428a6c7b 100644
 +            setLiveActivityStatus(enabled ? "enabled" : "disabled");
 +          })
 +          .catch(() =>
-+            Alert.alert("Ongoing activity unavailable", "Could not update local ongoing activity."),
++            Dialog.alert("Ongoing activity unavailable", "Could not update local ongoing activity."),
 +          );
 +        return;
 +      }
        if (!enabled) {
          liveActivityWriteInFlight.current = true;
          setLiveActivityStatus("linking");
-@@ -414,6 +585,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -409,6 +580,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
        connections,
        getToken,
        isSignedIn,
@@ -1672,9 +1672,9 @@ index 25c2e03d4..1428a6c7b 100644
        linkEnvironments,
        liveActivitiesPreferenceEnabled,
        promptSignIn,
-@@ -447,7 +619,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
-             // relay; otherwise notifications cannot be delivered regardless of
-             // the local iOS permission.
+@@ -439,7 +611,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+             }
+             subtitle={agentAwarenessSubtitle}
              value={
 -              agentAwarenessPushAvailable && notificationStatus === "enabled" && deviceRegistered
 +              agentAwarenessPushAvailable &&
@@ -1683,7 +1683,7 @@ index 25c2e03d4..1428a6c7b 100644
              }
              onValueChange={handleDeviceNotificationsChange}
            />
-@@ -473,7 +647,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -463,7 +637,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
              value={
                agentAwarenessPushAvailable &&
                (liveActivityStatus === "enabled" || liveActivityStatus === "linking") &&
@@ -1692,7 +1692,7 @@ index 25c2e03d4..1428a6c7b 100644
              }
              onValueChange={handleLiveActivitiesChange}
            />
-@@ -484,6 +658,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -474,6 +648,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
                onPress={() => handleLiveActivitiesChange(false)}
              />
            ) : null}
@@ -1703,10 +1703,10 @@ index 25c2e03d4..1428a6c7b 100644
              <SettingsRow
                icon="bolt.circle"
 diff --git a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
-index e0f3e2ecc..c9e698cf2 100644
+index 70f7259f8..9fd2ac39a 100644
 --- a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
-@@ -14,6 +14,7 @@ import { useEnvironmentQuery } from "../../state/query";
+@@ -15,6 +15,7 @@ import { useEnvironmentQuery } from "../../state/query";
  import { serverEnvironment } from "../../state/server";
  import { useAtomCommand } from "../../state/use-atom-command";
  import { SettingsActionRow } from "./components/SettingsActionRow";
@@ -1714,7 +1714,7 @@ index e0f3e2ecc..c9e698cf2 100644
  import {
    AndroidSettingsEnvironmentFilter,
    SettingsEnvironmentFilterHeader,
-@@ -40,6 +41,7 @@ export function SettingsProviderAccountsRouteScreen() {
+@@ -41,6 +42,7 @@ export function SettingsProviderAccountsRouteScreen() {
            ) : (
              selectedTargets.map((environment) => (
                <SettingsSection key={environment.environmentId} title={environment.label}>
@@ -1724,7 +1724,7 @@ index e0f3e2ecc..c9e698cf2 100644
                      (provider) =>
 diff --git a/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx b/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx
 new file mode 100644
-index 000000000..e6bf819fa
+index 000000000..85ba6c68b
 --- /dev/null
 +++ b/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx
 @@ -0,0 +1,156 @@
@@ -1733,7 +1733,7 @@ index 000000000..e6bf819fa
 +import * as Schema from "effect/Schema";
 +import { useState } from "react";
 +import { TextInput, View } from "react-native";
-+import { AppText as Text } from "../../../components/AppText";
++import { AppText as Text } from "../../../components/ui/AppText";
 +import { serverEnvironment } from "../../../state/server";
 +import { useAtomCommand } from "../../../state/use-atom-command";
 +import type { SettingsTarget } from "../settings-environment-filter";
@@ -1885,10 +1885,10 @@ index 000000000..e6bf819fa
 +  );
 +}
 diff --git a/apps/mobile/src/persistence/mobile-preferences.ts b/apps/mobile/src/persistence/mobile-preferences.ts
-index 808383183..6980e2368 100644
+index 4ec0f9ea8..43891513a 100644
 --- a/apps/mobile/src/persistence/mobile-preferences.ts
 +++ b/apps/mobile/src/persistence/mobile-preferences.ts
-@@ -56,6 +56,9 @@ export interface Preferences {
+@@ -54,6 +54,9 @@ export interface Preferences {
    readonly pullRequestHideTestFiles?: boolean;
    readonly pullRequestMergeMethod?: PullRequestMergeMethod;
    readonly liveActivitiesEnabled?: boolean;
@@ -1898,7 +1898,7 @@ index 808383183..6980e2368 100644
    readonly themeId?: MobileThemeId;
    readonly lightThemeId?: MobileThemeId;
    readonly darkThemeId?: MobileThemeId;
-@@ -139,6 +142,8 @@ function sanitizePreferences(parsed: Preferences): Preferences {
+@@ -128,6 +131,8 @@ function sanitizePreferences(parsed: Preferences): Preferences {
      pullRequestHideTestFiles?: boolean;
      pullRequestMergeMethod?: PullRequestMergeMethod;
      liveActivitiesEnabled?: boolean;
@@ -1907,7 +1907,7 @@ index 808383183..6980e2368 100644
      themeId?: MobileThemeId;
      lightThemeId?: MobileThemeId;
      darkThemeId?: MobileThemeId;
-@@ -180,6 +185,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
+@@ -170,6 +175,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
    if (typeof parsed.liveActivitiesEnabled === "boolean") {
      preferences.liveActivitiesEnabled = parsed.liveActivitiesEnabled;
    }
@@ -2063,7 +2063,7 @@ index 3bb6d0be8..8c57d0cb5 100644
    "materializes baseline, lookup fails=%s",
    (lookupFails) => {
 diff --git a/apps/server/src/orchestration-v2/CheckpointService.ts b/apps/server/src/orchestration-v2/CheckpointService.ts
-index ee3316311..9fbb441ca 100644
+index b49da7740..c73b0aa02 100644
 --- a/apps/server/src/orchestration-v2/CheckpointService.ts
 +++ b/apps/server/src/orchestration-v2/CheckpointService.ts
 @@ -259,8 +259,11 @@ export const layer: Layer.Layer<
@@ -2218,10 +2218,10 @@ index 000000000..4f92ccd68
 +  240_000,
 +);
 diff --git a/apps/server/src/serverSettings.test.ts b/apps/server/src/serverSettings.test.ts
-index 26ae1dbc4..317db66e9 100644
+index e20b293a2..ff9d06e58 100644
 --- a/apps/server/src/serverSettings.test.ts
 +++ b/apps/server/src/serverSettings.test.ts
-@@ -181,6 +181,45 @@ it.layer(NodeServices.layer)("server settings", (it) => {
+@@ -180,6 +180,45 @@ it.layer(NodeServices.layer)("server settings", (it) => {
        }),
      ).pipe(Effect.provide(layerServerSettings())),
    );
@@ -2268,10 +2268,10 @@ index 26ae1dbc4..317db66e9 100644
      Effect.gen(function* () {
        const config = yield* ServerConfig.ServerConfig;
 diff --git a/apps/server/src/serverSettings.ts b/apps/server/src/serverSettings.ts
-index 44e645858..ac8b5632d 100644
+index ad9a81f2d..e582d8aee 100644
 --- a/apps/server/src/serverSettings.ts
 +++ b/apps/server/src/serverSettings.ts
-@@ -90,8 +90,45 @@ const textDecoder = new TextDecoder();
+@@ -74,8 +74,45 @@ const textDecoder = new TextDecoder();
  const foldProviderInstanceEnabledFlags = (settings: ServerSettings): ServerSettings => {
    let changed = false;
    const providerInstances: Record<string, ProviderInstanceConfig> = {};
@@ -2320,7 +2320,7 @@ index 44e645858..ac8b5632d 100644
      // stay in the blob so driver schema validation flags it instead of the
      // fold silently repairing the config.
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index e959f76a2..f71827682 100644
+index fcf193a45..81283ff02 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
 @@ -189,6 +189,10 @@ import { previewEnvironment } from "../state/preview";
@@ -2334,7 +2334,7 @@ index e959f76a2..f71827682 100644
  import {
    claimWorkspaceBasenameLookup,
    needsWorkspaceBasenameLookup,
-@@ -2353,6 +2357,14 @@ function useChatMarkdownState({
+@@ -2265,6 +2269,14 @@ function useChatMarkdownState({
    const searchProjectEntries = useAtomQueryRunner(projectEnvironment.searchEntries, {
      reportFailure: false,
    });
@@ -2349,7 +2349,7 @@ index e959f76a2..f71827682 100644
    const openPreview = useAtomCommand(previewEnvironment.open, {
      reportFailure: false,
    });
-@@ -2623,6 +2635,77 @@ function useChatMarkdownState({
+@@ -2533,6 +2545,79 @@ function useChatMarkdownState({
      },
      [cwd, environmentId, searchProjectEntries],
    );
@@ -2424,10 +2424,12 @@ index e959f76a2..f71827682 100644
 +    },
 +    [cwd, currentBasenamePaths],
 +  );
-   // A bare filename resolves to the workspace root, which is rarely where the
-   // file is, so ask the index before opening. Absolute host paths open as-is.
++  // A bare filename resolves to the workspace root, which is rarely where the
++  // file is, so ask the index before opening. Absolute host paths open as-is.
    const openFileInPanel = useCallback(
-@@ -2658,6 +2741,7 @@ function useChatMarkdownState({
+     (panelPath: string, line: number | undefined) => {
+       if (!threadRef) return;
+@@ -2566,6 +2651,7 @@ function useChatMarkdownState({
    );
    const fileLinkChip = useCallback(
      (fileLinkMeta: MarkdownFileLinkMeta, copyMarkdown: string, mediaSource?: string) => {
@@ -2435,7 +2437,7 @@ index e959f76a2..f71827682 100644
        const mediaPath = mediaSource ?? fileLinkMeta.filePath;
        const canPreviewMedia =
          mediaMimeTypeFromExtension(
-@@ -2728,6 +2812,7 @@ function useChatMarkdownState({
+@@ -2634,6 +2720,7 @@ function useChatMarkdownState({
        revealInFileManagerLabel,
        revealMarkdownFileInFileManager,
        threadRef,
@@ -2443,7 +2445,7 @@ index e959f76a2..f71827682 100644
      ],
    );
  
-@@ -2764,6 +2849,7 @@ function useChatMarkdownState({
+@@ -2670,6 +2757,7 @@ function useChatMarkdownState({
        text,
        threadRef,
        updateThreadPullRequestLink,
@@ -2451,7 +2453,7 @@ index e959f76a2..f71827682 100644
      }),
      [
        canOperateHost,
-@@ -2797,6 +2883,7 @@ function useChatMarkdownState({
+@@ -2703,6 +2791,7 @@ function useChatMarkdownState({
        text,
        threadRef,
        updateThreadPullRequestLink,
@@ -2459,7 +2461,7 @@ index e959f76a2..f71827682 100644
      ],
    );
    return {
-@@ -2833,6 +2920,8 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
+@@ -2736,6 +2825,8 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
  }
  
  // Keep component types stable when streaming changes the message state.
@@ -2468,7 +2470,7 @@ index e959f76a2..f71827682 100644
  const CHAT_MARKDOWN_COMPONENTS = {
    h1: markdownHeadingRenderer(1),
    h2: markdownHeadingRenderer(2),
-@@ -3234,6 +3323,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -3126,6 +3217,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
        imageBaseDir,
        threadRef,
        renderContextReference,
@@ -2476,7 +2478,7 @@ index e959f76a2..f71827682 100644
      } = use(ChatMarkdownRendererContext);
      const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
      const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
-@@ -3258,7 +3348,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -3150,7 +3242,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
      const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
      const { className, style: _style, width, height, ...imageProps } = props;
      const authoredSizeStyle = authoredImageSizeStyle(width, height);
@@ -2490,10 +2492,10 @@ index e959f76a2..f71827682 100644
      const directUri = imageSource._tag === "Direct" ? imageSource.uri : null;
      const githubMediaUrl =
 diff --git a/apps/web/src/components/ChatView.logic.test.ts b/apps/web/src/components/ChatView.logic.test.ts
-index f870182b1..7647feb86 100644
+index 43c970053..40ae725f4 100644
 --- a/apps/web/src/components/ChatView.logic.test.ts
 +++ b/apps/web/src/components/ChatView.logic.test.ts
-@@ -1848,6 +1848,12 @@ describe("shouldRefocusComposerOnWindowFocus", () => {
+@@ -1845,6 +1845,12 @@ describe("shouldRefocusComposerOnWindowFocus", () => {
      ).toBe(false);
    });
  
@@ -2507,23 +2509,19 @@ index f870182b1..7647feb86 100644
      expect(shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "dialog" }))).toBe(false);
      expect(shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "-popup" }))).toBe(false);
 diff --git a/apps/web/src/components/ChatView.logic.ts b/apps/web/src/components/ChatView.logic.ts
-index 1e79964ca..de9bdb4a7 100644
+index f01fa3227..263cdcbc0 100644
 --- a/apps/web/src/components/ChatView.logic.ts
 +++ b/apps/web/src/components/ChatView.logic.ts
-@@ -1280,10 +1280,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
+@@ -1230,6 +1230,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
    );
  }
  
--// Returning to the window should land the caret in the composer, so the reader can type right
--// away. The exceptions are places where focus is deliberate: another text field, a terminal in
--// the drawer or the right panel, or an open dialog or popup. A focused button outside those is
--// not one of them, so it yields to the composer.
 +// Returning to the window should focus the composer unless a text field, terminal, device
 +// screen, dialog, or popup owns focus. A plain button outside those yields to the composer.
  export function shouldRefocusComposerOnWindowFocus(
    activeElement:
      | (Pick<Element, "tagName" | "closest" | "getAttribute"> & { isContentEditable?: boolean })
-@@ -1303,7 +1301,7 @@ export function shouldRefocusComposerOnWindowFocus(
+@@ -1249,7 +1251,7 @@ export function shouldRefocusComposerOnWindowFocus(
    }
    return (
      activeElement.closest(
@@ -2533,10 +2531,10 @@ index 1e79964ca..de9bdb4a7 100644
    );
  }
 diff --git a/apps/web/src/components/ChatView.tsx b/apps/web/src/components/ChatView.tsx
-index 270f1f26a..627a54d3e 100644
+index d5599f8c4..61d921032 100644
 --- a/apps/web/src/components/ChatView.tsx
 +++ b/apps/web/src/components/ChatView.tsx
-@@ -94,6 +94,14 @@ import {
+@@ -95,6 +95,14 @@ import {
  } from "@t3tools/client-runtime/errors";
  import { readPastedComposerContext } from "./composerInlineTokenPaste";
  import { isPasteAsTextShortcut } from "@t3tools/client-runtime/text-paste";
@@ -2549,9 +2547,9 @@ index 270f1f26a..627a54d3e 100644
 +  TYPE_TO_FOCUS_FLOATING_LAYER_SELECTOR,
 +} from "~/lib/composerInputFocus";
  import { effectiveSnoozed, threadWokeAt } from "@t3tools/client-runtime/state/thread-settled";
+ import { childThreadInputsTitle } from "@t3tools/client-runtime/state/threads";
  import { useAcknowledgeThreadWoke, useThreadActions } from "../hooks/useThreadActions";
- import {
-@@ -716,94 +724,12 @@ const DevicePanel = lazy(() =>
+@@ -718,85 +726,12 @@ const DevicePanel = lazy(() =>
  );
  const FilePreviewPanel = lazy(() => import("./files/FilePreviewPanel"));
  const EMPTY_PENDING_FILE_SURFACE_IDS: ReadonlySet<string> = new Set();
@@ -2607,11 +2605,6 @@ index 270f1f26a..627a54d3e 100644
 -
 -const SECRET_REQUEST_SELECTOR = '[data-v2-item-type="secret_request"]';
 -
--/**
-- * Whether input that landed outside any editable or interactive element
-- * should be redirected into the composer. Shared by type-to-focus and
-- * paste-to-focus so both honour the same surfaces.
-- */
 -function shouldRedirectInputToComposer(event: Event): boolean {
 -  if (event.defaultPrevented) return false;
 -  // Near a pending secret request, input is meant for its private field: it
@@ -2632,10 +2625,6 @@ index 270f1f26a..627a54d3e 100644
 -  return true;
 -}
 -
--/**
-- * Plain text pasted with nothing editable focused, such as after the resting
-- * composer blurred. Files are left to the composer's own paste handler.
-- */
 -function pasteTextToFocusComposer(event: ClipboardEvent): string | null {
 -  if (!event.clipboardData || event.clipboardData.files.length > 0) return null;
 -  if (!shouldRedirectInputToComposer(event)) return null;
@@ -2646,7 +2635,7 @@ index 270f1f26a..627a54d3e 100644
  const draftFanoutStateAtom = Atom.family((_routeKey: string) =>
    Atom.make({
      selections: null as ReadonlyArray<ModelSelection> | null,
-@@ -8071,6 +7997,7 @@ export default function ChatView(props: ChatViewProps) {
+@@ -7640,6 +7575,7 @@ export default function ChatView(props: ChatViewProps) {
        if (!activeThreadId || isCommandPaletteOpen()) {
          return;
        }
@@ -2704,19 +2693,19 @@ index 000000000..63745660f
 +  );
 +}
 diff --git a/apps/web/src/components/chat/V2ItemInspector.tsx b/apps/web/src/components/chat/V2ItemInspector.tsx
-index 2bc303832..7aca00ce1 100644
+index b012f6f75..203ce3d48 100644
 --- a/apps/web/src/components/chat/V2ItemInspector.tsx
 +++ b/apps/web/src/components/chat/V2ItemInspector.tsx
 @@ -14,7 +14,7 @@ import {
  import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
  import { isJavaScriptReplTool } from "@t3tools/shared/toolActivity";
  import { ExternalLinkIcon, GitBranchIcon, RotateCcwIcon } from "lucide-react";
--import { memo, Suspense, use, useMemo } from "react";
-+import { lazy, memo, Suspense, use, useMemo, useState } from "react";
+-import { memo, type ReactNode, Suspense, use, useMemo } from "react";
++import { lazy, memo, type ReactNode, Suspense, use, useMemo, useState } from "react";
  
  import { useTheme } from "../../hooks/useTheme";
  import { cn } from "../../lib/utils";
-@@ -30,6 +30,78 @@ import { resolveExternalWebLinkHref } from "./externalLinkContextMenu";
+@@ -31,6 +31,78 @@ import { resolveExternalWebLinkHref } from "./externalLinkContextMenu";
  import type { ExpandedImagePreview } from "./ExpandedImagePreview";
  import { ShellCommandBlock } from "./ShellCommandBlock";
  
@@ -2795,7 +2784,7 @@ index 2bc303832..7aca00ce1 100644
  interface V2ItemInspectorProps {
    readonly projectedItem: OrchestrationV2ProjectedTurnItem;
    readonly environmentId: EnvironmentId;
-@@ -272,44 +344,12 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
+@@ -283,44 +355,12 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
        ) : null}
  
        {item.type === "file_change" ? (
@@ -2937,10 +2926,10 @@ index 000000000..5f2284e73
 +  return `${header}\n${body.join("\n")}`;
 +}
 diff --git a/apps/web/src/components/device/DeviceStreamView.test.tsx b/apps/web/src/components/device/DeviceStreamView.test.tsx
-index 559050303..cef6c7702 100644
+index 38d83f0f0..cb3c38864 100644
 --- a/apps/web/src/components/device/DeviceStreamView.test.tsx
 +++ b/apps/web/src/components/device/DeviceStreamView.test.tsx
-@@ -58,9 +58,14 @@ afterEach(async () => {
+@@ -56,9 +56,14 @@ afterEach(async () => {
    vi.unstubAllGlobals();
  });
  
@@ -2956,7 +2945,7 @@ index 559050303..cef6c7702 100644
    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
    let videoBody: ReadableStreamDefaultController<Uint8Array> | undefined;
    let output: VideoFrameOutputCallback | undefined;
-@@ -109,7 +114,9 @@ async function setup(h264 = false) {
+@@ -107,7 +112,9 @@ async function setup(h264 = false) {
          sockets.push(this);
        }
        onmessage?: (event: { data: ArrayBuffer }) => void;
@@ -2967,7 +2956,7 @@ index 559050303..cef6c7702 100644
        close() {}
      },
    );
-@@ -126,7 +133,7 @@ async function setup(h264 = false) {
+@@ -124,7 +131,7 @@ async function setup(h264 = false) {
        hostId="local"
        environmentId={EnvironmentId.make("test")}
        deviceId="test"
@@ -2976,7 +2965,7 @@ index 559050303..cef6c7702 100644
        visible={visible}
        allowPhoneView={h264}
      />
-@@ -150,6 +157,7 @@ async function setup(h264 = false) {
+@@ -148,6 +155,7 @@ async function setup(h264 = false) {
    return {
      images,
      view,
@@ -2984,7 +2973,7 @@ index 559050303..cef6c7702 100644
      configure() {
        const json = new TextEncoder().encode(
          JSON.stringify({ width: 400, height: 800, orientation: "portrait" }),
-@@ -200,6 +208,42 @@ it("offers Reconnect after the shared timeout and receives a frame after retry w
+@@ -198,6 +206,42 @@ it("offers Reconnect after the shared timeout and receives a frame after retry w
    expect(vi.getTimerCount()).toBe(0);
  });
  
@@ -3027,7 +3016,7 @@ index 559050303..cef6c7702 100644
  it("starts exactly one new stream per Reconnect press", async () => {
    await setup();
    await act(async () => {
-@@ -211,7 +255,7 @@ it("starts exactly one new stream per Reconnect press", async () => {
+@@ -209,7 +253,7 @@ it("starts exactly one new stream per Reconnect press", async () => {
  });
  
  it("keeps the 3D viewer mounted across iOS video recovery and releases it when hidden", async () => {
@@ -3037,10 +3026,10 @@ index 559050303..cef6c7702 100644
    expect(viewerMounts).toBe(0);
    await act(async () => frame());
 diff --git a/apps/web/src/components/device/DeviceStreamView.tsx b/apps/web/src/components/device/DeviceStreamView.tsx
-index 42bb69ccc..a7cde7869 100644
+index 55934ec13..4b1385a92 100644
 --- a/apps/web/src/components/device/DeviceStreamView.tsx
 +++ b/apps/web/src/components/device/DeviceStreamView.tsx
-@@ -395,13 +395,30 @@ export function DeviceStreamView(props: {
+@@ -375,13 +375,30 @@ export function DeviceStreamView(props: {
          )}
          tabIndex={0}
          role="application"
@@ -3072,10 +3061,10 @@ index 42bb69ccc..a7cde7869 100644
            if (event.target !== event.currentTarget) return;
            clientRef.current?.sendKey(event.nativeEvent, "up");
 diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
-index 443ac6e02..caa213ef1 100644
+index 29429e37a..07b04ec5e 100644
 --- a/apps/web/src/components/settings/ConnectionsSettings.tsx
 +++ b/apps/web/src/components/settings/ConnectionsSettings.tsx
-@@ -2186,6 +2186,7 @@ export function ConnectionsSettings() {
+@@ -2152,6 +2152,7 @@ export function ConnectionsSettings() {
      useState<EnvironmentId | null>(null);
    const [isUpdatingDesktopServerExposure, setIsUpdatingDesktopServerExposure] = useState(false);
    const [isDesktopServerExposureDialogOpen, setIsDesktopServerExposureDialogOpen] = useState(false);
@@ -3083,7 +3072,7 @@ index 443ac6e02..caa213ef1 100644
    const [isUpdatingTailscaleServe, setIsUpdatingTailscaleServe] = useState(false);
    const [isUpdatingWslBackend, setIsUpdatingWslBackend] = useState(false);
    const [desktopWslMutationError, setDesktopWslMutationError] = useState<string | null>(null);
-@@ -2868,6 +2869,48 @@ export function ConnectionsSettings() {
+@@ -2812,6 +2813,48 @@ export function ConnectionsSettings() {
      },
      [setDefaultAdvertisedEndpointKey],
    );
@@ -3132,7 +3121,7 @@ index 443ac6e02..caa213ef1 100644
    const handleSavedBackendHostChange = useCallback((value: string) => {
      const parsedPairingUrl = parsePairingUrlFields(value);
      if (parsedPairingUrl) {
-@@ -3569,6 +3612,67 @@ export function ConnectionsSettings() {
+@@ -3450,6 +3493,67 @@ export function ConnectionsSettings() {
        control={renderNetworkAccessToggle()}
      />
    );
@@ -3200,7 +3189,7 @@ index 443ac6e02..caa213ef1 100644
    const renderDisabledNetworkAccessRow = () => (
      <SettingsRow
        title={searchableSetting("network-access").title}
-@@ -3701,6 +3805,7 @@ export function ConnectionsSettings() {
+@@ -3582,6 +3686,7 @@ export function ConnectionsSettings() {
              {canManageLocalBackend && desktopBridge ? (
                <>
                  {renderNetworkAccessRow()}
@@ -3209,10 +3198,10 @@ index 443ac6e02..caa213ef1 100644
                  {renderTailscaleRow()}
                  {renderWslRow()}
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index 0ee55ef37..cf115fa0f 100644
+index 53032977f..ec0465ca9 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
-@@ -924,6 +924,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+@@ -891,6 +891,14 @@ export const SETTINGS_SEARCH_ITEMS = [
      searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
      localBackendManagementOnly: true,
    },
@@ -3520,7 +3509,7 @@ index 9c5e30ef7..d53c8f970 100644
 -Notification permission and Android notification channels are controlled in system Settings. Background delivery requires T3 Connect; a direct or Tailscale connection alone does not enable push notifications. The mobile app does not need to maintain a connection to your environment. Force-stopping the Android app in system Settings prevents push delivery until you open it again.
 +Notification permission and Android notification channels are controlled in system Settings. Android can also configure device-local notifications without a T3 Connect account from **Settings → Notifications**. This does not use a relay or require an account, but delivery still requires a local sender configured with the Firebase project; the mobile app does not send notifications itself. Without that sender, notifications are not delivered. A direct or Tailscale connection alone does not enable push notifications. Force-stopping the Android app in system Settings prevents push delivery until you open it again.
 diff --git a/packages/client-runtime/src/device/stream.test.ts b/packages/client-runtime/src/device/stream.test.ts
-index e92f1a8fa..3180e8dae 100644
+index 76dae57ab..8c32385fb 100644
 --- a/packages/client-runtime/src/device/stream.test.ts
 +++ b/packages/client-runtime/src/device/stream.test.ts
 @@ -161,6 +161,111 @@ describe("native device stream transport", () => {
@@ -3635,7 +3624,7 @@ index e92f1a8fa..3180e8dae 100644
    it("renews an expired Android ticket when the HTTP upgrade is rejected instead of retrying it forever", async () => {
      const { client, opened, events } = setup("android");
      client.start();
-@@ -788,16 +893,32 @@ describe("shared device stream readiness and recovery", () => {
+@@ -787,16 +892,32 @@ describe("shared device stream readiness and recovery", () => {
      expect(vi.getTimerCount()).toBe(0);
    });
  
@@ -3671,10 +3660,10 @@ index e92f1a8fa..3180e8dae 100644
      expect(events.onStatus).toHaveBeenLastCalledWith("error", expect.stringContaining("No video"));
      expect(vi.getTimerCount()).toBe(0);
 diff --git a/packages/client-runtime/src/device/stream.ts b/packages/client-runtime/src/device/stream.ts
-index ae83bf935..26f3ee0b9 100644
+index 6eeeb66cb..f28963164 100644
 --- a/packages/client-runtime/src/device/stream.ts
 +++ b/packages/client-runtime/src/device/stream.ts
-@@ -274,6 +274,8 @@ export interface DeviceStreamClient {
+@@ -245,6 +245,8 @@ export interface DeviceStreamClient {
    /** Normalized 0..1 coordinates in the displayed frame. */
    readonly sendTouch: (phase: "begin" | "move" | "end", x: number, y: number) => void;
    readonly sendKey: (event: KeyboardEvent, phase: "down" | "up") => void;
@@ -3683,7 +3672,7 @@ index ae83bf935..26f3ee0b9 100644
    readonly pressButton: (button: DeviceHardwareButton) => void;
    readonly rotate: () => void;
    readonly setOrientation: (orientation: DeviceScreenSize["orientation"]) => void;
-@@ -368,6 +370,7 @@ export function createDeviceStreamClient(
+@@ -337,6 +339,7 @@ export function createDeviceStreamClient(
    let decodedVideoGeneration: number | null = null;
    let iosInputAdmitted = false;
    let iosInputUnavailable = false;
@@ -3691,7 +3680,7 @@ index ae83bf935..26f3ee0b9 100644
    let timestamp = 0;
    let awaitingKeyframe = true;
    let screen: DeviceScreenSize | null = null;
-@@ -622,10 +625,16 @@ export function createDeviceStreamClient(
+@@ -588,10 +591,16 @@ export function createDeviceStreamClient(
      }
    };
  
@@ -3712,8 +3701,8 @@ index ae83bf935..26f3ee0b9 100644
    };
  
    const scheduleRetry = (channel: "video" | "input", run: () => void) => {
-@@ -904,6 +913,8 @@ export function createDeviceStreamClient(
-   // Android: one socket for video and input.
+@@ -864,6 +873,8 @@ export function createDeviceStreamClient(
+ 
    const connectAndroid = () => {
      if (stopped) return;
 +    awaitingSessionAck = false;
@@ -3721,7 +3710,7 @@ index ae83bf935..26f3ee0b9 100644
      const ws = new WebSocket(wsUrl(`/ws?device=${device}&frame-meta=1`));
      ws.binaryType = "arraybuffer";
      socket = ws;
-@@ -915,13 +926,16 @@ export function createDeviceStreamClient(
+@@ -875,13 +886,16 @@ export function createDeviceStreamClient(
      ws.onmessage = (event) => {
        if (stopped || socket !== ws) return;
        if (typeof event.data === "string") {
@@ -3741,7 +3730,7 @@ index ae83bf935..26f3ee0b9 100644
          }
          return;
        }
-@@ -942,7 +956,11 @@ export function createDeviceStreamClient(
+@@ -902,7 +916,11 @@ export function createDeviceStreamClient(
              if (!isCurrent() || epoch !== decoderEpoch) return;
              configuring = false;
              awaitingKeyframe = true;
@@ -3754,7 +3743,7 @@ index ae83bf935..26f3ee0b9 100644
            },
          );
          return;
-@@ -1088,12 +1106,40 @@ export function createDeviceStreamClient(
+@@ -1048,12 +1066,40 @@ export function createDeviceStreamClient(
        }
        if (phase !== "down") return;
        if (event.key === "Escape") return send(JSON.stringify({ type: "back" }));
@@ -3799,10 +3788,10 @@ index ae83bf935..26f3ee0b9 100644
        if (platform === "ios") {
          const name =
 diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
-index bea353c2b..d45f59a6b 100644
+index dcce2af0b..71be736b6 100644
 --- a/packages/contracts/src/ipc.ts
 +++ b/packages/contracts/src/ipc.ts
-@@ -508,6 +508,7 @@ export interface DesktopServerExposureState {
+@@ -486,6 +486,7 @@ export interface DesktopServerExposureState {
    mode: DesktopServerExposureMode;
    endpointUrl: string | null;
    advertisedHost: string | null;
@@ -3810,7 +3799,7 @@ index bea353c2b..d45f59a6b 100644
    tailscaleServeEnabled: boolean;
    tailscaleServePort: number;
  }
-@@ -516,6 +517,7 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
+@@ -494,6 +495,7 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
    mode: DesktopServerExposureModeSchema,
    endpointUrl: Schema.NullOr(Schema.String),
    advertisedHost: Schema.NullOr(Schema.String),
@@ -3818,7 +3807,7 @@ index bea353c2b..d45f59a6b 100644
    tailscaleServeEnabled: Schema.Boolean,
    tailscaleServePort: Schema.Number,
  });
-@@ -1190,6 +1192,7 @@ export interface DesktopBridge {
+@@ -1087,6 +1089,7 @@ export interface DesktopBridge {
    resolveSshPasswordPrompt: (requestId: string, password: string | null) => Promise<void>;
    getServerExposureState: () => Promise<DesktopServerExposureState>;
    setServerExposureMode: (mode: DesktopServerExposureMode) => Promise<DesktopServerExposureState>;
@@ -3860,3 +3849,144 @@ index 314d8272c..ef499b8fb 100644
      ...(input.description === undefined ? {} : { description: input.description }),
    };
  }
+diff --git a/patches/expo-widgets@58.0.18.patch b/patches/expo-widgets@58.0.18.patch
+index f5ac33c00..82957fef3 100644
+--- a/patches/expo-widgets@58.0.18.patch
++++ b/patches/expo-widgets@58.0.18.patch
+@@ -1,5 +1,50 @@
++diff --git a/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationBuilder.kt b/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationBuilder.kt
++index 07eca412c873c7fc6d77d40e3ec76f6338081b31..82cabeaa5dc7d73ace29c813d3a7e3e64a1c2972 100644
++--- a/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationBuilder.kt
+++++ b/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationBuilder.kt
++@@ -14,8 +14,8 @@ import android.os.Bundle
++ import androidx.core.app.NotificationCompat
++ import androidx.core.app.NotificationManagerCompat
++ import expo.modules.widgets.R
++-import io.github.jakex7.peek.notification.PeekNotificationViews
++-import io.github.jakex7.peek.notification.setPeekContent
+++import io.github.expo.peek.notification.PeekNotificationViews
+++import io.github.expo.peek.notification.setPeekContent
++ 
++ internal object CustomNotificationBuilder {
++   private const val DEFAULT_CHANNEL_ID = "expo_widgets_notifications"
++diff --git a/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationRenderer.kt b/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationRenderer.kt
++index 446a39eb7229324bf70af2bea68b6c60576389e2..e90b09a490bb7fc21b3f048bcffcc45fd4adef3b 100644
++--- a/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationRenderer.kt
+++++ b/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationRenderer.kt
++@@ -8,9 +8,9 @@ import expo.modules.widgets.WidgetsStorage
++ import expo.modules.widgets.evaluateLayout
++ import expo.modules.widgets.getWidgetEnvironment
++ import expo.modules.widgets.toPeekRoot
++-import io.github.jakex7.peek.emittables.peekEmittableNotificationViews
++-import io.github.jakex7.peek.notification.PeekNotificationSizes
++-import io.github.jakex7.peek.notification.PeekNotificationViews
+++import io.github.expo.peek.emittables.peekEmittableNotificationViews
+++import io.github.expo.peek.notification.PeekNotificationSizes
+++import io.github.expo.peek.notification.PeekNotificationViews
++ 
++ internal object CustomNotificationRenderer {
++   suspend fun render(context: Context, state: CustomNotificationState): PeekNotificationViews {
++diff --git a/android/src/main/java/expo/modules/widgets/notifications/CustomNotifications.kt b/android/src/main/java/expo/modules/widgets/notifications/CustomNotifications.kt
++index a7b372e656b9b1369ddbface2efb15127c211d14..dd001ee83af872c53cf74177f27ced2b507f2682 100644
++--- a/android/src/main/java/expo/modules/widgets/notifications/CustomNotifications.kt
+++++ b/android/src/main/java/expo/modules/widgets/notifications/CustomNotifications.kt
++@@ -3,7 +3,7 @@ package expo.modules.widgets.notifications
++ import android.annotation.SuppressLint
++ import android.content.Context
++ import androidx.core.app.NotificationManagerCompat
++-import io.github.jakex7.peek.notification.PeekNotificationViews
+++import io.github.expo.peek.notification.PeekNotificationViews
++ import kotlinx.coroutines.CancellationException
++ import kotlinx.coroutines.Job
++ import kotlinx.coroutines.coroutineScope
+ diff --git a/build/Widgets.types.d.ts b/build/Widgets.types.d.ts
+-index 4c474bb..b0173df 100644
++index 4c474bb2730376c8e182159c096a6031da4864de..b0173dff2a4aa3df57c64564950902676773cf34 100644
+ --- a/build/Widgets.types.d.ts
+ +++ b/build/Widgets.types.d.ts
+ @@ -98,6 +98,10 @@ export type LiveActivityEnvironment = {
+@@ -14,7 +59,7 @@ index 4c474bb..b0173df 100644
+       * Whether the activity is displayed in a context with reduced luminance.
+       * @platform iOS 16+
+ diff --git a/ios/LiveActivityFactory.swift b/ios/LiveActivityFactory.swift
+-index 29e4f15..7143f9a 100644
++index 29e4f1566d188665e301d32bc1ad85640f83e68c..7143f9a1c06245d16649b981d7f5cde1d8868217 100644
+ --- a/ios/LiveActivityFactory.swift
+ +++ b/ios/LiveActivityFactory.swift
+ @@ -19,6 +19,14 @@ final class LiveActivityFactory: SharedObject {
+@@ -33,7 +78,7 @@ index 29e4f15..7143f9a 100644
+        let initialState = LiveActivityAttributes.ContentState(name: name, props: props)
+        let activity = try Activity.request(
+ diff --git a/ios/Widgets/Utils.swift b/ios/Widgets/Utils.swift
+-index 76b2199..6cb52c3 100644
++index 76b2199c2d3f879463fed5d2bd49038b0428a2e7..6cb52c3de4ad9696bc0c51ad62401cce96f405e7 100644
+ --- a/ios/Widgets/Utils.swift
+ +++ b/ios/Widgets/Utils.swift
+ @@ -125,6 +125,10 @@ func getLiveActivityEnvironment(for environment: EnvironmentValues, in context:
+@@ -48,7 +93,7 @@ index 76b2199..6cb52c3 100644
+      env["isActivityUpdateReduced"] = environment.isActivityUpdateReduced
+      env["activityFamily"] = "\(environment.activityFamily)"
+ diff --git a/ios/Widgets/WidgetLiveActivity.swift b/ios/Widgets/WidgetLiveActivity.swift
+-index 4d135c4..dae4744 100644
++index 4d135c4e4eb1f846315654ed9d835a935d120d42..dae47445b27516fa2464a25b68bddc8f6dec3e1e 100644
+ --- a/ios/Widgets/WidgetLiveActivity.swift
+ +++ b/ios/Widgets/WidgetLiveActivity.swift
+ @@ -19,53 +19,41 @@ struct LiveActivityAttributes: ActivityAttributes {
+@@ -151,7 +196,7 @@ index 4d135c4..dae4744 100644
+        LiveActivityBanner(context: context, nodes: nodes)
+      } else if let node = nodes["banner"] as? [String: Any] {
+ diff --git a/scripts/build-layout-registry.mjs b/scripts/build-layout-registry.mjs
+-index d52a60e..fa9bd77 100644
++index d52a60e342c8e0a8a1d78f7174da5e60e6bd1c53..fa9bd77c5c04d459038a5b4a00e1391780b406fa 100644
+ --- a/scripts/build-layout-registry.mjs
+ +++ b/scripts/build-layout-registry.mjs
+ @@ -154,6 +154,8 @@ function createLayoutRegistry(expectedWidgets, capturedLayouts) {
+@@ -165,7 +210,7 @@ index d52a60e..fa9bd77 100644
+    await main();
+  }
+ diff --git a/src/Widgets.types.ts b/src/Widgets.types.ts
+-index 690d069..ffab6f3 100644
++index 690d0695c726dd4f260ba3aeb4edb82b9a72cd39..ffab6f312601150a2168425a2a53de70393c92bc 100644
+ --- a/src/Widgets.types.ts
+ +++ b/src/Widgets.types.ts
+ @@ -112,6 +112,10 @@ export type LiveActivityEnvironment = {
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index e1ef83663..619ab7960 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -165,7 +165,7 @@ patchedDependencies:
+   expo-blur@58.0.3: d0311b0c0b05bd94393bd9a84653cb42503d5f3c8a19eb2627c34ace08bedf18
+   expo-glass-effect@58.0.3: f750041c45ab838a3530451dc7b50d6640a79141037a1b0499c5e3412a860c57
+   expo-sharing@58.0.18: d0ca151b2a4eec8bb28df547c8663e4b803acd981ace492c6b401bcb279f524a
+-  expo-widgets@58.0.18: 40806e85c756563935c7368b93d679bd3bb7742bff21d9c7611d9161e1aee602
++  expo-widgets@58.0.18: 8d0071c3a1bedfb78ffca8f28ea5060eb5d95aa8585039bc21ce954830ed8d45
+   node-pty@1.2.0-beta.15: f2fe901c61cde17986240002d05c172d5d0272d83ffaab8d0ebeb922763be414
+   react-native-gesture-handler@3.3.0: abe20e1d1c23549297cbbc818e14fe479b41455930d9663135d6b40fe359b626
+   react-native-keyboard-controller@1.22.7: f28d08f1233e3cce8b9324b4357d2b10f1ee040b8051bc87235b0fb95069b9bb
+@@ -524,7 +524,7 @@ importers:
+         version: 58.0.6(expo@58.0.11)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))
+       expo-widgets:
+         specifier: 58.0.18
+-        version: 58.0.18(patch_hash=40806e85c756563935c7368b93d679bd3bb7742bff21d9c7611d9161e1aee602)(@babel/core@7.29.7)(expo@58.0.11)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0)
++        version: 58.0.18(patch_hash=8d0071c3a1bedfb78ffca8f28ea5060eb5d95aa8585039bc21ce954830ed8d45)(@babel/core@7.29.7)(expo@58.0.11)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0)
+       react:
+         specifier: 19.3.0
+         version: 19.3.0
+@@ -18181,7 +18181,7 @@ snapshots:
+     optionalDependencies:
+       '@babel/runtime': 7.29.7
+       expo: 58.0.11(0279ba067f3e563cec3a046cc8b71592)
+-      expo-widgets: 58.0.18(patch_hash=40806e85c756563935c7368b93d679bd3bb7742bff21d9c7611d9161e1aee602)(@babel/core@7.29.7)(expo@58.0.11)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0)
++      expo-widgets: 58.0.18(patch_hash=8d0071c3a1bedfb78ffca8f28ea5060eb5d95aa8585039bc21ce954830ed8d45)(@babel/core@7.29.7)(expo@58.0.11)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0)
+     transitivePeerDependencies:
+       - '@babel/core'
+       - supports-color
+@@ -19636,7 +19636,7 @@ snapshots:
+       expo: 58.0.11(0279ba067f3e563cec3a046cc8b71592)
+       react-native: 0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6)
+ 
+-  expo-widgets@58.0.18(patch_hash=40806e85c756563935c7368b93d679bd3bb7742bff21d9c7611d9161e1aee602)(@babel/core@7.29.7)(expo@58.0.11)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0):
++  expo-widgets@58.0.18(patch_hash=8d0071c3a1bedfb78ffca8f28ea5060eb5d95aa8585039bc21ce954830ed8d45)(@babel/core@7.29.7)(expo@58.0.11)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0):
+     dependencies:
+       '@expo/plist': 0.10.1
+       '@expo/ui': 58.0.18(patch_hash=5a26480373850c1a7943919aa21f904151b335a0cb01042109e0746def37923e)(@babel/core@7.29.7)(expo@58.0.11)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0)
