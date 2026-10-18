@@ -1409,7 +1409,7 @@ index d1ec539b8..41402a4b2 100644
    window.addEventListener("pagehide", stop, { once: true });
    post({ type: "input", connected: false });
 diff --git a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
-index eceefbda0..c29a32569 100644
+index eceefbda0..cc075b26f 100644
 --- a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 @@ -13,6 +13,7 @@ import { AppState, Linking, Platform } from "react-native";
@@ -1639,7 +1639,7 @@ index eceefbda0..c29a32569 100644
        Dialog.alert(
          "Disable notifications",
          "Open system Settings to disable notifications for T3 Code.",
-@@ -346,6 +499,24 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -346,6 +499,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    const handleLiveActivitiesChange = useCallback(
      (enabled: boolean) => {
        if (liveActivityWriteInFlight.current) return;
@@ -1657,14 +1657,17 @@ index eceefbda0..c29a32569 100644
 +            setLiveActivityStatus(enabled ? "enabled" : "disabled");
 +          })
 +          .catch(() =>
-+            Dialog.alert("Ongoing activity unavailable", "Could not update local ongoing activity."),
++            Dialog.alert(
++              "Ongoing activity unavailable",
++              "Could not update local ongoing activity.",
++            ),
 +          );
 +        return;
 +      }
        if (!enabled) {
          liveActivityWriteInFlight.current = true;
          setLiveActivityStatus("linking");
-@@ -409,6 +580,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -409,6 +583,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
        connections,
        getToken,
        isSignedIn,
@@ -1672,7 +1675,7 @@ index eceefbda0..c29a32569 100644
        linkEnvironments,
        liveActivitiesPreferenceEnabled,
        promptSignIn,
-@@ -439,7 +611,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -439,7 +614,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
              }
              subtitle={agentAwarenessSubtitle}
              value={
@@ -1683,7 +1686,7 @@ index eceefbda0..c29a32569 100644
              }
              onValueChange={handleDeviceNotificationsChange}
            />
-@@ -463,7 +637,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -463,7 +640,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
              value={
                agentAwarenessPushAvailable &&
                (liveActivityStatus === "enabled" || liveActivityStatus === "linking") &&
@@ -1692,7 +1695,7 @@ index eceefbda0..c29a32569 100644
              }
              onValueChange={handleLiveActivitiesChange}
            />
-@@ -474,6 +648,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -474,6 +651,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
                onPress={() => handleLiveActivitiesChange(false)}
              />
            ) : null}
@@ -1703,10 +1706,10 @@ index eceefbda0..c29a32569 100644
              <SettingsRow
                icon="bolt.circle"
 diff --git a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
-index 70f7259f8..9fd2ac39a 100644
+index 7346914fd..d1797e2d8 100644
 --- a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
-@@ -15,6 +15,7 @@ import { useEnvironmentQuery } from "../../state/query";
+@@ -17,6 +17,7 @@ import { useEnvironmentQuery } from "../../state/query";
  import { serverEnvironment } from "../../state/server";
  import { useAtomCommand } from "../../state/use-atom-command";
  import { SettingsActionRow } from "./components/SettingsActionRow";
@@ -1714,12 +1717,12 @@ index 70f7259f8..9fd2ac39a 100644
  import {
    AndroidSettingsEnvironmentFilter,
    SettingsEnvironmentFilterHeader,
-@@ -41,6 +42,7 @@ export function SettingsProviderAccountsRouteScreen() {
+@@ -44,6 +45,7 @@ export function SettingsProviderAccountsRouteScreen() {
            ) : (
              selectedTargets.map((environment) => (
                <SettingsSection key={environment.environmentId} title={environment.label}>
 +                <CustomAcpCommandEditor environment={environment} />
-                 {environment.serverConfig.providers
+                 {(providersByEnvironment.get(environment.environmentId) ?? [])
                    .filter(
                      (provider) =>
 diff --git a/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx b/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx
@@ -2218,7 +2221,7 @@ index 000000000..4f92ccd68
 +  240_000,
 +);
 diff --git a/apps/server/src/serverSettings.test.ts b/apps/server/src/serverSettings.test.ts
-index e20b293a2..ff9d06e58 100644
+index 5287c5a3d..b7652f159 100644
 --- a/apps/server/src/serverSettings.test.ts
 +++ b/apps/server/src/serverSettings.test.ts
 @@ -180,6 +180,45 @@ it.layer(NodeServices.layer)("server settings", (it) => {
@@ -2320,10 +2323,10 @@ index ad9a81f2d..e582d8aee 100644
      // stay in the blob so driver schema validation flags it instead of the
      // fold silently repairing the config.
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index fcf193a45..81283ff02 100644
+index a608ecb02..690b7437c 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
-@@ -189,6 +189,10 @@ import { previewEnvironment } from "../state/preview";
+@@ -194,6 +194,10 @@ import { previewEnvironment } from "../state/preview";
  import { useAtomCommand } from "../state/use-atom-command";
  import { useAtomQueryRunner } from "../state/use-atom-query-runner";
  import { projectEnvironment } from "../state/projects";
@@ -2334,7 +2337,7 @@ index fcf193a45..81283ff02 100644
  import {
    claimWorkspaceBasenameLookup,
    needsWorkspaceBasenameLookup,
-@@ -2265,6 +2269,14 @@ function useChatMarkdownState({
+@@ -2347,6 +2351,14 @@ function useChatMarkdownState({
    const searchProjectEntries = useAtomQueryRunner(projectEnvironment.searchEntries, {
      reportFailure: false,
    });
@@ -2349,12 +2352,10 @@ index fcf193a45..81283ff02 100644
    const openPreview = useAtomCommand(previewEnvironment.open, {
      reportFailure: false,
    });
-@@ -2533,6 +2545,79 @@ function useChatMarkdownState({
-     },
-     [cwd, environmentId, searchProjectEntries],
-   );
-+  // Resolve references ahead of rendering, deduplicating per basename and cancelling
-+  // stale cwd/text lookups. Only bare names need project-index searches.
+@@ -2592,6 +2604,70 @@ function useChatMarkdownState({
+       ? pickWorkspaceBasenameMatch(workspaceRelativePath, result.value.entries)
+       : null;
+   };
 +  useEffect(() => {
 +    const scope = `${environmentId}:${cwd}`;
 +    if (workspaceBasenameLookupCache.current.scope !== scope)
@@ -2410,58 +2411,35 @@ index fcf193a45..81283ff02 100644
 +    cwd && environmentId !== null && workspaceBasenamePaths.scope === `${environmentId}:${cwd}`
 +      ? workspaceBasenamePaths.paths
 +      : EMPTY_WORKSPACE_BASENAME_PATHS;
-+  const resolveWorkspaceBasename = useCallback(
-+    (path: string) =>
-+      cwd && needsWorkspaceBasenameLookup(path) ? (currentBasenamePaths.get(path) ?? path) : path,
-+    [cwd, currentBasenamePaths],
-+  );
-+  const resolvedFileLinkMeta = useCallback(
-+    (meta: MarkdownFileLinkMeta) => {
-+      const resolved = meta.workspaceRelativePath
-+        ? currentBasenamePaths.get(meta.workspaceRelativePath)
-+        : undefined;
-+      return resolved && cwd ? (resolveMarkdownFileLinkMeta(resolved, cwd) ?? meta) : meta;
-+    },
-+    [cwd, currentBasenamePaths],
-+  );
-+  // A bare filename resolves to the workspace root, which is rarely where the
-+  // file is, so ask the index before opening. Absolute host paths open as-is.
-   const openFileInPanel = useCallback(
-     (panelPath: string, line: number | undefined) => {
-       if (!threadRef) return;
-@@ -2566,6 +2651,7 @@ function useChatMarkdownState({
-   );
-   const fileLinkChip = useCallback(
-     (fileLinkMeta: MarkdownFileLinkMeta, copyMarkdown: string, mediaSource?: string) => {
-+      fileLinkMeta = resolvedFileLinkMeta(fileLinkMeta);
-       const mediaPath = mediaSource ?? fileLinkMeta.filePath;
-       const canPreviewMedia =
-         mediaMimeTypeFromExtension(
-@@ -2634,6 +2720,7 @@ function useChatMarkdownState({
-       revealInFileManagerLabel,
-       revealMarkdownFileInFileManager,
-       threadRef,
-+      resolvedFileLinkMeta,
-     ],
-   );
- 
-@@ -2670,6 +2757,7 @@ function useChatMarkdownState({
-       text,
-       threadRef,
-       updateThreadPullRequestLink,
-+      resolveWorkspaceBasename,
-     }),
-     [
-       canOperateHost,
-@@ -2703,6 +2791,7 @@ function useChatMarkdownState({
-       text,
-       threadRef,
-       updateThreadPullRequestLink,
-+      resolveWorkspaceBasename,
-     ],
-   );
++  const resolveWorkspaceBasename = (path: string) =>
++    cwd && needsWorkspaceBasenameLookup(path) ? (currentBasenamePaths.get(path) ?? path) : path;
++  const resolvedFileLinkMeta = (meta: MarkdownFileLinkMeta) => {
++    const resolved = meta.workspaceRelativePath
++      ? currentBasenamePaths.get(meta.workspaceRelativePath)
++      : undefined;
++    return resolved && cwd ? (resolveMarkdownFileLinkMeta(resolved, cwd) ?? meta) : meta;
++  };
++
+   const openFileInPanel = (panelPath: string, line: number | undefined) => {
+     if (!threadRef) return;
+     // Claimed on every open so a synchronous one supersedes a lookup already
+@@ -2621,6 +2697,7 @@ function useChatMarkdownState({
+     copyMarkdown: string,
+     mediaSource?: string,
+   ) => {
++    fileLinkMeta = resolvedFileLinkMeta(fileLinkMeta);
+     const mediaPath = mediaSource ?? fileLinkMeta.filePath;
+     const canPreviewMedia =
+       mediaMimeTypeFromExtension(
+@@ -2707,6 +2784,7 @@ function useChatMarkdownState({
+     skills,
+     threadRef,
+     updateThreadPullRequestLink,
++    resolveWorkspaceBasename,
+   };
    return {
-@@ -2736,6 +2825,8 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
+     componentState,
+@@ -2743,6 +2821,8 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
  }
  
  // Keep component types stable when streaming changes the message state.
@@ -2470,7 +2448,7 @@ index fcf193a45..81283ff02 100644
  const CHAT_MARKDOWN_COMPONENTS = {
    h1: markdownHeadingRenderer(1),
    h2: markdownHeadingRenderer(2),
-@@ -3126,6 +3217,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -3137,6 +3217,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
        imageBaseDir,
        threadRef,
        renderContextReference,
@@ -2478,7 +2456,7 @@ index fcf193a45..81283ff02 100644
      } = use(ChatMarkdownRendererContext);
      const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
      const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
-@@ -3150,7 +3242,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -3161,7 +3242,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
      const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
      const { className, style: _style, width, height, ...imageProps } = props;
      const authoredSizeStyle = authoredImageSizeStyle(width, height);
@@ -2492,10 +2470,10 @@ index fcf193a45..81283ff02 100644
      const directUri = imageSource._tag === "Direct" ? imageSource.uri : null;
      const githubMediaUrl =
 diff --git a/apps/web/src/components/ChatView.logic.test.ts b/apps/web/src/components/ChatView.logic.test.ts
-index 43c970053..40ae725f4 100644
+index 45f382f72..01c9c5351 100644
 --- a/apps/web/src/components/ChatView.logic.test.ts
 +++ b/apps/web/src/components/ChatView.logic.test.ts
-@@ -1845,6 +1845,12 @@ describe("shouldRefocusComposerOnWindowFocus", () => {
+@@ -1851,6 +1851,12 @@ describe("shouldRefocusComposerOnWindowFocus", () => {
      ).toBe(false);
    });
  
@@ -2509,10 +2487,10 @@ index 43c970053..40ae725f4 100644
      expect(shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "dialog" }))).toBe(false);
      expect(shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "-popup" }))).toBe(false);
 diff --git a/apps/web/src/components/ChatView.logic.ts b/apps/web/src/components/ChatView.logic.ts
-index f01fa3227..263cdcbc0 100644
+index 58ceb88fb..64ab4b0dd 100644
 --- a/apps/web/src/components/ChatView.logic.ts
 +++ b/apps/web/src/components/ChatView.logic.ts
-@@ -1230,6 +1230,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
+@@ -1226,6 +1226,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
    );
  }
  
@@ -2521,7 +2499,7 @@ index f01fa3227..263cdcbc0 100644
  export function shouldRefocusComposerOnWindowFocus(
    activeElement:
      | (Pick<Element, "tagName" | "closest" | "getAttribute"> & { isContentEditable?: boolean })
-@@ -1249,7 +1251,7 @@ export function shouldRefocusComposerOnWindowFocus(
+@@ -1245,7 +1247,7 @@ export function shouldRefocusComposerOnWindowFocus(
    }
    return (
      activeElement.closest(
@@ -2530,127 +2508,13 @@ index f01fa3227..263cdcbc0 100644
      ) === null
    );
  }
-diff --git a/apps/web/src/components/ChatView.tsx b/apps/web/src/components/ChatView.tsx
-index d5599f8c4..61d921032 100644
---- a/apps/web/src/components/ChatView.tsx
-+++ b/apps/web/src/components/ChatView.tsx
-@@ -95,6 +95,14 @@ import {
- } from "@t3tools/client-runtime/errors";
- import { readPastedComposerContext } from "./composerInlineTokenPaste";
- import { isPasteAsTextShortcut } from "@t3tools/client-runtime/text-paste";
-+import {
-+  eventPathContainsSelector,
-+  pasteTextToFocusComposer,
-+  shouldRedirectInputToComposer,
-+  shouldTypeToFocusComposer,
-+  TYPE_TO_FOCUS_EDITABLE_SELECTOR,
-+  TYPE_TO_FOCUS_FLOATING_LAYER_SELECTOR,
-+} from "~/lib/composerInputFocus";
- import { effectiveSnoozed, threadWokeAt } from "@t3tools/client-runtime/state/thread-settled";
- import { childThreadInputsTitle } from "@t3tools/client-runtime/state/threads";
- import { useAcknowledgeThreadWoke, useThreadActions } from "../hooks/useThreadActions";
-@@ -718,85 +726,12 @@ const DevicePanel = lazy(() =>
- );
- const FilePreviewPanel = lazy(() => import("./files/FilePreviewPanel"));
- const EMPTY_PENDING_FILE_SURFACE_IDS: ReadonlySet<string> = new Set();
--const TYPE_TO_FOCUS_EDITABLE_SELECTOR = [
--  "input",
--  "textarea",
--  "select",
--  '[contenteditable="true"]',
--  '[contenteditable="plaintext-only"]',
--  '[role="textbox"]',
--].join(",");
--const TYPE_TO_FOCUS_INTERACTIVE_SELECTOR = [
--  "button",
--  "a[href]",
--  "summary",
--  '[role="button"]',
--  '[role="checkbox"]',
--  '[role="menuitem"]',
--  '[role="option"]',
--  '[role="radio"]',
--  '[role="switch"]',
--  '[role="tab"]',
--].join(",");
--// Popups match only while open or closing: some stay mounted when closed,
--// such as the chat header actions menu.
--const TYPE_TO_FOCUS_FLOATING_LAYER_SELECTOR = [
--  '[role="dialog"][aria-modal="true"]',
--  '[data-slot="alert-dialog-popup"]:is([data-open],[data-ending-style])',
--  '[data-slot="command-dialog-popup"]:is([data-open],[data-ending-style])',
--  '[data-slot="dialog-popup"]:is([data-open],[data-ending-style])',
--  '[data-slot="sheet-popup"]:is([data-open],[data-ending-style])',
--  '[data-slot="sidebar"][data-mobile="true"]:is([data-open],[data-ending-style])',
--  '[data-slot="menu-popup"]:is([data-open],[data-ending-style])',
--  '[data-slot="select-popup"]:is([data-open],[data-ending-style])',
--  '[data-slot="popover-popup"]:is([data-open],[data-ending-style])',
--  '[data-slot="combobox-popup"]:is([data-open],[data-ending-style])',
--  '[data-slot="autocomplete-popup"]:is([data-open],[data-ending-style])',
--].join(",");
--
- type EnvironmentUnavailableState = {
-   readonly environmentId: EnvironmentId;
-   readonly label: string;
-   readonly connection: EnvironmentConnectionPresentation;
- };
- 
--function eventPathContainsSelector(event: Event, selector: string): boolean {
--  const path = event.composedPath();
--  if (path.length === 0 && event.target) {
--    path.push(event.target);
--  }
--  return path.some((target) => target instanceof Element && target.closest(selector));
--}
--
--const SECRET_REQUEST_SELECTOR = '[data-v2-item-type="secret_request"]';
--
--function shouldRedirectInputToComposer(event: Event): boolean {
--  if (event.defaultPrevented) return false;
--  // Near a pending secret request, input is meant for its private field: it
--  // must never land in the composer draft, which is persisted and sent.
--  if (eventPathContainsSelector(event, SECRET_REQUEST_SELECTOR)) return false;
--  if (eventPathContainsSelector(event, TYPE_TO_FOCUS_EDITABLE_SELECTOR)) return false;
--  if (eventPathContainsSelector(event, TYPE_TO_FOCUS_INTERACTIVE_SELECTOR)) return false;
--  if (document.querySelector(TYPE_TO_FOCUS_FLOATING_LAYER_SELECTOR)) return false;
--  return true;
--}
--
--function shouldTypeToFocusComposer(event: KeyboardEvent): boolean {
--  if (event.isComposing) return false;
--  if (event.metaKey || event.ctrlKey || event.altKey) return false;
--  if (event.key.length !== 1) return false;
--  if (!shouldRedirectInputToComposer(event)) return false;
--
--  return true;
--}
--
--function pasteTextToFocusComposer(event: ClipboardEvent): string | null {
--  if (!event.clipboardData || event.clipboardData.files.length > 0) return null;
--  if (!shouldRedirectInputToComposer(event)) return null;
--  const text = event.clipboardData.getData("text/plain");
--  return text.length > 0 ? text : null;
--}
--
- const draftFanoutStateAtom = Atom.family((_routeKey: string) =>
-   Atom.make({
-     selections: null as ReadonlyArray<ModelSelection> | null,
-@@ -7640,6 +7575,7 @@ export default function ChatView(props: ChatViewProps) {
-       if (!activeThreadId || isCommandPaletteOpen()) {
-         return;
-       }
-+      if (eventPathContainsSelector(event, '[role="application"]')) return;
-       const terminalFocusOwner = getTerminalFocusOwner();
-       if (event.defaultPrevented && terminalFocusOwner === null) {
-         return;
 diff --git a/apps/web/src/components/chat/V2FileChangeDiffView.tsx b/apps/web/src/components/chat/V2FileChangeDiffView.tsx
 new file mode 100644
-index 000000000..63745660f
+index 000000000..d987861c3
 --- /dev/null
 +++ b/apps/web/src/components/chat/V2FileChangeDiffView.tsx
-@@ -0,0 +1,43 @@
+@@ -0,0 +1,39 @@
 +import type { CodeViewDiffItem } from "@pierre/diffs/react";
-+import { useMemo } from "react";
 +import type { V2FileChangeDiffInput } from "./v2FileChangeDiff";
 +import { v2FileChangePatch } from "./v2FileChangeDiff";
 +import { getRenderablePatch } from "../../lib/diffRendering";
@@ -2664,11 +2528,8 @@ index 000000000..63745660f
 +  readonly cacheKey: string;
 +}) {
 +  const { diffStr, fileName, newStr, oldStr } = item;
-+  const patch = useMemo(
-+    () => v2FileChangePatch({ diffStr, fileName, newStr, oldStr }),
-+    [diffStr, fileName, newStr, oldStr],
-+  );
-+  const items = useMemo(() => {
++  const patch = v2FileChangePatch({ diffStr, fileName, newStr, oldStr });
++  const items = (() => {
 +    if (!patch) return [];
 +    const parsed = getRenderablePatch(patch, cacheKey);
 +    return parsed?.kind === "files"
@@ -2678,7 +2539,7 @@ index 000000000..63745660f
 +          fileDiff: file,
 +        })) satisfies CodeViewDiffItem[])
 +      : [];
-+  }, [cacheKey, patch]);
++  })();
 +  if (!patch) return null;
 +  if (!items.length)
 +    return (
@@ -2693,15 +2554,15 @@ index 000000000..63745660f
 +  );
 +}
 diff --git a/apps/web/src/components/chat/V2ItemInspector.tsx b/apps/web/src/components/chat/V2ItemInspector.tsx
-index b012f6f75..203ce3d48 100644
+index 217811021..57acc39cb 100644
 --- a/apps/web/src/components/chat/V2ItemInspector.tsx
 +++ b/apps/web/src/components/chat/V2ItemInspector.tsx
 @@ -14,7 +14,7 @@ import {
  import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
  import { isJavaScriptReplTool } from "@t3tools/shared/toolActivity";
  import { ExternalLinkIcon, GitBranchIcon, RotateCcwIcon } from "lucide-react";
--import { memo, type ReactNode, Suspense, use, useMemo } from "react";
-+import { lazy, memo, type ReactNode, Suspense, use, useMemo, useState } from "react";
+-import { memo, type ReactNode, Suspense, use } from "react";
++import { lazy, memo, type ReactNode, Suspense, use, useState } from "react";
  
  import { useTheme } from "../../hooks/useTheme";
  import { cn } from "../../lib/utils";
@@ -2766,8 +2627,8 @@ index b012f6f75..203ce3d48 100644
 +      ) : null}
 +      {item.changes?.length ? (
 +        <ul className="space-y-1 font-mono text-muted-foreground">
-+          {item.changes.map((change, index) => (
-+            <li key={`${change.operation}:${change.path}:${index}`}>
++          {item.changes.map((change) => (
++            <li key={JSON.stringify([change.operation, change.oldPath, change.path])}>
 +              {change.operation} {change.oldPath ? `${change.oldPath} → ` : ""}
 +              {formatWorkspaceRelativePath(change.path, workspaceRoot)}
 +              {change.fileType || change.mimeType
@@ -2784,7 +2645,7 @@ index b012f6f75..203ce3d48 100644
  interface V2ItemInspectorProps {
    readonly projectedItem: OrchestrationV2ProjectedTurnItem;
    readonly environmentId: EnvironmentId;
-@@ -283,44 +355,12 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
+@@ -281,44 +353,12 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
        ) : null}
  
        {item.type === "file_change" ? (
@@ -2814,8 +2675,8 @@ index b012f6f75..203ce3d48 100644
 -          ) : null}
 -          {item.changes !== undefined && item.changes.length > 0 ? (
 -            <ul className="space-y-1 font-mono text-muted-foreground">
--              {item.changes.map((change, index) => (
--                <li key={`${change.operation}:${change.path}:${index}`}>
+-              {item.changes.map((change) => (
+-                <li key={JSON.stringify([change.operation, change.oldPath, change.path])}>
 -                  {change.operation} {change.oldPath ? `${change.oldPath} → ` : ""}
 -                  {formatWorkspaceRelativePath(change.path, props.workspaceRoot)}
 -                  {change.fileType || change.mimeType
@@ -2835,6 +2696,70 @@ index b012f6f75..203ce3d48 100644
        ) : null}
  
        {item.type === "file_search" && item.pattern?.trim() ? (
+diff --git a/apps/web/src/components/chat/composerFocusRedirect.ts b/apps/web/src/components/chat/composerFocusRedirect.ts
+index e7937779a..585f681ab 100644
+--- a/apps/web/src/components/chat/composerFocusRedirect.ts
++++ b/apps/web/src/components/chat/composerFocusRedirect.ts
+@@ -1,6 +1,3 @@
+-// Type-to-focus: printable keys and pastes that land on no editable target go to
+-// the composer, so the user can start typing anywhere in the chat.
+-
+ export const TYPE_TO_FOCUS_EDITABLE_SELECTOR = [
+   "input",
+   "textarea",
+@@ -20,9 +17,8 @@ const TYPE_TO_FOCUS_INTERACTIVE_SELECTOR = [
+   '[role="radio"]',
+   '[role="switch"]',
+   '[role="tab"]',
++  '[role="application"]',
+ ].join(",");
+-// Popups match only while open or closing: some stay mounted when closed,
+-// such as the chat header actions menu.
+ export const TYPE_TO_FOCUS_FLOATING_LAYER_SELECTOR = [
+   '[role="dialog"][aria-modal="true"]',
+   '[data-slot="alert-dialog-popup"]:is([data-open],[data-ending-style])',
+@@ -49,8 +45,6 @@ const SECRET_REQUEST_SELECTOR = '[data-v2-item-type="secret_request"]';
+ 
+ export function shouldRedirectInputToComposer(event: Event): boolean {
+   if (event.defaultPrevented) return false;
+-  // Near a pending secret request, input is meant for its private field: it
+-  // must never land in the composer draft, which is persisted and sent.
+   if (eventPathContainsSelector(event, SECRET_REQUEST_SELECTOR)) return false;
+   if (eventPathContainsSelector(event, TYPE_TO_FOCUS_EDITABLE_SELECTOR)) return false;
+   if (eventPathContainsSelector(event, TYPE_TO_FOCUS_INTERACTIVE_SELECTOR)) return false;
+@@ -64,6 +58,11 @@ export function shouldTypeToFocusComposer(event: KeyboardEvent): boolean {
+   if (event.key.length !== 1) return false;
+   if (!shouldRedirectInputToComposer(event)) return false;
+ 
++  const launcherKeys = document
++    .querySelector("[data-surface-launcher-keys]")
++    ?.getAttribute("data-surface-launcher-keys");
++  if (launcherKeys && launcherKeys.toLowerCase().includes(event.key.toLowerCase())) return false;
++
+   return true;
+ }
+ 
+diff --git a/apps/web/src/components/chat/useChatShortcuts.ts b/apps/web/src/components/chat/useChatShortcuts.ts
+index b68f502ab..c0fd07523 100644
+--- a/apps/web/src/components/chat/useChatShortcuts.ts
++++ b/apps/web/src/components/chat/useChatShortcuts.ts
+@@ -8,7 +8,7 @@ import {
+   preventTerminalCloseShortcut,
+ } from "../../lib/terminalCloseShortcut";
+ import { getTerminalFocusOwner, type TerminalFocusOwner } from "../../lib/terminalFocus";
+-import { shouldTypeToFocusComposer } from "./composerFocusRedirect";
++import { eventPathContainsSelector, shouldTypeToFocusComposer } from "./composerFocusRedirect";
+ 
+ /** Runs a command. Returning false lets the key event through untouched. */
+ export type ChatShortcutHandler = (context: {
+@@ -56,6 +56,7 @@ export function useChatShortcuts(input: ChatShortcutsInput) {
+         return;
+       }
+       if (!current.enabled || isCommandPaletteOpen()) return;
++      if (eventPathContainsSelector(event, '[role="application"]')) return;
+       const terminalFocusOwner = getTerminalFocusOwner();
+       if (event.defaultPrevented && terminalFocusOwner === null) return;
+       const shortcutContext = current.getShortcutContext(event.target);
 diff --git a/apps/web/src/components/chat/v2FileChangeDiff.test.ts b/apps/web/src/components/chat/v2FileChangeDiff.test.ts
 new file mode 100644
 index 000000000..f5e096a5c
@@ -2925,27 +2850,22 @@ index 000000000..5f2284e73
 +  const header = oldExists ? `--- a/${path}\n+++ b/${path}` : `--- /dev/null\n+++ b/${path}`;
 +  return `${header}\n${body.join("\n")}`;
 +}
-diff --git a/apps/web/src/components/device/DeviceStreamView.test.tsx b/apps/web/src/components/device/DeviceStreamView.test.tsx
-index 38d83f0f0..cb3c38864 100644
---- a/apps/web/src/components/device/DeviceStreamView.test.tsx
-+++ b/apps/web/src/components/device/DeviceStreamView.test.tsx
-@@ -56,9 +56,14 @@ afterEach(async () => {
+diff --git a/apps/web/src/components/device/DeviceStreamView.browser.test.tsx b/apps/web/src/components/device/DeviceStreamView.browser.test.tsx
+index 843849df0..668445082 100644
+--- a/apps/web/src/components/device/DeviceStreamView.browser.test.tsx
++++ b/apps/web/src/components/device/DeviceStreamView.browser.test.tsx
+@@ -109,8 +109,9 @@ afterEach(async () => {
    vi.unstubAllGlobals();
  });
  
 -async function setup(h264 = false) {
 +async function setup(platform: "ios" | "android" = "ios", h264 = false) {
    vi.useFakeTimers();
-   vi.stubGlobal("window", globalThis);
-+  if (platform === "android") {
-+    vi.stubGlobal("VideoDecoder", vi.fn());
-+    vi.stubGlobal("EncodedVideoChunk", vi.fn());
-+  }
 +  const messages: Array<string | Uint8Array> = [];
    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
    let videoBody: ReadableStreamDefaultController<Uint8Array> | undefined;
    let output: VideoFrameOutputCallback | undefined;
-@@ -107,7 +112,9 @@ async function setup(h264 = false) {
+@@ -168,7 +169,9 @@ async function setup(h264 = false) {
          sockets.push(this);
        }
        onmessage?: (event: { data: ArrayBuffer }) => void;
@@ -2956,7 +2876,7 @@ index 38d83f0f0..cb3c38864 100644
        close() {}
      },
    );
-@@ -124,7 +131,7 @@ async function setup(h264 = false) {
+@@ -177,7 +180,7 @@ async function setup(h264 = false) {
        hostId="local"
        environmentId={EnvironmentId.make("test")}
        deviceId="test"
@@ -2965,7 +2885,7 @@ index 38d83f0f0..cb3c38864 100644
        visible={visible}
        allowPhoneView={h264}
      />
-@@ -148,6 +155,7 @@ async function setup(h264 = false) {
+@@ -186,6 +189,7 @@ async function setup(h264 = false) {
    return {
      images,
      view,
@@ -2973,39 +2893,31 @@ index 38d83f0f0..cb3c38864 100644
      configure() {
        const json = new TextEncoder().encode(
          JSON.stringify({ width: 400, height: 800, orientation: "portrait" }),
-@@ -198,6 +206,42 @@ it("offers Reconnect after the shared timeout and receives a frame after retry w
+@@ -240,6 +244,34 @@ it("offers Reconnect after the shared timeout and receives a frame after retry w
    expect(vi.getTimerCount()).toBe(0);
  });
  
 +it("sends Ctrl shortcuts to Android and lets a browser paste insert clipboard text once", async () => {
 +  const { messages } = await setup("android");
-+  const screen = renderer!.root.findByProps({ role: "application" });
-+  const target = {};
++  const screen = container.querySelector('[role="application"]')!;
 +  const key = (value: string) => {
-+    const preventDefault = vi.fn();
-+    const stopPropagation = vi.fn();
-+    const nativeEvent = { key: value, ctrlKey: true } as KeyboardEvent;
-+    screen.props.onKeyDown({
-+      target,
-+      currentTarget: target,
++    const event = new KeyboardEvent("keydown", {
 +      key: value,
 +      ctrlKey: true,
-+      nativeEvent,
-+      preventDefault,
-+      stopPropagation,
++      bubbles: true,
++      cancelable: true,
 +    });
-+    return preventDefault;
++    screen.dispatchEvent(event);
++    return event.defaultPrevented;
 +  };
-+  expect(key("a")).toHaveBeenCalledOnce();
-+  expect(key("c")).toHaveBeenCalledOnce();
-+  expect(key("v")).not.toHaveBeenCalled();
-+  screen.props.onPaste({
-+    target,
-+    currentTarget: target,
-+    clipboardData: { getData: () => "Pasted from the computer" },
-+    preventDefault: vi.fn(),
-+    stopPropagation: vi.fn(),
-+  });
++  expect(key("a")).toBe(true);
++  expect(key("c")).toBe(true);
++  expect(key("v")).toBe(false);
++  const clipboardData = new DataTransfer();
++  clipboardData.setData("text/plain", "Pasted from the computer");
++  screen.dispatchEvent(
++    new ClipboardEvent("paste", { clipboardData, bubbles: true, cancelable: true }),
++  );
 +  expect(messages.map((message) => JSON.parse(message as string) as unknown)).toEqual([
 +    { type: "key", keycode: 29, metaState: 0x1000 },
 +    { type: "key", keycode: 31, metaState: 0x1000 },
@@ -3016,7 +2928,7 @@ index 38d83f0f0..cb3c38864 100644
  it("starts exactly one new stream per Reconnect press", async () => {
    await setup();
    await act(async () => {
-@@ -209,7 +253,7 @@ it("starts exactly one new stream per Reconnect press", async () => {
+@@ -251,7 +283,7 @@ it("starts exactly one new stream per Reconnect press", async () => {
  });
  
  it("keeps the 3D viewer mounted across iOS video recovery and releases it when hidden", async () => {
@@ -3026,10 +2938,10 @@ index 38d83f0f0..cb3c38864 100644
    expect(viewerMounts).toBe(0);
    await act(async () => frame());
 diff --git a/apps/web/src/components/device/DeviceStreamView.tsx b/apps/web/src/components/device/DeviceStreamView.tsx
-index 55934ec13..4b1385a92 100644
+index 25d0a3135..0eca2daaa 100644
 --- a/apps/web/src/components/device/DeviceStreamView.tsx
 +++ b/apps/web/src/components/device/DeviceStreamView.tsx
-@@ -375,13 +375,30 @@ export function DeviceStreamView(props: {
+@@ -381,13 +381,30 @@ export function DeviceStreamView(props: {
          )}
          tabIndex={0}
          role="application"
@@ -3061,10 +2973,10 @@ index 55934ec13..4b1385a92 100644
            if (event.target !== event.currentTarget) return;
            clientRef.current?.sendKey(event.nativeEvent, "up");
 diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
-index 29429e37a..07b04ec5e 100644
+index 2e46f8be0..7d0c50b02 100644
 --- a/apps/web/src/components/settings/ConnectionsSettings.tsx
 +++ b/apps/web/src/components/settings/ConnectionsSettings.tsx
-@@ -2152,6 +2152,7 @@ export function ConnectionsSettings() {
+@@ -2125,6 +2125,7 @@ export function ConnectionsSettings() {
      useState<EnvironmentId | null>(null);
    const [isUpdatingDesktopServerExposure, setIsUpdatingDesktopServerExposure] = useState(false);
    const [isDesktopServerExposureDialogOpen, setIsDesktopServerExposureDialogOpen] = useState(false);
@@ -3072,56 +2984,49 @@ index 29429e37a..07b04ec5e 100644
    const [isUpdatingTailscaleServe, setIsUpdatingTailscaleServe] = useState(false);
    const [isUpdatingWslBackend, setIsUpdatingWslBackend] = useState(false);
    const [desktopWslMutationError, setDesktopWslMutationError] = useState<string | null>(null);
-@@ -2812,6 +2813,48 @@ export function ConnectionsSettings() {
-     },
-     [setDefaultAdvertisedEndpointKey],
-   );
-+  const desktopLanInterfaces = useMemo(
-+    () =>
-+      desktopAdvertisedEndpoints.flatMap((endpoint) =>
-+        endpoint.interfaceName !== undefined
-+          ? [
-+              {
-+                name: endpoint.interfaceName,
-+                label: endpoint.label,
-+                address: new URL(endpoint.httpBaseUrl).hostname,
-+              },
-+            ]
-+          : [],
-+      ),
-+    [desktopAdvertisedEndpoints],
+@@ -2718,6 +2719,41 @@ export function ConnectionsSettings() {
+   const handleSetDefaultAdvertisedEndpoint = (endpoint: AdvertisedEndpoint) => {
+     setDefaultAdvertisedEndpointKey(endpointDefaultPreferenceKey(endpoint));
+   };
++  const desktopLanInterfaces = desktopAdvertisedEndpoints.flatMap((endpoint) =>
++    endpoint.interfaceName !== undefined
++      ? [
++          {
++            name: endpoint.interfaceName,
++            label: endpoint.label,
++            address: new URL(endpoint.httpBaseUrl).hostname,
++          },
++        ]
++      : [],
 +  );
 +  const preferredLanInterfaceName = desktopServerExposureState?.preferredLanInterfaceName ?? null;
 +  const isPreferredLanInterfaceMissing =
 +    preferredLanInterfaceName !== null &&
 +    !desktopLanInterfaces.some((candidate) => candidate.name === preferredLanInterfaceName);
-+  const handlePreferredLanInterfaceChange = useCallback(
-+    async (value: string) => {
-+      if (!desktopBridge) return;
-+      setIsUpdatingLanInterface(true);
-+      try {
-+        await desktopBridge.setPreferredLanInterfaceName(value === "auto" ? null : value);
-+        refreshDesktopNetworkAccessState();
-+      } catch (error) {
-+        const message =
-+          error instanceof Error ? error.message : "Failed to update the network interface.";
-+        toastManager.add(
-+          stackedThreadToast({
-+            type: "error",
-+            title: "Could not set the network interface",
-+            description: message,
-+          }),
-+        );
-+      } finally {
-+        setIsUpdatingLanInterface(false);
-+      }
-+    },
-+    [desktopBridge],
-+  );
-   const handleSavedBackendHostChange = useCallback((value: string) => {
++  const handlePreferredLanInterfaceChange = async (value: string) => {
++    if (!desktopBridge) return;
++    setIsUpdatingLanInterface(true);
++    try {
++      await desktopBridge.setPreferredLanInterfaceName(value === "auto" ? null : value);
++      refreshDesktopNetworkAccessState();
++    } catch (error) {
++      const message =
++        error instanceof Error ? error.message : "Failed to update the network interface.";
++      toastManager.add(
++        stackedThreadToast({
++          type: "error",
++          title: "Could not set the network interface",
++          description: message,
++        }),
++      );
++    } finally {
++      setIsUpdatingLanInterface(false);
++    }
++  };
+   const handleSavedBackendHostChange = (value: string) => {
      const parsedPairingUrl = parsePairingUrlFields(value);
      if (parsedPairingUrl) {
-@@ -3450,6 +3493,67 @@ export function ConnectionsSettings() {
+@@ -3343,6 +3379,67 @@ export function ConnectionsSettings() {
        control={renderNetworkAccessToggle()}
      />
    );
@@ -3189,7 +3094,7 @@ index 29429e37a..07b04ec5e 100644
    const renderDisabledNetworkAccessRow = () => (
      <SettingsRow
        title={searchableSetting("network-access").title}
-@@ -3582,6 +3686,7 @@ export function ConnectionsSettings() {
+@@ -3475,6 +3572,7 @@ export function ConnectionsSettings() {
              {canManageLocalBackend && desktopBridge ? (
                <>
                  {renderNetworkAccessRow()}
@@ -3198,10 +3103,10 @@ index 29429e37a..07b04ec5e 100644
                  {renderTailscaleRow()}
                  {renderWslRow()}
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index 53032977f..ec0465ca9 100644
+index 1999ff83d..a92232afd 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
-@@ -891,6 +891,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+@@ -897,6 +897,14 @@ export const SETTINGS_SEARCH_ITEMS = [
      searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
      localBackendManagementOnly: true,
    },
@@ -3218,13 +3123,16 @@ index 53032977f..ec0465ca9 100644
      title: "Tailscale HTTPS",
 diff --git a/apps/web/src/lib/composerInputFocus.test.ts b/apps/web/src/lib/composerInputFocus.test.ts
 new file mode 100644
-index 000000000..e16d96ffe
+index 000000000..6f4135d75
 --- /dev/null
 +++ b/apps/web/src/lib/composerInputFocus.test.ts
-@@ -0,0 +1,98 @@
+@@ -0,0 +1,101 @@
 +import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 +
-+import { pasteTextToFocusComposer, shouldTypeToFocusComposer } from "./composerInputFocus";
++import {
++  pasteTextToFocusComposer,
++  shouldTypeToFocusComposer,
++} from "../components/chat/composerFocusRedirect";
 +
 +class FakeElement extends EventTarget {
 +  constructor(
@@ -3320,96 +3228,6 @@ index 000000000..e16d96ffe
 +    expect(pasteTextToFocusComposer(pasteEvent(target))).toBeNull();
 +  });
 +});
-diff --git a/apps/web/src/lib/composerInputFocus.ts b/apps/web/src/lib/composerInputFocus.ts
-new file mode 100644
-index 000000000..e85df0192
---- /dev/null
-+++ b/apps/web/src/lib/composerInputFocus.ts
-@@ -0,0 +1,84 @@
-+export const TYPE_TO_FOCUS_EDITABLE_SELECTOR = [
-+  "input",
-+  "textarea",
-+  "select",
-+  '[contenteditable="true"]',
-+  '[contenteditable="plaintext-only"]',
-+  '[role="textbox"]',
-+].join(",");
-+const TYPE_TO_FOCUS_INTERACTIVE_SELECTOR = [
-+  "button",
-+  "a[href]",
-+  "summary",
-+  '[role="button"]',
-+  '[role="checkbox"]',
-+  '[role="menuitem"]',
-+  '[role="option"]',
-+  '[role="radio"]',
-+  '[role="switch"]',
-+  '[role="tab"]',
-+  '[role="application"]',
-+].join(",");
-+export const TYPE_TO_FOCUS_FLOATING_LAYER_SELECTOR = [
-+  '[role="dialog"][aria-modal="true"]',
-+  '[data-slot="alert-dialog-popup"]:is([data-open],[data-ending-style])',
-+  '[data-slot="command-dialog-popup"]:is([data-open],[data-ending-style])',
-+  '[data-slot="dialog-popup"]:is([data-open],[data-ending-style])',
-+  '[data-slot="sheet-popup"]:is([data-open],[data-ending-style])',
-+  '[data-slot="sidebar"][data-mobile="true"]:is([data-open],[data-ending-style])',
-+  '[data-slot="menu-popup"]',
-+  '[data-slot="select-popup"]',
-+  '[data-slot="popover-popup"]',
-+  '[data-slot="combobox-popup"]',
-+  '[data-slot="autocomplete-popup"]',
-+].join(",");
-+
-+export function eventPathContainsSelector(event: Event, selector: string): boolean {
-+  const path = event.composedPath();
-+  if (path.length === 0 && event.target) {
-+    path.push(event.target);
-+  }
-+  return path.some((target) => target instanceof Element && target.closest(selector));
-+}
-+
-+/**
-+ * Whether input that landed outside any editable or interactive element
-+ * should be redirected into the composer. Shared by type-to-focus and
-+ * paste-to-focus so both honour the same surfaces.
-+ */
-+export function shouldRedirectInputToComposer(event: Event): boolean {
-+  if (event.defaultPrevented) return false;
-+  if (eventPathContainsSelector(event, '[data-v2-item-type="secret_request"]')) return false;
-+  if (eventPathContainsSelector(event, TYPE_TO_FOCUS_EDITABLE_SELECTOR)) return false;
-+  if (eventPathContainsSelector(event, TYPE_TO_FOCUS_INTERACTIVE_SELECTOR)) return false;
-+  if (document.querySelector(TYPE_TO_FOCUS_FLOATING_LAYER_SELECTOR)) return false;
-+  return true;
-+}
-+
-+export function shouldTypeToFocusComposer(event: KeyboardEvent): boolean {
-+  if (event.isComposing) return false;
-+  if (event.metaKey || event.ctrlKey || event.altKey) return false;
-+  if (event.key.length !== 1) return false;
-+  if (!shouldRedirectInputToComposer(event)) return false;
-+
-+  // The right-panel surface launcher claims its shortcut letters while it is
-+  // visible (data attribute set in RightPanelTabs); those keys open surfaces
-+  // instead of typing into the composer.
-+  const launcherKeys = document
-+    .querySelector("[data-surface-launcher-keys]")
-+    ?.getAttribute("data-surface-launcher-keys");
-+  if (launcherKeys && launcherKeys.toLowerCase().includes(event.key.toLowerCase())) return false;
-+
-+  return true;
-+}
-+
-+/**
-+ * Plain text pasted with nothing editable focused, such as after the resting
-+ * composer blurred. Files are left to the composer's own paste handler.
-+ */
-+export function pasteTextToFocusComposer(event: ClipboardEvent): string | null {
-+  if (!event.clipboardData || event.clipboardData.files.length > 0) return null;
-+  if (!shouldRedirectInputToComposer(event)) return null;
-+  const text = event.clipboardData.getData("text/plain");
-+  return text.length > 0 ? text : null;
-+}
 diff --git a/apps/web/src/state/desktopNetworkAccess.test.ts b/apps/web/src/state/desktopNetworkAccess.test.ts
 index 25c522522..8733e2fca 100644
 --- a/apps/web/src/state/desktopNetworkAccess.test.ts
@@ -3849,144 +3667,3 @@ index 314d8272c..ef499b8fb 100644
      ...(input.description === undefined ? {} : { description: input.description }),
    };
  }
-diff --git a/patches/expo-widgets@58.0.18.patch b/patches/expo-widgets@58.0.18.patch
-index f5ac33c00..82957fef3 100644
---- a/patches/expo-widgets@58.0.18.patch
-+++ b/patches/expo-widgets@58.0.18.patch
-@@ -1,5 +1,50 @@
-+diff --git a/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationBuilder.kt b/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationBuilder.kt
-+index 07eca412c873c7fc6d77d40e3ec76f6338081b31..82cabeaa5dc7d73ace29c813d3a7e3e64a1c2972 100644
-+--- a/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationBuilder.kt
-++++ b/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationBuilder.kt
-+@@ -14,8 +14,8 @@ import android.os.Bundle
-+ import androidx.core.app.NotificationCompat
-+ import androidx.core.app.NotificationManagerCompat
-+ import expo.modules.widgets.R
-+-import io.github.jakex7.peek.notification.PeekNotificationViews
-+-import io.github.jakex7.peek.notification.setPeekContent
-++import io.github.expo.peek.notification.PeekNotificationViews
-++import io.github.expo.peek.notification.setPeekContent
-+ 
-+ internal object CustomNotificationBuilder {
-+   private const val DEFAULT_CHANNEL_ID = "expo_widgets_notifications"
-+diff --git a/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationRenderer.kt b/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationRenderer.kt
-+index 446a39eb7229324bf70af2bea68b6c60576389e2..e90b09a490bb7fc21b3f048bcffcc45fd4adef3b 100644
-+--- a/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationRenderer.kt
-++++ b/android/src/main/java/expo/modules/widgets/notifications/CustomNotificationRenderer.kt
-+@@ -8,9 +8,9 @@ import expo.modules.widgets.WidgetsStorage
-+ import expo.modules.widgets.evaluateLayout
-+ import expo.modules.widgets.getWidgetEnvironment
-+ import expo.modules.widgets.toPeekRoot
-+-import io.github.jakex7.peek.emittables.peekEmittableNotificationViews
-+-import io.github.jakex7.peek.notification.PeekNotificationSizes
-+-import io.github.jakex7.peek.notification.PeekNotificationViews
-++import io.github.expo.peek.emittables.peekEmittableNotificationViews
-++import io.github.expo.peek.notification.PeekNotificationSizes
-++import io.github.expo.peek.notification.PeekNotificationViews
-+ 
-+ internal object CustomNotificationRenderer {
-+   suspend fun render(context: Context, state: CustomNotificationState): PeekNotificationViews {
-+diff --git a/android/src/main/java/expo/modules/widgets/notifications/CustomNotifications.kt b/android/src/main/java/expo/modules/widgets/notifications/CustomNotifications.kt
-+index a7b372e656b9b1369ddbface2efb15127c211d14..dd001ee83af872c53cf74177f27ced2b507f2682 100644
-+--- a/android/src/main/java/expo/modules/widgets/notifications/CustomNotifications.kt
-++++ b/android/src/main/java/expo/modules/widgets/notifications/CustomNotifications.kt
-+@@ -3,7 +3,7 @@ package expo.modules.widgets.notifications
-+ import android.annotation.SuppressLint
-+ import android.content.Context
-+ import androidx.core.app.NotificationManagerCompat
-+-import io.github.jakex7.peek.notification.PeekNotificationViews
-++import io.github.expo.peek.notification.PeekNotificationViews
-+ import kotlinx.coroutines.CancellationException
-+ import kotlinx.coroutines.Job
-+ import kotlinx.coroutines.coroutineScope
- diff --git a/build/Widgets.types.d.ts b/build/Widgets.types.d.ts
--index 4c474bb..b0173df 100644
-+index 4c474bb2730376c8e182159c096a6031da4864de..b0173dff2a4aa3df57c64564950902676773cf34 100644
- --- a/build/Widgets.types.d.ts
- +++ b/build/Widgets.types.d.ts
- @@ -98,6 +98,10 @@ export type LiveActivityEnvironment = {
-@@ -14,7 +59,7 @@ index 4c474bb..b0173df 100644
-       * Whether the activity is displayed in a context with reduced luminance.
-       * @platform iOS 16+
- diff --git a/ios/LiveActivityFactory.swift b/ios/LiveActivityFactory.swift
--index 29e4f15..7143f9a 100644
-+index 29e4f1566d188665e301d32bc1ad85640f83e68c..7143f9a1c06245d16649b981d7f5cde1d8868217 100644
- --- a/ios/LiveActivityFactory.swift
- +++ b/ios/LiveActivityFactory.swift
- @@ -19,6 +19,14 @@ final class LiveActivityFactory: SharedObject {
-@@ -33,7 +78,7 @@ index 29e4f15..7143f9a 100644
-        let initialState = LiveActivityAttributes.ContentState(name: name, props: props)
-        let activity = try Activity.request(
- diff --git a/ios/Widgets/Utils.swift b/ios/Widgets/Utils.swift
--index 76b2199..6cb52c3 100644
-+index 76b2199c2d3f879463fed5d2bd49038b0428a2e7..6cb52c3de4ad9696bc0c51ad62401cce96f405e7 100644
- --- a/ios/Widgets/Utils.swift
- +++ b/ios/Widgets/Utils.swift
- @@ -125,6 +125,10 @@ func getLiveActivityEnvironment(for environment: EnvironmentValues, in context:
-@@ -48,7 +93,7 @@ index 76b2199..6cb52c3 100644
-      env["isActivityUpdateReduced"] = environment.isActivityUpdateReduced
-      env["activityFamily"] = "\(environment.activityFamily)"
- diff --git a/ios/Widgets/WidgetLiveActivity.swift b/ios/Widgets/WidgetLiveActivity.swift
--index 4d135c4..dae4744 100644
-+index 4d135c4e4eb1f846315654ed9d835a935d120d42..dae47445b27516fa2464a25b68bddc8f6dec3e1e 100644
- --- a/ios/Widgets/WidgetLiveActivity.swift
- +++ b/ios/Widgets/WidgetLiveActivity.swift
- @@ -19,53 +19,41 @@ struct LiveActivityAttributes: ActivityAttributes {
-@@ -151,7 +196,7 @@ index 4d135c4..dae4744 100644
-        LiveActivityBanner(context: context, nodes: nodes)
-      } else if let node = nodes["banner"] as? [String: Any] {
- diff --git a/scripts/build-layout-registry.mjs b/scripts/build-layout-registry.mjs
--index d52a60e..fa9bd77 100644
-+index d52a60e342c8e0a8a1d78f7174da5e60e6bd1c53..fa9bd77c5c04d459038a5b4a00e1391780b406fa 100644
- --- a/scripts/build-layout-registry.mjs
- +++ b/scripts/build-layout-registry.mjs
- @@ -154,6 +154,8 @@ function createLayoutRegistry(expectedWidgets, capturedLayouts) {
-@@ -165,7 +210,7 @@ index d52a60e..fa9bd77 100644
-    await main();
-  }
- diff --git a/src/Widgets.types.ts b/src/Widgets.types.ts
--index 690d069..ffab6f3 100644
-+index 690d0695c726dd4f260ba3aeb4edb82b9a72cd39..ffab6f312601150a2168425a2a53de70393c92bc 100644
- --- a/src/Widgets.types.ts
- +++ b/src/Widgets.types.ts
- @@ -112,6 +112,10 @@ export type LiveActivityEnvironment = {
-diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
-index e1ef83663..619ab7960 100644
---- a/pnpm-lock.yaml
-+++ b/pnpm-lock.yaml
-@@ -165,7 +165,7 @@ patchedDependencies:
-   expo-blur@58.0.3: d0311b0c0b05bd94393bd9a84653cb42503d5f3c8a19eb2627c34ace08bedf18
-   expo-glass-effect@58.0.3: f750041c45ab838a3530451dc7b50d6640a79141037a1b0499c5e3412a860c57
-   expo-sharing@58.0.18: d0ca151b2a4eec8bb28df547c8663e4b803acd981ace492c6b401bcb279f524a
--  expo-widgets@58.0.18: 40806e85c756563935c7368b93d679bd3bb7742bff21d9c7611d9161e1aee602
-+  expo-widgets@58.0.18: 8d0071c3a1bedfb78ffca8f28ea5060eb5d95aa8585039bc21ce954830ed8d45
-   node-pty@1.2.0-beta.15: f2fe901c61cde17986240002d05c172d5d0272d83ffaab8d0ebeb922763be414
-   react-native-gesture-handler@3.3.0: abe20e1d1c23549297cbbc818e14fe479b41455930d9663135d6b40fe359b626
-   react-native-keyboard-controller@1.22.7: f28d08f1233e3cce8b9324b4357d2b10f1ee040b8051bc87235b0fb95069b9bb
-@@ -524,7 +524,7 @@ importers:
-         version: 58.0.6(expo@58.0.11)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))
-       expo-widgets:
-         specifier: 58.0.18
--        version: 58.0.18(patch_hash=40806e85c756563935c7368b93d679bd3bb7742bff21d9c7611d9161e1aee602)(@babel/core@7.29.7)(expo@58.0.11)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0)
-+        version: 58.0.18(patch_hash=8d0071c3a1bedfb78ffca8f28ea5060eb5d95aa8585039bc21ce954830ed8d45)(@babel/core@7.29.7)(expo@58.0.11)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0)
-       react:
-         specifier: 19.3.0
-         version: 19.3.0
-@@ -18181,7 +18181,7 @@ snapshots:
-     optionalDependencies:
-       '@babel/runtime': 7.29.7
-       expo: 58.0.11(0279ba067f3e563cec3a046cc8b71592)
--      expo-widgets: 58.0.18(patch_hash=40806e85c756563935c7368b93d679bd3bb7742bff21d9c7611d9161e1aee602)(@babel/core@7.29.7)(expo@58.0.11)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0)
-+      expo-widgets: 58.0.18(patch_hash=8d0071c3a1bedfb78ffca8f28ea5060eb5d95aa8585039bc21ce954830ed8d45)(@babel/core@7.29.7)(expo@58.0.11)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0)
-     transitivePeerDependencies:
-       - '@babel/core'
-       - supports-color
-@@ -19636,7 +19636,7 @@ snapshots:
-       expo: 58.0.11(0279ba067f3e563cec3a046cc8b71592)
-       react-native: 0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6)
- 
--  expo-widgets@58.0.18(patch_hash=40806e85c756563935c7368b93d679bd3bb7742bff21d9c7611d9161e1aee602)(@babel/core@7.29.7)(expo@58.0.11)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0):
-+  expo-widgets@58.0.18(patch_hash=8d0071c3a1bedfb78ffca8f28ea5060eb5d95aa8585039bc21ce954830ed8d45)(@babel/core@7.29.7)(expo@58.0.11)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0):
-     dependencies:
-       '@expo/plist': 0.10.1
-       '@expo/ui': 58.0.18(patch_hash=5a26480373850c1a7943919aa21f904151b335a0cb01042109e0746def37923e)(@babel/core@7.29.7)(expo@58.0.11)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7)(bufferutil@4.1.0)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(utf-8-validate@6.0.6))(react@19.3.0)
