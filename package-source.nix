@@ -27,7 +27,7 @@ stdenvNoCC.mkDerivation {
     fetcherVersion = 4;
     # Unfiltered: filtered fetches skip packages the sandboxed install
     # resolves (observed with the Sep 13 lockfile and @effect/platform-bun).
-    hash = "sha256-1BEDzCBOEvybtZ5W9p/07kj4K91vJewkWO9wGV59zYc=";
+    hash = "sha256-k9q7URkuObY7oXBYm99kGebRWlpUXeRYGW7WnU6DbcI=";
   };
 
   pnpmWorkspaces = [
@@ -50,6 +50,9 @@ stdenvNoCC.mkDerivation {
     stdenv.cc
   ];
 
+  # pnpm executes whatever `packageManager` pins; without this it replaces itself
+  # with pnpm 12.14.0, which is not the version this derivation provides.
+  npm_config_manage_package_manager_versions = "false";
   ELECTRON_SKIP_BINARY_DOWNLOAD = "1";
   PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
   APP_VERSION = version;

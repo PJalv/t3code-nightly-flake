@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     t3code-source = {
-      url = "github:pingdotgg/t3code/16918b57d6754d6f145e9b6367c825aa31a740da";
+      url = "github:pingdotgg/t3code/1688f965682d331da16a8c39f049592361f69c8d";
       flake = false;
     };
   };
@@ -20,12 +20,12 @@
       };
       lib = pkgs.lib;
       source = lib.importJSON ./source.json;
-      # The repo pins packageManager pnpm@11.10.0; nixpkgs' pnpm_11 (11.25.0)
-      # fetches the filtered workspace store incompletely.
-      pnpmPinned = pkgs.pnpm_11.override {
-        version = "11.10.0";
-        hash = "sha256-YgtmBepPYvxWptCphzP0eQcdAyHgPkhrUix+mnRhdDE=";
-      };
+      # The repo pins packageManager pnpm@12.14.0. pnpm rewrites itself to the
+      # pinned version unless told otherwise, and 12.14.0's npm tarball no longer
+      # ships the `dist/vendor` tree that nixpkgs' pnpm builder unpacks, so it
+      # cannot be packaged here. The pinned nixpkgs pnpm installs the same
+      # lockfile; package-source.nix stops it from self-upgrading first.
+      pnpmPinned = pkgs.pnpm;
       spdxLicenseData = pkgs.fetchFromGitHub {
         owner = "spdx";
         repo = "license-list-data";
