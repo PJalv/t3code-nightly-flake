@@ -1,5 +1,5 @@
 diff --git a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
-index 8d70ab4c4..1b4d80296 100644
+index 7464d8fbe..29ea98300 100644
 --- a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
 +++ b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
 @@ -38,6 +38,7 @@ const layerServerExposure = Layer.succeed(DesktopServerExposure.DesktopServerExp
@@ -774,7 +774,7 @@ index 4d57b30e2..0bbf9054c 100644
      ipcRenderer.invoke(IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL, input),
    getAdvertisedEndpoints: () => ipcRenderer.invoke(IpcChannels.GET_ADVERTISED_ENDPOINTS_CHANNEL),
 diff --git a/apps/desktop/src/settings/DesktopAppSettings.test.ts b/apps/desktop/src/settings/DesktopAppSettings.test.ts
-index 832a77457..a5a4ec821 100644
+index 0135225f9..97e874265 100644
 --- a/apps/desktop/src/settings/DesktopAppSettings.test.ts
 +++ b/apps/desktop/src/settings/DesktopAppSettings.test.ts
 @@ -3,6 +3,7 @@ import { assert, describe, it } from "@effect/vitest";
@@ -783,9 +783,9 @@ index 832a77457..a5a4ec821 100644
  import * as Layer from "effect/Layer";
 +import * as Option from "effect/Option";
  import * as Schema from "effect/Schema";
+ import * as Tracer from "effect/Tracer";
  
- import * as DesktopConfig from "../app/DesktopConfig.ts";
-@@ -25,6 +26,7 @@ const DesktopSettingsPatch = Schema.Struct({
+@@ -26,6 +27,7 @@ const DesktopSettingsPatch = Schema.Struct({
    ),
    mainWindowMaximized: Schema.optionalKey(Schema.Boolean),
    serverExposureMode: Schema.optionalKey(Schema.Literals(["local-only", "network-accessible"])),
@@ -793,7 +793,7 @@ index 832a77457..a5a4ec821 100644
    tailscaleServeEnabled: Schema.optionalKey(Schema.Boolean),
    tailscaleServePort: Schema.optionalKey(Schema.Number),
    updateChannel: Schema.optionalKey(Schema.Literals(["latest", "nightly"])),
-@@ -108,6 +110,144 @@ describe("DesktopSettings", () => {
+@@ -140,6 +142,144 @@ describe("DesktopSettings", () => {
          }),
        ),
    );
@@ -938,7 +938,7 @@ index 832a77457..a5a4ec821 100644
  
    it.effect("falls back to defaults when the settings file is malformed", () =>
      withSettings(
-@@ -147,6 +287,7 @@ describe("DesktopSettings", () => {
+@@ -179,6 +319,7 @@ describe("DesktopSettings", () => {
            mainWindowBounds: { x: 120, y: 80, width: 1280, height: 900 },
            mainWindowMaximized: false,
            serverExposureMode: "network-accessible",
@@ -946,7 +946,7 @@ index 832a77457..a5a4ec821 100644
            tailscaleServeEnabled: true,
            tailscaleServePort: 8443,
            updateChannel: "latest",
-@@ -167,6 +308,7 @@ describe("DesktopSettings", () => {
+@@ -199,6 +340,7 @@ describe("DesktopSettings", () => {
            mainWindowBounds: { x: 10.5, y: 20, width: 839, height: 620 },
            mainWindowMaximized: true,
            serverExposureMode: "network-accessible",
@@ -954,7 +954,7 @@ index 832a77457..a5a4ec821 100644
          });
  
          const loaded = yield* settings.load;
-@@ -177,6 +319,46 @@ describe("DesktopSettings", () => {
+@@ -209,6 +351,46 @@ describe("DesktopSettings", () => {
      ),
    );
  
@@ -1001,7 +1001,7 @@ index 832a77457..a5a4ec821 100644
    it.effect("persists sparse desktop settings documents", () =>
      withSettings(
        Effect.gen(function* () {
-@@ -233,6 +415,7 @@ describe("DesktopSettings", () => {
+@@ -265,6 +447,7 @@ describe("DesktopSettings", () => {
          const settings = yield* DesktopAppSettings.DesktopAppSettings;
          yield* writeSettingsPatch({
            serverExposureMode: "local-only",
@@ -1009,7 +1009,7 @@ index 832a77457..a5a4ec821 100644
            updateChannel: "latest",
          });
  
-@@ -242,6 +425,7 @@ describe("DesktopSettings", () => {
+@@ -274,6 +457,7 @@ describe("DesktopSettings", () => {
            mainWindowBounds: null,
            mainWindowMaximized: false,
            serverExposureMode: "local-only",
@@ -1017,7 +1017,7 @@ index 832a77457..a5a4ec821 100644
            tailscaleServeEnabled: false,
            tailscaleServePort: 443,
            updateChannel: "nightly",
-@@ -261,6 +445,7 @@ describe("DesktopSettings", () => {
+@@ -293,6 +477,7 @@ describe("DesktopSettings", () => {
          const settings = yield* DesktopAppSettings.DesktopAppSettings;
          yield* writeSettingsPatch({
            serverExposureMode: "local-only",
@@ -1025,7 +1025,7 @@ index 832a77457..a5a4ec821 100644
            updateChannel: "latest",
            updateChannelConfiguredByUser: true,
          });
-@@ -271,6 +456,7 @@ describe("DesktopSettings", () => {
+@@ -303,6 +488,7 @@ describe("DesktopSettings", () => {
            mainWindowBounds: null,
            mainWindowMaximized: false,
            serverExposureMode: "local-only",
@@ -1033,7 +1033,7 @@ index 832a77457..a5a4ec821 100644
            tailscaleServeEnabled: false,
            tailscaleServePort: 443,
            updateChannel: "latest",
-@@ -284,6 +470,34 @@ describe("DesktopSettings", () => {
+@@ -316,6 +502,34 @@ describe("DesktopSettings", () => {
      ),
    );
  
@@ -1069,7 +1069,7 @@ index 832a77457..a5a4ec821 100644
      withSettings(
        Effect.gen(function* () {
 diff --git a/apps/desktop/src/settings/DesktopAppSettings.ts b/apps/desktop/src/settings/DesktopAppSettings.ts
-index 433e8127a..44a16e8cb 100644
+index 5767057b4..b5a3076b3 100644
 --- a/apps/desktop/src/settings/DesktopAppSettings.ts
 +++ b/apps/desktop/src/settings/DesktopAppSettings.ts
 @@ -31,6 +31,13 @@ export interface DesktopSettings {
@@ -1153,26 +1153,31 @@ index 433e8127a..44a16e8cb 100644
  function setMainWindowBounds(
    settings: DesktopSettings,
    bounds: DesktopWindowBounds,
-@@ -537,6 +569,10 @@ export const make = Effect.gen(function* () {
-       persist((settings) => setServerExposureMode(settings, mode)).pipe(
-         Effect.withSpan("desktop.settings.setServerExposureMode", { attributes: { mode } }),
-       ),
-+    setPreferredLanInterfaceName: (name) =>
-+      persist((settings) => setPreferredLanInterfaceName(settings, name)).pipe(
-+        Effect.withSpan("desktop.settings.setPreferredLanInterfaceName", { attributes: { name } }),
-+      ),
-     setTailscaleServe: (input) =>
-       persist((settings) => setTailscaleServe(settings, input)).pipe(
-         Effect.withSpan("desktop.settings.setTailscaleServe", { attributes: input }),
-@@ -598,6 +634,8 @@ export const layerTest = (initialSettings: DesktopSettings = DEFAULT_DESKTOP_SET
-           update((settings) => setMainWindowBounds(settings, bounds, isMaximized)),
-         setServerExposureMode: (mode) =>
-           update((settings) => setServerExposureMode(settings, mode)),
-+        setPreferredLanInterfaceName: (name) =>
-+          update((settings) => setPreferredLanInterfaceName(settings, name)),
-         setTailscaleServe: (input) => update((settings) => setTailscaleServe(settings, input)),
-         setUpdateChannel: (channel) => update((settings) => setUpdateChannel(settings, channel)),
-         setWslBackendEnabled: (enabled) =>
+@@ -539,6 +571,12 @@ export const make = Effect.gen(function* () {
+ 
+       return yield* persist((settings) => setServerExposureMode(settings, mode));
+     }),
++    setPreferredLanInterfaceName: Effect.fn("desktop.settings.setPreferredLanInterfaceName")(
++      function* (name) {
++        yield* Effect.annotateCurrentSpan({ name });
++        return yield* persist((settings) => setPreferredLanInterfaceName(settings, name));
++      },
++    ),
+     setTailscaleServe: Effect.fn("desktop.settings.setTailscaleServe")(function* (input) {
+       yield* Effect.annotateCurrentSpan(input);
+ 
+@@ -612,6 +650,11 @@ export const layerTest = (initialSettings: DesktopSettings = DEFAULT_DESKTOP_SET
+             return update((settings) => setServerExposureMode(settings, mode));
+           },
+         ),
++        setPreferredLanInterfaceName: Effect.fn("DesktopAppSettings.setPreferredLanInterfaceName")(
++          function (name) {
++            return update((settings) => setPreferredLanInterfaceName(settings, name));
++          },
++        ),
+         setTailscaleServe: Effect.fn("DesktopAppSettings.setTailscaleServe")(function (input) {
+           return update((settings) => setTailscaleServe(settings, input));
+         }),
 diff --git a/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts b/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
 index 78f41968b..557bf1612 100644
 --- a/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
@@ -1833,7 +1838,7 @@ index ed2092148..388dfe934 100644
    window.addEventListener("pagehide", stop, { once: true });
    post({ type: "input", connected: false });
 diff --git a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
-index 6959e1e74..b07fdaf9b 100644
+index 701403f3a..4a0b4e7a0 100644
 --- a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 @@ -8,11 +8,12 @@ import * as Notifications from "expo-notifications";
@@ -1850,7 +1855,7 @@ index 6959e1e74..b07fdaf9b 100644
  import {
    isAtomCommandInterrupted,
    reportAtomCommandResult,
-@@ -26,6 +27,15 @@ import {
+@@ -26,6 +27,12 @@ import {
    supportsAndroidLiveUpdateSettings,
  } from "../agent-awareness/androidNotifications";
  import { setLiveActivityUpdatesEnabled } from "../agent-awareness/liveActivityPreferences";
@@ -1859,14 +1864,11 @@ index 6959e1e74..b07fdaf9b 100644
 +  enableLocalAgentNotifications,
 +  setLocalAgentOngoing,
 +} from "../agent-awareness/localNotifications";
-+import {
-+  loadOrCreateAgentAwarenessDeviceId,
-+  loadPreferences,
-+} from "../../persistence/imperative";
++import { loadOrCreateAgentAwarenessDeviceId, loadPreferences } from "../../persistence/imperative";
  import { requestAgentNotificationPermission } from "../agent-awareness/notificationPermissions";
  import {
    getAgentAwarenessRegistrationStatus,
-@@ -55,8 +65,109 @@ function useDeviceRegistered(): boolean {
+@@ -55,8 +62,116 @@ function useDeviceRegistered(): boolean {
    return status === "registered";
  }
  
@@ -1897,14 +1899,21 @@ index 6959e1e74..b07fdaf9b 100644
 +  const [enabled, setEnabled] = useState(false);
 +  const [ongoing, setOngoing] = useState(false);
 +  const [busy, setBusy] = useState(false);
-+  const refresh = useCallback(async () => {
-+    const preferences = await loadPreferences();
-+    setEnabled(preferences.localNotificationsEnabled === true);
-+    setOngoing(preferences.localNotificationsOngoing === true);
-+  }, []);
++  // Persisted preferences live outside React, so read them once on mount.
++  // oxlint-disable-next-line t3code/react-effect-budget -- one mount read of persisted preferences
 +  useEffect(() => {
-+    void refresh().catch(() => {});
-+  }, [refresh]);
++    let cancelled = false;
++    void loadPreferences()
++      .then((preferences) => {
++        if (cancelled) return;
++        setEnabled(preferences.localNotificationsEnabled === true);
++        setOngoing(preferences.localNotificationsOngoing === true);
++      })
++      .catch(() => {});
++    return () => {
++      cancelled = true;
++    };
++  }, []);
 +
 +  const enable = useCallback(async (withOngoing = false) => {
 +    setBusy(true);
@@ -1976,36 +1985,40 @@ index 6959e1e74..b07fdaf9b 100644
      return (
        <SettingsScreen title="Notifications">
          <ScrollView
-@@ -89,6 +200,8 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -89,8 +204,32 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    const { savedConnectionsById } = useSavedRemoteConnections();
    const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>("checking");
    const [liveActivityStatus, setLiveActivityStatus] = useState<LiveActivityStatus>("checking");
-+  const [localNotificationsEnabled, setLocalNotificationsEnabled] = useState(false);
-+  const [localOngoingEnabled, setLocalOngoingEnabled] = useState(false);
++  // The atom mirrors the persisted preferences, so the handlers below only mark
++  // which keys they wrote.
++  const [localNotificationOverrides, setLocalNotificationOverrides] = useState<{
++    isSignedIn: boolean | null | undefined;
++    enabled?: boolean;
++    ongoing?: boolean;
++  }>({ isSignedIn: null });
    const liveActivityWriteInFlight = useRef(false);
    const deviceRegistered = useDeviceRegistered();
++  // Local notifications only apply to a signed-out Android device, so an auth
++  // change drops earlier toggle overrides and falls back to the stored keys.
++  if (localNotificationOverrides.isSignedIn !== isSignedIn) {
++    setLocalNotificationOverrides({ isSignedIn });
++  }
++  const localNotificationsEnabled =
++    localNotificationOverrides.enabled ??
++    (localNotificationOverrides.isSignedIn === false &&
++      Platform.OS === "android" &&
++      AsyncResult.isSuccess(preferencesResult) &&
++      preferencesResult.value.localNotificationsEnabled === true);
++  const localOngoingEnabled =
++    localNotificationOverrides.ongoing ??
++    (localNotificationOverrides.isSignedIn === false &&
++      Platform.OS === "android" &&
++      AsyncResult.isSuccess(preferencesResult) &&
++      preferencesResult.value.localNotificationsOngoing === true);
    const liveActivitiesPreferenceEnabled = AsyncResult.isSuccess(preferencesResult)
-@@ -123,13 +236,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
-     return () => subscription.remove();
-   }, [refreshNotifications]);
- 
-+  useEffect(() => {
-+    if (Platform.OS === "android" && !isSignedIn) {
-+      void loadPreferences()
-+        .then((preferences) => {
-+          setLocalNotificationsEnabled(preferences.localNotificationsEnabled === true);
-+          setLocalOngoingEnabled(preferences.localNotificationsOngoing === true);
-+        })
-+        .catch(() => setLocalNotificationsEnabled(false));
-+    } else {
-+      setLocalNotificationsEnabled(false);
-+      setLocalOngoingEnabled(false);
-+    }
-+  }, [isSignedIn]);
-+
-   useEffect(() => {
-     if (!isLoaded) {
-       setLiveActivityStatus("checking");
+     ? preferencesResult.value.liveActivitiesEnabled !== false
+     : true;
+@@ -131,7 +270,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
        return;
      }
      if (!isSignedIn) {
@@ -2014,7 +2027,7 @@ index 6959e1e74..b07fdaf9b 100644
        return;
      }
      if (!AsyncResult.isSuccess(preferencesResult)) {
-@@ -144,7 +271,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -146,7 +285,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
      setLiveActivityStatus(
        preferencesResult.value.liveActivitiesEnabled === false ? "disabled" : "enabled",
      );
@@ -2023,7 +2036,7 @@ index 6959e1e74..b07fdaf9b 100644
  
    const requestNotifications = async () => {
      const result = await settleAsyncResult(() =>
-@@ -312,6 +439,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -314,6 +453,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
  
    const handleDeviceNotificationsChange = (enabled: boolean) => {
      if (enabled) {
@@ -2037,7 +2050,7 @@ index 6959e1e74..b07fdaf9b 100644
 +            return;
 +          }
 +          await enableLocalAgentNotifications(false);
-+          setLocalNotificationsEnabled(true);
++          setLocalNotificationOverrides((current) => ({ ...current, enabled: true }));
 +          setNotificationStatus("enabled");
 +          Dialog.alert(
 +            "Notifications enabled",
@@ -2051,7 +2064,7 @@ index 6959e1e74..b07fdaf9b 100644
        if (!isSignedIn) {
          promptSignIn();
          return;
-@@ -320,6 +468,14 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -322,6 +482,14 @@ function ConfiguredSettingsNotificationsRouteScreen() {
        return;
      }
  
@@ -2059,14 +2072,14 @@ index 6959e1e74..b07fdaf9b 100644
 +      void disableLocalAgentNotifications().catch(() => {
 +        Dialog.alert("Notifications unavailable", "Could not save the notification setting.");
 +      });
-+      setLocalNotificationsEnabled(false);
-+      setLocalOngoingEnabled(false);
++      setLocalNotificationOverrides((current) => ({ ...current, enabled: false }));
++      setLocalNotificationOverrides((current) => ({ ...current, ongoing: false }));
 +      return;
 +    }
      Dialog.alert(
        "Disable notifications",
        "Open system Settings to disable notifications for T3 Code.",
-@@ -371,6 +527,24 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -373,6 +541,24 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    // Both writers settle their own failures, so awaiting them never throws.
    const handleLiveActivitiesChange = async (enabled: boolean) => {
      if (liveActivityWriteInFlight.current) return;
@@ -2080,7 +2093,7 @@ index 6959e1e74..b07fdaf9b 100644
 +      }
 +      void setLocalAgentOngoing(enabled)
 +        .then(() => {
-+          setLocalOngoingEnabled(enabled);
++          setLocalNotificationOverrides((current) => ({ ...current, ongoing: enabled }));
 +          setLiveActivityStatus(enabled ? "enabled" : "disabled");
 +        })
 +        .catch(() =>
@@ -2091,7 +2104,7 @@ index 6959e1e74..b07fdaf9b 100644
      if (!enabled) {
        liveActivityWriteInFlight.current = true;
        setLiveActivityStatus("linking");
-@@ -412,7 +586,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -414,7 +600,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
              }
              subtitle={agentAwarenessSubtitle}
              value={
@@ -2102,7 +2115,7 @@ index 6959e1e74..b07fdaf9b 100644
              }
              onValueChange={handleDeviceNotificationsChange}
            />
-@@ -436,7 +612,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -438,7 +626,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
              value={
                agentAwarenessPushAvailable &&
                (liveActivityStatus === "enabled" || liveActivityStatus === "linking") &&
@@ -2111,7 +2124,7 @@ index 6959e1e74..b07fdaf9b 100644
              }
              onValueChange={(enabled) => void handleLiveActivitiesChange(enabled)}
            />
-@@ -447,6 +623,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -449,6 +637,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
                onPress={() => void handleLiveActivitiesChange(false)}
              />
            ) : null}
@@ -2639,7 +2652,7 @@ index 000000000..d848a2bb6
 +  ),
 +);
 diff --git a/apps/server/src/serverSettings.test.ts b/apps/server/src/serverSettings.test.ts
-index 9fedd701a..9fe2f4876 100644
+index bd985cab2..13e27b58b 100644
 --- a/apps/server/src/serverSettings.test.ts
 +++ b/apps/server/src/serverSettings.test.ts
 @@ -176,6 +176,45 @@ it.layer(NodeServices.layer)("server settings", (it) => {
@@ -2741,10 +2754,10 @@ index 3131c84d8..1740ecdfd 100644
      if (
        config === null ||
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index 238024cf3..cc7a48fca 100644
+index e5691c8cb..018680e09 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
-@@ -74,6 +74,7 @@ import React, {
+@@ -75,6 +75,7 @@ import React, {
    type ClipboardEvent as ReactClipboardEvent,
    use,
    memo,
@@ -2752,7 +2765,7 @@ index 238024cf3..cc7a48fca 100644
    useLayoutEffect,
    useRef,
    useState,
-@@ -162,6 +163,10 @@ import { useAtomCommand } from "../state/use-atom-command";
+@@ -163,6 +164,10 @@ import { useAtomCommand } from "../state/use-atom-command";
  import { useAtomQueryRunner } from "../state/use-atom-query-runner";
  import { projectEnvironment } from "../state/projects";
  import { filesystemEnvironment } from "../state/filesystem";
@@ -2763,7 +2776,7 @@ index 238024cf3..cc7a48fca 100644
  import {
    claimWorkspaceBasenameLookup,
    needsWorkspaceBasenameLookup,
-@@ -490,6 +495,14 @@ function useChatMarkdownState({
+@@ -491,6 +496,14 @@ function useChatMarkdownState({
    const searchProjectEntries = useAtomQueryRunner(projectEnvironment.searchEntries, {
      reportFailure: false,
    });
@@ -2778,7 +2791,7 @@ index 238024cf3..cc7a48fca 100644
    const getFilesystemMetadata = useAtomQueryRunner(filesystemEnvironment.getMetadata, {
      reportFailure: false,
      refresh: true,
-@@ -774,6 +787,89 @@ function useChatMarkdownState({
+@@ -775,6 +788,91 @@ function useChatMarkdownState({
      });
      return metadata._tag === "Success" && metadata.value.entries[0] === null ? match : null;
    };
@@ -2801,6 +2814,8 @@ index 238024cf3..cc7a48fca 100644
 +    return pickWorkspaceBasenameMatch(name, result.value.entries);
 +  };
 +
++  // The candidates come from the rendered markdown text, so the search runs here.
++  // oxlint-disable-next-line t3code/react-effect-budget -- batched basename lookups follow the text, not a handler
 +  useEffect(() => {
 +    const scope = `${environmentId}:${cwd}`;
 +    if (workspaceBasenameLookupCache.current.scope !== scope)
@@ -2868,7 +2883,7 @@ index 238024cf3..cc7a48fca 100644
    const openFileInPanel = (fileLinkMeta: MarkdownFileLinkMeta, panelPath: string) => {
      if (!threadRef) return;
      // Every open supersedes pending lookups, including synchronous opens.
-@@ -796,10 +892,11 @@ function useChatMarkdownState({
+@@ -797,10 +895,11 @@ function useChatMarkdownState({
      })();
    };
    const fileLinkChip = (
@@ -2881,7 +2896,7 @@ index 238024cf3..cc7a48fca 100644
      const resolveHostPath = () =>
        resolveMarkdownFileHostPath({
          meta: fileLinkMeta,
-@@ -905,6 +1002,7 @@ function useChatMarkdownState({
+@@ -906,6 +1005,7 @@ function useChatMarkdownState({
      skills,
      threadRef,
      updateThreadPullRequestLink,
@@ -2889,7 +2904,7 @@ index 238024cf3..cc7a48fca 100644
    };
    return {
      componentState,
-@@ -939,6 +1037,9 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
+@@ -940,6 +1040,9 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
    };
  }
  
@@ -2899,15 +2914,15 @@ index 238024cf3..cc7a48fca 100644
  const CHAT_MARKDOWN_COMPONENTS = {
    h1: markdownHeadingRenderer(1),
    h2: markdownHeadingRenderer(2),
-@@ -1345,6 +1446,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
-       threadRef,
+@@ -1348,6 +1451,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
        workspaceMutationId,
        renderContextReference,
+       fileLinkChip,
 +      resolveWorkspaceBasename,
      } = use(ChatMarkdownRendererContext);
      const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
      const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
-@@ -1369,7 +1471,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1372,7 +1476,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
      const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
      const { className, style: _style, width, height, ...imageProps } = props;
      const authoredSizeStyle = authoredImageSizeStyle(width, height);
@@ -2917,9 +2932,9 @@ index 238024cf3..cc7a48fca 100644
 +        ? resolveWorkspaceBasename(classifiedSrc)
 +        : classifiedSrc;
 +    const imageSource = classifyMarkdownImageSource(resolvedSrc, imageBaseDir ?? cwd);
-     const kind = mediaKindFromPath(classifiedSrc) ?? "image";
-     const directUri = imageSource._tag === "Direct" ? imageSource.uri : null;
-     const hostMediaUrl =
+     const mediaKind = mediaKindFromPath(classifiedSrc);
+     if (mediaKind === "audio") {
+       const filePath = imageSource._tag === "WorkspaceFile" ? imageSource.path : null;
 diff --git a/apps/web/src/components/ChatView.logic.test.ts b/apps/web/src/components/ChatView.logic.test.ts
 index 426818dba..52ff7b77e 100644
 --- a/apps/web/src/components/ChatView.logic.test.ts
@@ -3128,10 +3143,10 @@ index 426818dba..52ff7b77e 100644
    it("does not confuse an environment id containing the separator with a path", () => {
      rememberCheckoutIsRepo(EnvironmentId.make("env"), "a:b", false);
 diff --git a/apps/web/src/components/ChatView.logic.ts b/apps/web/src/components/ChatView.logic.ts
-index 231135d9c..8085a46b3 100644
+index e14d296cd..1aab349aa 100644
 --- a/apps/web/src/components/ChatView.logic.ts
 +++ b/apps/web/src/components/ChatView.logic.ts
-@@ -1252,6 +1252,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
+@@ -1240,6 +1240,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
    );
  }
  
@@ -3782,10 +3797,10 @@ index 000000000..b3453839b
 +  expect(vi.getTimerCount()).toBe(0);
 +});
 diff --git a/apps/web/src/components/device/DeviceStreamView.tsx b/apps/web/src/components/device/DeviceStreamView.tsx
-index e0ae786c7..8544bef56 100644
+index 222423bf2..8791d2303 100644
 --- a/apps/web/src/components/device/DeviceStreamView.tsx
 +++ b/apps/web/src/components/device/DeviceStreamView.tsx
-@@ -378,9 +378,20 @@ export function DeviceStreamView(props: {
+@@ -305,9 +305,20 @@ export function DeviceStreamView(props: {
          )}
          tabIndex={0}
          role="application"
@@ -3806,15 +3821,15 @@ index e0ae786c7..8544bef56 100644
            if (event.metaKey && !["r", "R"].includes(event.key)) return;
            // Let browser paste chords fire the paste event.
            if (
-@@ -393,8 +404,9 @@ export function DeviceStreamView(props: {
-           clientRef.current?.sendKey(event.nativeEvent, "down");
+@@ -320,8 +331,9 @@ export function DeviceStreamView(props: {
+           client?.sendKey(event.nativeEvent, "down");
          }}
          onPaste={(event) => {
 -          if (event.target !== event.currentTarget) return;
 +          if (props.platform !== "android" || event.target !== event.currentTarget) return;
            event.preventDefault();
 +          event.stopPropagation();
-           clientRef.current?.sendText(event.clipboardData.getData("text/plain"));
+           client?.sendText(event.clipboardData.getData("text/plain"));
          }}
          onKeyUp={(event) => {
 diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
@@ -3948,10 +3963,10 @@ index 3aa4a150a..a6571796a 100644
                  {renderTailscaleRow()}
                  {renderWslRow()}
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index 000ae5d47..319b53c20 100644
+index 6ebea8d80..6ec2226b1 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
-@@ -949,6 +949,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+@@ -958,6 +958,14 @@ export const SETTINGS_SEARCH_ITEMS = [
      searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
      localBackendManagementOnly: true,
    },
@@ -4134,7 +4149,7 @@ index 000000000..ba2482567
 +  return result;
 +}
 diff --git a/docs/user/devices.md b/docs/user/devices.md
-index bf372009d..26fb20dfc 100644
+index 6c32f94ee..019d49fb5 100644
 --- a/docs/user/devices.md
 +++ b/docs/user/devices.md
 @@ -54,6 +54,11 @@ to the other screen switches the live display and touch input to that screen.
@@ -4510,10 +4525,10 @@ index 7da96cb3d..421209dc7 100644
      const { client, sockets, sps, events, Decoder, decoders, decodedFrame, drawImage } =
        recoveryFixture("android");
 diff --git a/packages/client-runtime/src/device/stream.ts b/packages/client-runtime/src/device/stream.ts
-index 436ffa4b5..310424b99 100644
+index dc1720725..6c48c0c4e 100644
 --- a/packages/client-runtime/src/device/stream.ts
 +++ b/packages/client-runtime/src/device/stream.ts
-@@ -405,6 +405,7 @@ export function createDeviceStreamClient(
+@@ -404,6 +404,7 @@ export function createDeviceStreamClient(
    let decodedVideoGeneration: number | null = null;
    let iosInputAdmitted = false;
    let iosInputUnavailable = false;
@@ -4521,7 +4536,7 @@ index 436ffa4b5..310424b99 100644
    let timestamp = 0;
    let awaitingKeyframe = true;
    let screen: DeviceScreenSize | null = null;
-@@ -663,10 +664,16 @@ export function createDeviceStreamClient(
+@@ -662,10 +663,16 @@ export function createDeviceStreamClient(
      }
    };
  
@@ -4542,7 +4557,7 @@ index 436ffa4b5..310424b99 100644
    };
  
    const scheduleRetry = (channel: "video" | "input", run: () => void) => {
-@@ -1156,6 +1163,8 @@ export function createDeviceStreamClient(
+@@ -1155,6 +1162,8 @@ export function createDeviceStreamClient(
  
    const connectAndroid = () => {
      if (stopped) return;
@@ -4551,7 +4566,7 @@ index 436ffa4b5..310424b99 100644
      const ws = new WebSocket(wsUrl(`/ws?device=${device}&frame-meta=1`));
      ws.binaryType = "arraybuffer";
      socket = ws;
-@@ -1167,13 +1176,16 @@ export function createDeviceStreamClient(
+@@ -1166,13 +1175,16 @@ export function createDeviceStreamClient(
      ws.onmessage = (event) => {
        if (stopped || socket !== ws) return;
        if (typeof event.data === "string") {
@@ -4571,7 +4586,7 @@ index 436ffa4b5..310424b99 100644
          }
          return;
        }
-@@ -1194,7 +1206,11 @@ export function createDeviceStreamClient(
+@@ -1193,7 +1205,11 @@ export function createDeviceStreamClient(
              if (!isCurrent() || epoch !== decoderEpoch) return;
              configuring = false;
              awaitingKeyframe = true;
@@ -4584,7 +4599,7 @@ index 436ffa4b5..310424b99 100644
            },
          );
          return;
-@@ -1342,9 +1358,20 @@ export function createDeviceStreamClient(
+@@ -1341,9 +1357,20 @@ export function createDeviceStreamClient(
        }
        if (phase !== "down") return;
        if (event.key === "Escape") return send(JSON.stringify({ type: "back" }));
@@ -4609,10 +4624,10 @@ index 436ffa4b5..310424b99 100644
        }
      },
 diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
-index 1a91b8a25..94a13459d 100644
+index b353eca72..1bbd6958c 100644
 --- a/packages/contracts/src/ipc.ts
 +++ b/packages/contracts/src/ipc.ts
-@@ -484,6 +484,7 @@ export interface DesktopServerExposureState {
+@@ -486,6 +486,7 @@ export interface DesktopServerExposureState {
    mode: DesktopServerExposureMode;
    endpointUrl: string | null;
    advertisedHost: string | null;
@@ -4620,7 +4635,7 @@ index 1a91b8a25..94a13459d 100644
    tailscaleServeEnabled: boolean;
    tailscaleServePort: number;
  }
-@@ -492,6 +493,7 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
+@@ -494,6 +495,7 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
    mode: DesktopServerExposureModeSchema,
    endpointUrl: Schema.NullOr(Schema.String),
    advertisedHost: Schema.NullOr(Schema.String),
@@ -4628,7 +4643,7 @@ index 1a91b8a25..94a13459d 100644
    tailscaleServeEnabled: Schema.Boolean,
    tailscaleServePort: Schema.Number,
  });
-@@ -1066,6 +1068,7 @@ export interface DesktopBridge {
+@@ -1070,6 +1072,7 @@ export interface DesktopBridge {
    resolveSshPasswordPrompt: (requestId: string, password: string | null) => Promise<void>;
    getServerExposureState: () => Promise<DesktopServerExposureState>;
    setServerExposureMode: (mode: DesktopServerExposureMode) => Promise<DesktopServerExposureState>;
