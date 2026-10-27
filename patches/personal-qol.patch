@@ -1444,6 +1444,18 @@ index 8468a9538..2ec3b9aa1 100644
    setTailscaleServeEnabled: () => Effect.die("unexpected setTailscaleServeEnabled"),
    getAdvertisedEndpoints: Effect.succeed([]),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
+diff --git a/apps/mobile/package.json b/apps/mobile/package.json
+index e91ec70d0..13d437dc8 100644
+--- a/apps/mobile/package.json
++++ b/apps/mobile/package.json
+@@ -73,6 +73,7 @@
+     "@t3tools/mobile-review-diff-native": "file:./modules/t3-review-diff",
+     "@t3tools/mobile-source-text": "file:./modules/t3-source-text",
+     "@t3tools/mobile-terminal-native": "file:./modules/t3-terminal",
++    "@t3tools/provider-acp-registry": "workspace:*",
+     "@t3tools/shared": "workspace:*",
+     "@tabler/icons-react-native": "^3.44.0",
+     "clsx": "^2.1.1",
 diff --git a/apps/mobile/src/features/agent-awareness/localNotifications.test.ts b/apps/mobile/src/features/agent-awareness/localNotifications.test.ts
 new file mode 100644
 index 000000000..3d1995e38
@@ -2368,10 +2380,10 @@ index 000000000..cb669f07c
 +  );
 +}
 diff --git a/apps/mobile/src/persistence/mobile-preferences.ts b/apps/mobile/src/persistence/mobile-preferences.ts
-index dda531328..24e2aa91b 100644
+index df8e2b079..db3f5bea4 100644
 --- a/apps/mobile/src/persistence/mobile-preferences.ts
 +++ b/apps/mobile/src/persistence/mobile-preferences.ts
-@@ -86,6 +86,9 @@ export interface Preferences {
+@@ -91,6 +91,9 @@ export interface Preferences {
    readonly pullRequestHideTestFiles?: boolean;
    readonly pullRequestMergeMethod?: PullRequestMergeMethod;
    readonly liveActivitiesEnabled?: boolean;
@@ -2381,7 +2393,7 @@ index dda531328..24e2aa91b 100644
    readonly themeId?: MobileThemeId;
    readonly lightThemeId?: MobileThemeId;
    readonly darkThemeId?: MobileThemeId;
-@@ -163,6 +166,8 @@ function sanitizePreferences(parsed: Preferences): Preferences {
+@@ -170,6 +173,8 @@ function sanitizePreferences(parsed: Preferences): Preferences {
      pullRequestHideTestFiles?: boolean;
      pullRequestMergeMethod?: PullRequestMergeMethod;
      liveActivitiesEnabled?: boolean;
@@ -2390,7 +2402,7 @@ index dda531328..24e2aa91b 100644
      themeId?: MobileThemeId;
      lightThemeId?: MobileThemeId;
      darkThemeId?: MobileThemeId;
-@@ -219,6 +224,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
+@@ -228,6 +233,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
    if (typeof parsed.liveActivitiesEnabled === "boolean") {
      preferences.liveActivitiesEnabled = parsed.liveActivitiesEnabled;
    }
@@ -2976,7 +2988,7 @@ index 8831ec98e..4d1984f69 100644
      if (mediaKind === "audio") {
        const filePath = imageSource._tag === "WorkspaceFile" ? imageSource.path : null;
 diff --git a/apps/web/src/components/ChatView.logic.test.ts b/apps/web/src/components/ChatView.logic.test.ts
-index 969a5d2e2..c7b13c62f 100644
+index 363e5db0b..44b0af08c 100644
 --- a/apps/web/src/components/ChatView.logic.test.ts
 +++ b/apps/web/src/components/ChatView.logic.test.ts
 @@ -35,11 +35,14 @@ import { Atom } from "effect/reactivity";
@@ -2995,7 +3007,7 @@ index 969a5d2e2..c7b13c62f 100644
    resolveWorktreeSetupProgress,
    peekRememberedThreadTimeline,
    rememberReadyThreadTimeline,
-@@ -52,6 +55,7 @@ import {
+@@ -51,6 +54,7 @@ import {
    deriveComposerSendState,
    deriveLockedProvider,
    hasServerAcknowledgedLocalDispatch,
@@ -3003,7 +3015,7 @@ index 969a5d2e2..c7b13c62f 100644
    waitForRevertedMessage,
  } from "./ChatView.logic";
  
-@@ -622,6 +626,178 @@ describe("resolveComposerProviderSelection", () => {
+@@ -620,6 +624,178 @@ describe("resolveComposerProviderSelection", () => {
    });
  });
  
@@ -3183,10 +3195,10 @@ index 969a5d2e2..c7b13c62f 100644
    it("does not confuse an environment id containing the separator with a path", () => {
      rememberCheckoutIsRepo(EnvironmentId.make("env"), "a:b", false);
 diff --git a/apps/web/src/components/ChatView.logic.ts b/apps/web/src/components/ChatView.logic.ts
-index 67c10d9df..319d98a4e 100644
+index 0e36a3ef4..306215e5d 100644
 --- a/apps/web/src/components/ChatView.logic.ts
 +++ b/apps/web/src/components/ChatView.logic.ts
-@@ -1203,6 +1203,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
+@@ -1165,6 +1165,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
    );
  }
  
@@ -3837,7 +3849,7 @@ index 000000000..b3453839b
 +  expect(vi.getTimerCount()).toBe(0);
 +});
 diff --git a/apps/web/src/components/device/DeviceStreamView.tsx b/apps/web/src/components/device/DeviceStreamView.tsx
-index 222423bf2..8791d2303 100644
+index e237a4690..5a81575f8 100644
 --- a/apps/web/src/components/device/DeviceStreamView.tsx
 +++ b/apps/web/src/components/device/DeviceStreamView.tsx
 @@ -305,9 +305,20 @@ export function DeviceStreamView(props: {
@@ -4003,10 +4015,10 @@ index daa240cbf..a1a1361ae 100644
                  {renderTailscaleRow()}
                  {renderWslRow()}
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index 1bd8f1bb0..4c1de4f1d 100644
+index 5840566dc..925055f4d 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
-@@ -1020,6 +1020,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+@@ -1014,6 +1014,14 @@ export const SETTINGS_SEARCH_ITEMS = [
      searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
      localBackendManagementOnly: true,
    },
@@ -4737,3 +4749,17 @@ index dfec546fa..3e5df487b 100644
      ...(input.description === undefined ? {} : { description: input.description }),
    };
  }
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index fe5956f3f..c245eeada 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -579,6 +579,9 @@ importers:
+       '@t3tools/mobile-terminal-native':
+         specifier: file:./modules/t3-terminal
+         version: file:apps/mobile/modules/t3-terminal
++      '@t3tools/provider-acp-registry':
++        specifier: workspace:*
++        version: link:../../packages/provider-acp-registry
+       '@t3tools/shared':
+         specifier: workspace:*
+         version: link:../../packages/shared

@@ -27,7 +27,7 @@ stdenvNoCC.mkDerivation {
     fetcherVersion = 4;
     # Unfiltered: filtered fetches skip packages the sandboxed install
     # resolves (observed with the Sep 13 lockfile and @effect/platform-bun).
-    hash = "sha256-VPK/r9/w51gE5RyEacRb4MRszGMuyhLARQd3a+wt+KE=";
+    hash = "sha256-VHkd4zDCPWJk4+YIUG01WJnzmkya2nA3OFqxWQFf9gg=";
   };
 
   pnpmWorkspaces = [
