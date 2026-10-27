@@ -391,7 +391,7 @@ index f53cde3e4..2c1b28d50 100644
 +  );
  });
 diff --git a/apps/desktop/src/backend/DesktopServerExposure.ts b/apps/desktop/src/backend/DesktopServerExposure.ts
-index 8d178c605..bc63ebf6e 100644
+index 8d178c605..29eadec50 100644
 --- a/apps/desktop/src/backend/DesktopServerExposure.ts
 +++ b/apps/desktop/src/backend/DesktopServerExposure.ts
 @@ -45,6 +45,9 @@ interface DesktopAdvertisedEndpointInput {
@@ -419,17 +419,17 @@ index 8d178c605..bc63ebf6e 100644
 +const VIRTUAL_INTERFACE_NAME_PATTERN =
 +  /^(?:bridge\d|docker\d*|br-[0-9a-f]+|virbr\d*|veth\w*|vmnet\d*|vboxnet\d*|VirtualBox.*|VMware.*|vEthernet[\s\w()]*|wg\d*|utun\d*|ipsec\d*|ppp\d*|tun\d+|tap\d+|lo)$/iu;
 +
-+export const isVirtualLanInterfaceName = (name: string): boolean =>
++const isVirtualLanInterfaceName = (name: string): boolean =>
 +  VIRTUAL_INTERFACE_NAME_PATTERN.test(name);
 +
-+export interface LanInterfaceCandidate {
++interface LanInterfaceCandidate {
 +  readonly name: string;
 +  readonly address: string;
 +  readonly virtual: boolean;
 +}
 +
 +/** Returns one usable IPv4 address per interface, with physical adapters first. */
-+export const enumerateLanInterfaces = (
++const enumerateLanInterfaces = (
 +  networkInterfaces: DesktopNetworkInterfaces.NetworkInterfaces,
 +): ReadonlyArray<LanInterfaceCandidate> => {
 +  const physical: LanInterfaceCandidate[] = [];
@@ -1838,7 +1838,7 @@ index ed2092148..388dfe934 100644
    window.addEventListener("pagehide", stop, { once: true });
    post({ type: "input", connected: false });
 diff --git a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
-index 701403f3a..4a0b4e7a0 100644
+index 701403f3a..843484b57 100644
 --- a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 @@ -8,11 +8,12 @@ import * as Notifications from "expo-notifications";
@@ -1868,7 +1868,7 @@ index 701403f3a..4a0b4e7a0 100644
  import { requestAgentNotificationPermission } from "../agent-awareness/notificationPermissions";
  import {
    getAgentAwarenessRegistrationStatus,
-@@ -55,8 +62,116 @@ function useDeviceRegistered(): boolean {
+@@ -55,8 +62,127 @@ function useDeviceRegistered(): boolean {
    return status === "registered";
  }
  
@@ -1895,6 +1895,21 @@ index 701403f3a..4a0b4e7a0 100644
 +  );
 +}
 +
++type DeviceNotificationOutcome = "enabled" | "denied" | "failed";
++
++// Module scope keeps the try/catch out of the component, which the React
++// Compiler bails out of when a try block contains a value block.
++async function enableDeviceNotifications(withOngoing: boolean): Promise<DeviceNotificationOutcome> {
++  try {
++    const permission = await runtime.runPromiseExit(requestAgentNotificationPermission);
++    if (permission._tag !== "Success" || permission.value.type !== "granted") return "denied";
++    await enableLocalAgentNotifications(withOngoing);
++    return "enabled";
++  } catch {
++    return "failed";
++  }
++}
++
 +function LocalAndroidNotificationsSettings() {
 +  const [enabled, setEnabled] = useState(false);
 +  const [ongoing, setOngoing] = useState(false);
@@ -1917,20 +1932,16 @@ index 701403f3a..4a0b4e7a0 100644
 +
 +  const enable = useCallback(async (withOngoing = false) => {
 +    setBusy(true);
-+    try {
-+      const permission = await runtime.runPromiseExit(requestAgentNotificationPermission);
-+      if (permission._tag !== "Success" || permission.value.type !== "granted") {
-+        Dialog.alert("Notifications unavailable", "Notification permission is required.");
-+        return;
-+      }
-+      await enableLocalAgentNotifications(withOngoing);
++    const outcome = await enableDeviceNotifications(withOngoing);
++    if (outcome === "enabled") {
 +      setEnabled(true);
 +      setOngoing(withOngoing);
-+    } catch {
++    } else if (outcome === "denied") {
++      Dialog.alert("Notifications unavailable", "Notification permission is required.");
++    } else {
 +      Dialog.alert("Notifications unavailable", "Could not enable local notifications.");
-+    } finally {
-+      setBusy(false);
 +    }
++    setBusy(false);
 +  }, []);
 +
 +  return (
@@ -1985,7 +1996,7 @@ index 701403f3a..4a0b4e7a0 100644
      return (
        <SettingsScreen title="Notifications">
          <ScrollView
-@@ -89,8 +204,32 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -89,8 +215,32 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    const { savedConnectionsById } = useSavedRemoteConnections();
    const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>("checking");
    const [liveActivityStatus, setLiveActivityStatus] = useState<LiveActivityStatus>("checking");
@@ -2018,7 +2029,7 @@ index 701403f3a..4a0b4e7a0 100644
    const liveActivitiesPreferenceEnabled = AsyncResult.isSuccess(preferencesResult)
      ? preferencesResult.value.liveActivitiesEnabled !== false
      : true;
-@@ -131,7 +270,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -131,7 +281,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
        return;
      }
      if (!isSignedIn) {
@@ -2027,7 +2038,7 @@ index 701403f3a..4a0b4e7a0 100644
        return;
      }
      if (!AsyncResult.isSuccess(preferencesResult)) {
-@@ -146,7 +285,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -146,7 +296,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
      setLiveActivityStatus(
        preferencesResult.value.liveActivitiesEnabled === false ? "disabled" : "enabled",
      );
@@ -2036,7 +2047,7 @@ index 701403f3a..4a0b4e7a0 100644
  
    const requestNotifications = async () => {
      const result = await settleAsyncResult(() =>
-@@ -314,6 +453,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -314,6 +464,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
  
    const handleDeviceNotificationsChange = (enabled: boolean) => {
      if (enabled) {
@@ -2064,7 +2075,7 @@ index 701403f3a..4a0b4e7a0 100644
        if (!isSignedIn) {
          promptSignIn();
          return;
-@@ -322,6 +482,14 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -322,6 +493,14 @@ function ConfiguredSettingsNotificationsRouteScreen() {
        return;
      }
  
@@ -2079,7 +2090,7 @@ index 701403f3a..4a0b4e7a0 100644
      Dialog.alert(
        "Disable notifications",
        "Open system Settings to disable notifications for T3 Code.",
-@@ -373,6 +541,24 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -373,6 +552,24 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    // Both writers settle their own failures, so awaiting them never throws.
    const handleLiveActivitiesChange = async (enabled: boolean) => {
      if (liveActivityWriteInFlight.current) return;
@@ -2104,7 +2115,7 @@ index 701403f3a..4a0b4e7a0 100644
      if (!enabled) {
        liveActivityWriteInFlight.current = true;
        setLiveActivityStatus("linking");
-@@ -414,7 +600,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -414,7 +611,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
              }
              subtitle={agentAwarenessSubtitle}
              value={
@@ -2115,7 +2126,7 @@ index 701403f3a..4a0b4e7a0 100644
              }
              onValueChange={handleDeviceNotificationsChange}
            />
-@@ -438,7 +626,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -438,7 +637,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
              value={
                agentAwarenessPushAvailable &&
                (liveActivityStatus === "enabled" || liveActivityStatus === "linking") &&
@@ -2124,7 +2135,7 @@ index 701403f3a..4a0b4e7a0 100644
              }
              onValueChange={(enabled) => void handleLiveActivitiesChange(enabled)}
            />
-@@ -449,6 +637,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -449,6 +648,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
                onPress={() => void handleLiveActivitiesChange(false)}
              />
            ) : null}
@@ -2135,7 +2146,7 @@ index 701403f3a..4a0b4e7a0 100644
              <SettingsRow
                icon="bolt.circle"
 diff --git a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
-index 25cd506a5..0897e6c64 100644
+index dfb07954a..df5e6a25e 100644
 --- a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
 @@ -22,6 +22,7 @@ import { serverEnvironment } from "../../state/server";
@@ -2156,11 +2167,15 @@ index 25cd506a5..0897e6c64 100644
                          (provider) =>
 diff --git a/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx b/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx
 new file mode 100644
-index 000000000..85ba6c68b
+index 000000000..cb669f07c
 --- /dev/null
 +++ b/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx
-@@ -0,0 +1,156 @@
-+import { ProviderDriverKind, ProviderInstanceId } from "@t3tools/contracts";
+@@ -0,0 +1,196 @@
++import {
++  ProviderDriverKind,
++  ProviderInstanceId,
++  type ProviderInstanceConfig,
++} from "@t3tools/contracts";
 +import { AcpRegistrySettings } from "@t3tools/provider-acp-registry/settings";
 +import * as Schema from "effect/Schema";
 +import { useState } from "react";
@@ -2173,6 +2188,70 @@ index 000000000..85ba6c68b
 +
 +const decodeSettings = Schema.decodeUnknownSync(AcpRegistrySettings);
 +const decodeEnvironment = Schema.decodeUnknownSync(Schema.Record(Schema.String, Schema.String));
++
++// These helpers stay at module scope so the component body has no value blocks
++// inside its try/catch, which the React Compiler cannot yet compile.
++type SaveFields = {
++  readonly id: string;
++  readonly name: string;
++  readonly source: "registry" | "local";
++  readonly agentId: string;
++  readonly command: string;
++  readonly args: string;
++  readonly env: string;
++};
++
++const acpSettingsInput = (
++  existing: ProviderInstanceConfig | undefined,
++  source: "registry" | "local",
++  agentId: string,
++  commandPath: string,
++  args: string,
++) => ({
++  ...(existing?.config && typeof existing.config === "object" ? existing.config : {}),
++  source,
++  agentId,
++  commandPath,
++  commandArgs: JSON.parse(args),
++});
++
++const parseEnvironmentOverrides = (env: string) => decodeEnvironment(JSON.parse(env));
++
++const buildEnvironmentVariables = (
++  existing: ProviderInstanceConfig | undefined,
++  overrides: Record<string, string>,
++) => {
++  const variables = new Map((existing?.environment ?? []).map((entry) => [entry.name, entry]));
++  for (const [name, value] of Object.entries(overrides)) {
++    variables.set(name, { name, value, sensitive: variables.get(name)?.sensitive ?? false });
++  }
++  return [...variables.values()].filter(
++    (entry) => entry.valueRedacted || Object.hasOwn(overrides, entry.name),
++  );
++};
++
++const saveResultMessage = (result: { readonly _tag: string }) =>
++  result._tag === "Success" ? "Saved." : "Could not save custom command.";
++
++const buildProviderInstanceMutation = (input: {
++  readonly existing: ProviderInstanceConfig | undefined;
++  readonly fields: SaveFields;
++}) => {
++  const { existing, fields } = input;
++  return {
++    operation: existing ? ("upsert" as const) : ("create" as const),
++    instanceId: ProviderInstanceId.make(fields.id),
++    instance: {
++      ...existing,
++      driver: ProviderDriverKind.make("acpRegistry"),
++      displayName: fields.name.trim(),
++      config: decodeSettings(
++        acpSettingsInput(existing, fields.source, fields.agentId, fields.command, fields.args),
++      ),
++      environment: buildEnvironmentVariables(existing, parseEnvironmentOverrides(fields.env)),
++    },
++  };
++};
 +
 +export function CustomAcpCommandEditor({ environment }: { readonly environment: SettingsTarget }) {
 +  const instances = environment.serverConfig.settings.providerInstances;
@@ -2255,56 +2334,28 @@ index 000000000..85ba6c68b
 +        disabled={pending || (source === "local" ? !command.trim() : !agentId.trim())}
 +        onPress={() => {
 +          void (async () => {
++            if (existing && existing.driver !== "acpRegistry") {
++              // Same message the generic catch below produced for this branch.
++              setMessage("Check the instance ID, arguments array, and environment object.");
++              return;
++            }
++            setMessage(null);
 +            try {
-+              if (existing && existing.driver !== "acpRegistry")
-+                throw new Error("That ID belongs to another provider.");
-+              const instanceId = ProviderInstanceId.make(id);
-+              const config = decodeSettings({
-+                ...(existing?.config && typeof existing.config === "object" ? existing.config : {}),
-+                source,
-+                agentId,
-+                commandPath: command,
-+                commandArgs: JSON.parse(args),
++              const mutation = buildProviderInstanceMutation({
++                existing,
++                fields: { id, name, source, agentId, command, args, env },
 +              });
-+              const overrides = decodeEnvironment(JSON.parse(env));
-+              const variables = new Map(
-+                (existing?.environment ?? []).map((entry) => [entry.name, entry]),
-+              );
-+              for (const [name, value] of Object.entries(overrides)) {
-+                variables.set(name, {
-+                  name,
-+                  value,
-+                  sensitive: variables.get(name)?.sensitive ?? false,
-+                });
-+              }
-+              const environmentVariables = [...variables.values()].filter(
-+                (entry) => entry.valueRedacted || Object.hasOwn(overrides, entry.name),
-+              );
++              // Pending starts only once the payload decoded, as before.
 +              setPending(true);
-+              setMessage(null);
 +              const result = await save({
 +                environmentId: environment.environmentId,
-+                input: {
-+                  patch: {},
-+                  providerInstanceMutation: {
-+                    operation: existing ? "upsert" : "create",
-+                    instanceId,
-+                    instance: {
-+                      ...existing,
-+                      driver: ProviderDriverKind.make("acpRegistry"),
-+                      displayName: name.trim(),
-+                      config,
-+                      environment: environmentVariables,
-+                    },
-+                  },
-+                },
++                input: { patch: {}, providerInstanceMutation: mutation },
 +              });
-+              setMessage(result._tag === "Success" ? "Saved." : "Could not save custom command.");
++              setMessage(saveResultMessage(result));
 +            } catch {
 +              setMessage("Check the instance ID, arguments array, and environment object.");
-+            } finally {
-+              setPending(false);
 +            }
++            setPending(false);
 +          })();
 +        }}
 +      />
@@ -2754,7 +2805,7 @@ index 3131c84d8..1740ecdfd 100644
      if (
        config === null ||
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index e5691c8cb..018680e09 100644
+index 8831ec98e..4d1984f69 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
 @@ -75,6 +75,7 @@ import React, {
@@ -2791,7 +2842,7 @@ index e5691c8cb..018680e09 100644
    const getFilesystemMetadata = useAtomQueryRunner(filesystemEnvironment.getMetadata, {
      reportFailure: false,
      refresh: true,
-@@ -775,6 +788,91 @@ function useChatMarkdownState({
+@@ -775,6 +788,80 @@ function useChatMarkdownState({
      });
      return metadata._tag === "Success" && metadata.value.entries[0] === null ? match : null;
    };
@@ -2814,8 +2865,9 @@ index e5691c8cb..018680e09 100644
 +    return pickWorkspaceBasenameMatch(name, result.value.entries);
 +  };
 +
-+  // The candidates come from the rendered markdown text, so the search runs here.
-+  // oxlint-disable-next-line t3code/react-effect-budget -- batched basename lookups follow the text, not a handler
++  // Image sources render synchronously, so their bare basenames resolve before
++  // render. File links resolve through findWorkspaceFileMatch when opened.
++  // oxlint-disable-next-line t3code/react-effect-budget -- batched image basename lookups follow the text, not a handler
 +  useEffect(() => {
 +    const scope = `${environmentId}:${cwd}`;
 +    if (workspaceBasenameLookupCache.current.scope !== scope)
@@ -2824,12 +2876,7 @@ index e5691c8cb..018680e09 100644
 +    const imagePaths = [...text.matchAll(/!\[[^\]]*\]\(\s*(?:<([^>\n]+)>|([^\s)]+))/g)].map(
 +      (match) => match[1] ?? match[2] ?? "",
 +    );
-+    const candidates = collectWorkspaceBasenameCandidates([
-+      ...[...markdownFileLinkMetaByHref.values(), ...inlineCodeFileLinkMetaByText.values()].flatMap(
-+        (meta) => (meta.workspaceRelativePath ? [meta.workspaceRelativePath] : []),
-+      ),
-+      ...imagePaths,
-+    ]);
++    const candidates = collectWorkspaceBasenameCandidates(imagePaths);
 +    let cancelled = false;
 +    void Promise.all(
 +      [...candidates].map(
@@ -2859,14 +2906,7 @@ index e5691c8cb..018680e09 100644
 +    return () => {
 +      cancelled = true;
 +    };
-+  }, [
-+    cwd,
-+    environmentId,
-+    inlineCodeFileLinkMetaByText,
-+    resolveWorkspaceBasenamePath,
-+    markdownFileLinkMetaByHref,
-+    text,
-+  ]);
++  }, [cwd, environmentId, resolveWorkspaceBasenamePath, text]);
 +  const currentBasenamePaths =
 +    cwd && environmentId !== null && workspaceBasenamePaths.scope === `${environmentId}:${cwd}`
 +      ? workspaceBasenamePaths.paths
@@ -2883,7 +2923,7 @@ index e5691c8cb..018680e09 100644
    const openFileInPanel = (fileLinkMeta: MarkdownFileLinkMeta, panelPath: string) => {
      if (!threadRef) return;
      // Every open supersedes pending lookups, including synchronous opens.
-@@ -797,10 +895,11 @@ function useChatMarkdownState({
+@@ -797,10 +884,11 @@ function useChatMarkdownState({
      })();
    };
    const fileLinkChip = (
@@ -2896,7 +2936,7 @@ index e5691c8cb..018680e09 100644
      const resolveHostPath = () =>
        resolveMarkdownFileHostPath({
          meta: fileLinkMeta,
-@@ -906,6 +1005,7 @@ function useChatMarkdownState({
+@@ -906,6 +994,7 @@ function useChatMarkdownState({
      skills,
      threadRef,
      updateThreadPullRequestLink,
@@ -2904,7 +2944,7 @@ index e5691c8cb..018680e09 100644
    };
    return {
      componentState,
-@@ -940,6 +1040,9 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
+@@ -940,6 +1029,9 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
    };
  }
  
@@ -2914,7 +2954,7 @@ index e5691c8cb..018680e09 100644
  const CHAT_MARKDOWN_COMPONENTS = {
    h1: markdownHeadingRenderer(1),
    h2: markdownHeadingRenderer(2),
-@@ -1348,6 +1451,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1348,6 +1440,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
        workspaceMutationId,
        renderContextReference,
        fileLinkChip,
@@ -2922,7 +2962,7 @@ index e5691c8cb..018680e09 100644
      } = use(ChatMarkdownRendererContext);
      const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
      const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
-@@ -1372,7 +1476,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1372,7 +1465,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
      const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
      const { className, style: _style, width, height, ...imageProps } = props;
      const authoredSizeStyle = authoredImageSizeStyle(width, height);
@@ -2936,7 +2976,7 @@ index e5691c8cb..018680e09 100644
      if (mediaKind === "audio") {
        const filePath = imageSource._tag === "WorkspaceFile" ? imageSource.path : null;
 diff --git a/apps/web/src/components/ChatView.logic.test.ts b/apps/web/src/components/ChatView.logic.test.ts
-index 426818dba..52ff7b77e 100644
+index 969a5d2e2..c7b13c62f 100644
 --- a/apps/web/src/components/ChatView.logic.test.ts
 +++ b/apps/web/src/components/ChatView.logic.test.ts
 @@ -35,11 +35,14 @@ import { Atom } from "effect/reactivity";
@@ -2955,15 +2995,15 @@ index 426818dba..52ff7b77e 100644
    resolveWorktreeSetupProgress,
    peekRememberedThreadTimeline,
    rememberReadyThreadTimeline,
-@@ -53,6 +56,7 @@ import {
+@@ -52,6 +55,7 @@ import {
+   deriveComposerSendState,
    deriveLockedProvider,
    hasServerAcknowledgedLocalDispatch,
-   resolveDraftPromotionNavigationTarget,
 +  shouldRefocusComposerOnWindowFocus,
    waitForRevertedMessage,
  } from "./ChatView.logic";
  
-@@ -668,6 +672,178 @@ describe("resolveComposerProviderSelection", () => {
+@@ -622,6 +626,178 @@ describe("resolveComposerProviderSelection", () => {
    });
  });
  
@@ -3143,10 +3183,10 @@ index 426818dba..52ff7b77e 100644
    it("does not confuse an environment id containing the separator with a path", () => {
      rememberCheckoutIsRepo(EnvironmentId.make("env"), "a:b", false);
 diff --git a/apps/web/src/components/ChatView.logic.ts b/apps/web/src/components/ChatView.logic.ts
-index e14d296cd..1aab349aa 100644
+index 67c10d9df..319d98a4e 100644
 --- a/apps/web/src/components/ChatView.logic.ts
 +++ b/apps/web/src/components/ChatView.logic.ts
-@@ -1240,6 +1240,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
+@@ -1203,6 +1203,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
    );
  }
  
@@ -3201,7 +3241,7 @@ index 000000000..d987861c3
 +  );
 +}
 diff --git a/apps/web/src/components/chat/V2ItemInspector.tsx b/apps/web/src/components/chat/V2ItemInspector.tsx
-index 5e8b658be..c64ee3262 100644
+index 8df6eeb24..4da1355e8 100644
 --- a/apps/web/src/components/chat/V2ItemInspector.tsx
 +++ b/apps/web/src/components/chat/V2ItemInspector.tsx
 @@ -14,7 +14,7 @@ import {
@@ -3833,10 +3873,10 @@ index 222423bf2..8791d2303 100644
          }}
          onKeyUp={(event) => {
 diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
-index 3aa4a150a..a6571796a 100644
+index daa240cbf..a1a1361ae 100644
 --- a/apps/web/src/components/settings/ConnectionsSettings.tsx
 +++ b/apps/web/src/components/settings/ConnectionsSettings.tsx
-@@ -248,6 +248,7 @@ export function ConnectionsSettings() {
+@@ -249,6 +249,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
    const [removingSavedEnvironmentId, setRemovingSavedEnvironmentId] =
      useState<EnvironmentId | null>(null);
    const [isUpdatingDesktopServerExposure, setIsUpdatingDesktopServerExposure] = useState(false);
@@ -3844,7 +3884,7 @@ index 3aa4a150a..a6571796a 100644
    const [isUpdatingTailscaleServe, setIsUpdatingTailscaleServe] = useState(false);
    const [isUpdatingWslBackend, setIsUpdatingWslBackend] = useState(false);
    const [desktopWslMutationError, setDesktopWslMutationError] = useState<string | null>(null);
-@@ -632,6 +633,41 @@ export function ConnectionsSettings() {
+@@ -634,6 +635,41 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
    const handleSetDefaultAdvertisedEndpoint = (endpoint: AdvertisedEndpoint) => {
      setDefaultAdvertisedEndpointKey(endpointDefaultPreferenceKey(endpoint));
    };
@@ -3886,7 +3926,7 @@ index 3aa4a150a..a6571796a 100644
  
    const renderNetworkAccessToggle = () => (
      <Switch
-@@ -987,6 +1023,67 @@ export function ConnectionsSettings() {
+@@ -989,6 +1025,67 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
        control={renderNetworkAccessToggle()}
      />
    );
@@ -3954,7 +3994,7 @@ index 3aa4a150a..a6571796a 100644
    const renderDisabledNetworkAccessRow = () => (
      <SettingsRow
        title={searchableSetting("network-access").title}
-@@ -1119,6 +1216,7 @@ export function ConnectionsSettings() {
+@@ -1120,6 +1217,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
              {canManageLocalBackend && desktopBridge ? (
                <>
                  {renderNetworkAccessRow()}
@@ -3963,10 +4003,10 @@ index 3aa4a150a..a6571796a 100644
                  {renderTailscaleRow()}
                  {renderWslRow()}
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index 6ebea8d80..6ec2226b1 100644
+index 1bd8f1bb0..4c1de4f1d 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
-@@ -958,6 +958,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+@@ -1020,6 +1020,14 @@ export const SETTINGS_SEARCH_ITEMS = [
      searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
      localBackendManagementOnly: true,
    },
@@ -4149,7 +4189,7 @@ index 000000000..ba2482567
 +  return result;
 +}
 diff --git a/docs/user/devices.md b/docs/user/devices.md
-index 6c32f94ee..019d49fb5 100644
+index 42c0db4b2..7850ebbfc 100644
 --- a/docs/user/devices.md
 +++ b/docs/user/devices.md
 @@ -54,6 +54,11 @@ to the other screen switches the live display and touch input to that screen.
