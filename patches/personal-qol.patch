@@ -705,10 +705,10 @@ index 8d178c605..29eadec50 100644
      getAdvertisedEndpoints,
    });
 diff --git a/apps/desktop/src/ipc/DesktopIpcHandlers.ts b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
-index 2d67aa56e..290ce9c7e 100644
+index 35333ac3d..389ac08c2 100644
 --- a/apps/desktop/src/ipc/DesktopIpcHandlers.ts
 +++ b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
-@@ -16,6 +16,7 @@ import {
+@@ -12,6 +12,7 @@ import {
  import {
    getAdvertisedEndpoints,
    getServerExposureState,
@@ -716,7 +716,7 @@ index 2d67aa56e..290ce9c7e 100644
    setServerExposureMode,
    setTailscaleServeEnabled,
  } from "./methods/serverExposure.ts";
-@@ -134,6 +135,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
+@@ -127,6 +128,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
  
    yield* ipc.handle(getServerExposureState);
    yield* ipc.handle(setServerExposureMode);
@@ -725,10 +725,10 @@ index 2d67aa56e..290ce9c7e 100644
    yield* ipc.handle(getAdvertisedEndpoints);
  
 diff --git a/apps/desktop/src/ipc/channels.ts b/apps/desktop/src/ipc/channels.ts
-index 9b11a2283..08d645d9d 100644
+index bba4f6449..2fcb0fa49 100644
 --- a/apps/desktop/src/ipc/channels.ts
 +++ b/apps/desktop/src/ipc/channels.ts
-@@ -67,6 +67,7 @@ export const ISSUE_SSH_WEBSOCKET_TOKEN_CHANNEL = "desktop:issue-ssh-websocket-to
+@@ -65,6 +65,7 @@ export const FETCH_SSH_SESSION_STATE_CHANNEL = "desktop:fetch-ssh-session-state"
  export const SSH_PASSWORD_PROMPT_CHANNEL = "desktop:ssh-password-prompt";
  export const RESOLVE_SSH_PASSWORD_PROMPT_CHANNEL = "desktop:resolve-ssh-password-prompt";
  export const GET_SERVER_EXPOSURE_STATE_CHANNEL = "desktop:get-server-exposure-state";
@@ -761,10 +761,10 @@ index 9a9ce7689..b69c1e76c 100644
    channel: IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL,
    payload: SetTailscaleServeEnabledInput,
 diff --git a/apps/desktop/src/preload.ts b/apps/desktop/src/preload.ts
-index 4d57b30e2..0bbf9054c 100644
+index a3e1e711c..ed5bdd71e 100644
 --- a/apps/desktop/src/preload.ts
 +++ b/apps/desktop/src/preload.ts
-@@ -178,6 +178,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
+@@ -174,6 +174,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
    getServerExposureState: () => ipcRenderer.invoke(IpcChannels.GET_SERVER_EXPOSURE_STATE_CHANNEL),
    setServerExposureMode: (mode) =>
      ipcRenderer.invoke(IpcChannels.SET_SERVER_EXPOSURE_MODE_CHANNEL, mode),
@@ -1445,10 +1445,10 @@ index 8468a9538..2ec3b9aa1 100644
    getAdvertisedEndpoints: Effect.succeed([]),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 diff --git a/apps/mobile/package.json b/apps/mobile/package.json
-index e91ec70d0..13d437dc8 100644
+index f5c1c6521..9223b0d94 100644
 --- a/apps/mobile/package.json
 +++ b/apps/mobile/package.json
-@@ -73,6 +73,7 @@
+@@ -74,6 +74,7 @@
      "@t3tools/mobile-review-diff-native": "file:./modules/t3-review-diff",
      "@t3tools/mobile-source-text": "file:./modules/t3-source-text",
      "@t3tools/mobile-terminal-native": "file:./modules/t3-terminal",
@@ -1646,7 +1646,7 @@ index 000000000..4b062e0d9
 +  );
 +}
 diff --git a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
-index 9a88e1863..cdfc1e26a 100644
+index fc24d180a..be2b63ba2 100644
 --- a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 +++ b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 @@ -3,6 +3,7 @@ import {
@@ -1657,7 +1657,7 @@ index 9a88e1863..cdfc1e26a 100644
  import Constants from "expo-constants";
  import * as Notifications from "expo-notifications";
  import * as Effect from "effect/Effect";
-@@ -188,6 +189,7 @@ export function setAgentAwarenessRelayTokenProvider(
+@@ -185,6 +186,7 @@ export function setAgentAwarenessRelayTokenProvider(
    relayTokenProviderIdentity = provider ? (identity ?? null) : null;
    if (!provider) {
      clearAndroidAgentNotifications();
@@ -1850,16 +1850,16 @@ index ed2092148..388dfe934 100644
    window.addEventListener("pagehide", stop, { once: true });
    post({ type: "input", connected: false });
 diff --git a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
-index 701403f3a..843484b57 100644
+index 4aa5cc4c7..f421d7deb 100644
 --- a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 @@ -8,11 +8,12 @@ import * as Notifications from "expo-notifications";
  import { useNavigation } from "@react-navigation/native";
  import * as Effect from "effect/Effect";
  import { AsyncResult } from "effect/reactivity";
--import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+-import { useRef, useState, useSyncExternalStore } from "react";
 +import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
- import { AppState, Linking, Platform } from "react-native";
+ import { Linking, Platform } from "react-native";
  import { useSafeAreaInsets } from "react-native-safe-area-context";
  
  import { AppText as Text } from "../../components/ui/AppText";
@@ -1880,7 +1880,19 @@ index 701403f3a..843484b57 100644
  import { requestAgentNotificationPermission } from "../agent-awareness/notificationPermissions";
  import {
    getAgentAwarenessRegistrationStatus,
-@@ -55,8 +62,127 @@ function useDeviceRegistered(): boolean {
+@@ -71,9 +78,10 @@ function liveActivityStatusFrom(
+   isLoaded: boolean,
+   isSignedIn: boolean | undefined,
+   preferencesResult: AsyncResult.AsyncResult<{ readonly liveActivitiesEnabled?: boolean }, unknown>,
++  localOngoingEnabled: boolean,
+ ): LiveActivityStatus {
+   if (!isLoaded) return "checking";
+-  if (!isSignedIn) return "signed-out";
++  if (!isSignedIn) return localOngoingEnabled ? "enabled" : "signed-out";
+   if (AsyncResult.isFailure(preferencesResult)) return "enabled";
+   if (!AsyncResult.isSuccess(preferencesResult)) return "checking";
+   return preferencesResult.value.liveActivitiesEnabled === false ? "disabled" : "enabled";
+@@ -88,8 +96,127 @@ function useDeviceRegistered(): boolean {
    return status === "registered";
  }
  
@@ -2008,10 +2020,10 @@ index 701403f3a..843484b57 100644
      return (
        <SettingsScreen title="Notifications">
          <ScrollView
-@@ -89,8 +215,32 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -122,6 +249,30 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    const { savedConnectionsById } = useSavedRemoteConnections();
-   const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>("checking");
-   const [liveActivityStatus, setLiveActivityStatus] = useState<LiveActivityStatus>("checking");
+   const notificationStatus = useAtomValue(notificationStatusAtom);
+   const setNotificationStatus = useAtomSet(notificationStatusAtom);
 +  // The atom mirrors the persisted preferences, so the handlers below only mark
 +  // which keys they wrote.
 +  const [localNotificationOverrides, setLocalNotificationOverrides] = useState<{
@@ -2019,8 +2031,6 @@ index 701403f3a..843484b57 100644
 +    enabled?: boolean;
 +    ongoing?: boolean;
 +  }>({ isSignedIn: null });
-   const liveActivityWriteInFlight = useRef(false);
-   const deviceRegistered = useDeviceRegistered();
 +  // Local notifications only apply to a signed-out Android device, so an auth
 +  // change drops earlier toggle overrides and falls back to the stored keys.
 +  if (localNotificationOverrides.isSignedIn !== isSignedIn) {
@@ -2038,28 +2048,19 @@ index 701403f3a..843484b57 100644
 +      Platform.OS === "android" &&
 +      AsyncResult.isSuccess(preferencesResult) &&
 +      preferencesResult.value.localNotificationsOngoing === true);
-   const liveActivitiesPreferenceEnabled = AsyncResult.isSuccess(preferencesResult)
-     ? preferencesResult.value.liveActivitiesEnabled !== false
-     : true;
-@@ -131,7 +281,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
-       return;
-     }
-     if (!isSignedIn) {
--      setLiveActivityStatus("signed-out");
-+      setLiveActivityStatus(localOngoingEnabled ? "enabled" : "signed-out");
-       return;
-     }
-     if (!AsyncResult.isSuccess(preferencesResult)) {
-@@ -146,7 +296,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
-     setLiveActivityStatus(
-       preferencesResult.value.liveActivitiesEnabled === false ? "disabled" : "enabled",
-     );
--  }, [isLoaded, isSignedIn, preferencesResult]);
-+  }, [isLoaded, isSignedIn, localOngoingEnabled, preferencesResult]);
- 
-   const requestNotifications = async () => {
-     const result = await settleAsyncResult(() =>
-@@ -314,6 +464,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+   // A write in progress or a failed one shows its own status until the auth or
+   // preference state it was based on changes.
+   const [liveActivityOverride, setLiveActivityOverride] = useState<{
+@@ -135,7 +286,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+     liveActivityOverride.basis.isSignedIn === isSignedIn &&
+     liveActivityOverride.basis.preferencesResult === preferencesResult
+       ? liveActivityOverride.status
+-      : liveActivityStatusFrom(isLoaded, isSignedIn, preferencesResult);
++      : liveActivityStatusFrom(isLoaded, isSignedIn, preferencesResult, localOngoingEnabled);
+   const setLiveActivityStatus = (status: LiveActivityStatus) =>
+     setLiveActivityOverride({ status, basis: liveActivityBasis });
+   const liveActivityWriteInFlight = useRef(false);
+@@ -316,6 +467,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
  
    const handleDeviceNotificationsChange = (enabled: boolean) => {
      if (enabled) {
@@ -2087,7 +2088,7 @@ index 701403f3a..843484b57 100644
        if (!isSignedIn) {
          promptSignIn();
          return;
-@@ -322,6 +493,14 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -324,6 +496,14 @@ function ConfiguredSettingsNotificationsRouteScreen() {
        return;
      }
  
@@ -2102,7 +2103,7 @@ index 701403f3a..843484b57 100644
      Dialog.alert(
        "Disable notifications",
        "Open system Settings to disable notifications for T3 Code.",
-@@ -373,6 +552,24 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -375,6 +555,24 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    // Both writers settle their own failures, so awaiting them never throws.
    const handleLiveActivitiesChange = async (enabled: boolean) => {
      if (liveActivityWriteInFlight.current) return;
@@ -2127,7 +2128,7 @@ index 701403f3a..843484b57 100644
      if (!enabled) {
        liveActivityWriteInFlight.current = true;
        setLiveActivityStatus("linking");
-@@ -414,7 +611,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -416,7 +614,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
              }
              subtitle={agentAwarenessSubtitle}
              value={
@@ -2138,7 +2139,7 @@ index 701403f3a..843484b57 100644
              }
              onValueChange={handleDeviceNotificationsChange}
            />
-@@ -438,7 +637,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -440,7 +640,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
              value={
                agentAwarenessPushAvailable &&
                (liveActivityStatus === "enabled" || liveActivityStatus === "linking") &&
@@ -2147,7 +2148,7 @@ index 701403f3a..843484b57 100644
              }
              onValueChange={(enabled) => void handleLiveActivitiesChange(enabled)}
            />
-@@ -449,6 +648,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -451,6 +651,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
                onPress={() => void handleLiveActivitiesChange(false)}
              />
            ) : null}
@@ -2158,25 +2159,25 @@ index 701403f3a..843484b57 100644
              <SettingsRow
                icon="bolt.circle"
 diff --git a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
-index dfb07954a..df5e6a25e 100644
+index 6dfb8745e..4ed804b4c 100644
 --- a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
-@@ -22,6 +22,7 @@ import { serverEnvironment } from "../../state/server";
+@@ -27,6 +27,7 @@ import { serverEnvironment } from "../../state/server";
  import { useEnvironmentsWithScope } from "../../state/session";
  import { useAtomCommand } from "../../state/use-atom-command";
- import { SettingsActionRow } from "./components/SettingsActionRow";
+ import { ListActionRow as SettingsActionRow } from "../../components/ui/ListActionRow";
 +import { CustomAcpCommandEditor } from "./components/CustomAcpCommandEditor";
  import {
    AndroidSettingsEnvironmentFilter,
    SettingsEnvironmentFilterHeader,
-@@ -59,6 +60,7 @@ export function SettingsProviderAccountsRouteScreen() {
+@@ -64,6 +65,7 @@ export function SettingsProviderAccountsRouteScreen() {
                    </View>
                  ) : (
                    <>
 +                    <CustomAcpCommandEditor environment={environment} />
                      {(providersByEnvironment.get(environment.environmentId) ?? [])
-                       .filter(
-                         (provider) =>
+                       .filter(canManageProvider)
+                       .map((provider, index) => (
 diff --git a/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx b/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx
 new file mode 100644
 index 000000000..cb669f07c
@@ -2380,10 +2381,10 @@ index 000000000..cb669f07c
 +  );
 +}
 diff --git a/apps/mobile/src/persistence/mobile-preferences.ts b/apps/mobile/src/persistence/mobile-preferences.ts
-index df8e2b079..db3f5bea4 100644
+index 43ac75e18..39096ef84 100644
 --- a/apps/mobile/src/persistence/mobile-preferences.ts
 +++ b/apps/mobile/src/persistence/mobile-preferences.ts
-@@ -91,6 +91,9 @@ export interface Preferences {
+@@ -92,6 +92,9 @@ export interface Preferences {
    readonly pullRequestHideTestFiles?: boolean;
    readonly pullRequestMergeMethod?: PullRequestMergeMethod;
    readonly liveActivitiesEnabled?: boolean;
@@ -2393,7 +2394,7 @@ index df8e2b079..db3f5bea4 100644
    readonly themeId?: MobileThemeId;
    readonly lightThemeId?: MobileThemeId;
    readonly darkThemeId?: MobileThemeId;
-@@ -170,6 +173,8 @@ function sanitizePreferences(parsed: Preferences): Preferences {
+@@ -174,6 +177,8 @@ function sanitizePreferences(parsed: Preferences): Preferences {
      pullRequestHideTestFiles?: boolean;
      pullRequestMergeMethod?: PullRequestMergeMethod;
      liveActivitiesEnabled?: boolean;
@@ -2402,7 +2403,7 @@ index df8e2b079..db3f5bea4 100644
      themeId?: MobileThemeId;
      lightThemeId?: MobileThemeId;
      darkThemeId?: MobileThemeId;
-@@ -228,6 +233,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
+@@ -234,6 +239,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
    if (typeof parsed.liveActivitiesEnabled === "boolean") {
      preferences.liveActivitiesEnabled = parsed.liveActivitiesEnabled;
    }
@@ -2558,10 +2559,10 @@ index 39643ff38..eb7ab14df 100644
    "skips unsupported baseline and turn checkpoints without swallowing capture failures",
    () =>
 diff --git a/apps/server/src/orchestration-v2/CheckpointService.ts b/apps/server/src/orchestration-v2/CheckpointService.ts
-index 529ea60d3..eb6e4650d 100644
+index 2747fcefa..0529c76ba 100644
 --- a/apps/server/src/orchestration-v2/CheckpointService.ts
 +++ b/apps/server/src/orchestration-v2/CheckpointService.ts
-@@ -257,8 +257,11 @@ export const layer: Layer.Layer<
+@@ -241,8 +241,11 @@ export const layer: Layer.Layer<
      const withWorkspaceLock = <A, E, R>(cwd: string, effect: Effect.Effect<A, E, R>) =>
        workspaceLocks.withLock(cwd, effect);
  
@@ -2572,8 +2573,8 @@ index 529ea60d3..eb6e4650d 100644
 +        ? Effect.succeed(false)
 +        : checkpointStore.isGitRepository(cwd).pipe(Effect.orElseSucceed(() => false));
  
-     const ensureScope: CheckpointServiceV2Shape["ensureScope"] = (scope) => Effect.succeed(scope);
- 
+     const captureBaseline: CheckpointServiceV2Shape["captureBaseline"] = (input) =>
+       withWorkspaceLock(
 diff --git a/apps/server/src/provider/acp/MakiCustom.integration.test.ts b/apps/server/src/provider/acp/MakiCustom.integration.test.ts
 new file mode 100644
 index 000000000..d848a2bb6
@@ -2817,10 +2818,10 @@ index 3131c84d8..1740ecdfd 100644
      if (
        config === null ||
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index 8831ec98e..4d1984f69 100644
+index 32f15bcf5..f5314c754 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
-@@ -75,6 +75,7 @@ import React, {
+@@ -76,6 +76,7 @@ import React, {
    type ClipboardEvent as ReactClipboardEvent,
    use,
    memo,
@@ -2828,7 +2829,7 @@ index 8831ec98e..4d1984f69 100644
    useLayoutEffect,
    useRef,
    useState,
-@@ -163,6 +164,10 @@ import { useAtomCommand } from "../state/use-atom-command";
+@@ -164,6 +165,10 @@ import { useAtomCommand } from "../state/use-atom-command";
  import { useAtomQueryRunner } from "../state/use-atom-query-runner";
  import { projectEnvironment } from "../state/projects";
  import { filesystemEnvironment } from "../state/filesystem";
@@ -2839,7 +2840,7 @@ index 8831ec98e..4d1984f69 100644
  import {
    claimWorkspaceBasenameLookup,
    needsWorkspaceBasenameLookup,
-@@ -491,6 +496,14 @@ function useChatMarkdownState({
+@@ -493,6 +498,14 @@ function useChatMarkdownState({
    const searchProjectEntries = useAtomQueryRunner(projectEnvironment.searchEntries, {
      reportFailure: false,
    });
@@ -2854,7 +2855,7 @@ index 8831ec98e..4d1984f69 100644
    const getFilesystemMetadata = useAtomQueryRunner(filesystemEnvironment.getMetadata, {
      reportFailure: false,
      refresh: true,
-@@ -775,6 +788,80 @@ function useChatMarkdownState({
+@@ -777,6 +790,80 @@ function useChatMarkdownState({
      });
      return metadata._tag === "Success" && metadata.value.entries[0] === null ? match : null;
    };
@@ -2935,7 +2936,7 @@ index 8831ec98e..4d1984f69 100644
    const openFileInPanel = (fileLinkMeta: MarkdownFileLinkMeta, panelPath: string) => {
      if (!threadRef) return;
      // Every open supersedes pending lookups, including synchronous opens.
-@@ -797,10 +884,11 @@ function useChatMarkdownState({
+@@ -799,10 +886,11 @@ function useChatMarkdownState({
      })();
    };
    const fileLinkChip = (
@@ -2948,7 +2949,7 @@ index 8831ec98e..4d1984f69 100644
      const resolveHostPath = () =>
        resolveMarkdownFileHostPath({
          meta: fileLinkMeta,
-@@ -906,6 +994,7 @@ function useChatMarkdownState({
+@@ -908,6 +996,7 @@ function useChatMarkdownState({
      skills,
      threadRef,
      updateThreadPullRequestLink,
@@ -2956,7 +2957,7 @@ index 8831ec98e..4d1984f69 100644
    };
    return {
      componentState,
-@@ -940,6 +1029,9 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
+@@ -942,6 +1031,9 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
    };
  }
  
@@ -2966,7 +2967,7 @@ index 8831ec98e..4d1984f69 100644
  const CHAT_MARKDOWN_COMPONENTS = {
    h1: markdownHeadingRenderer(1),
    h2: markdownHeadingRenderer(2),
-@@ -1348,6 +1440,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1352,6 +1444,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
        workspaceMutationId,
        renderContextReference,
        fileLinkChip,
@@ -2974,7 +2975,7 @@ index 8831ec98e..4d1984f69 100644
      } = use(ChatMarkdownRendererContext);
      const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
      const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
-@@ -1372,7 +1465,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1376,7 +1469,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
      const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
      const { className, style: _style, width, height, ...imageProps } = props;
      const authoredSizeStyle = authoredImageSizeStyle(width, height);
@@ -2988,10 +2989,10 @@ index 8831ec98e..4d1984f69 100644
      if (mediaKind === "audio") {
        const filePath = imageSource._tag === "WorkspaceFile" ? imageSource.path : null;
 diff --git a/apps/web/src/components/ChatView.logic.test.ts b/apps/web/src/components/ChatView.logic.test.ts
-index 363e5db0b..44b0af08c 100644
+index 330489921..30e2af1c1 100644
 --- a/apps/web/src/components/ChatView.logic.test.ts
 +++ b/apps/web/src/components/ChatView.logic.test.ts
-@@ -35,11 +35,14 @@ import { Atom } from "effect/reactivity";
+@@ -34,11 +34,14 @@ import { Atom } from "effect/reactivity";
  import { appAtomRegistry } from "../rpc/atomRegistry";
  import { environmentThreadDetails } from "../state/threads";
  
@@ -3007,7 +3008,7 @@ index 363e5db0b..44b0af08c 100644
    resolveWorktreeSetupProgress,
    peekRememberedThreadTimeline,
    rememberReadyThreadTimeline,
-@@ -51,6 +54,7 @@ import {
+@@ -50,6 +53,7 @@ import {
    deriveComposerSendState,
    deriveLockedProvider,
    hasServerAcknowledgedLocalDispatch,
@@ -3015,7 +3016,7 @@ index 363e5db0b..44b0af08c 100644
    waitForRevertedMessage,
  } from "./ChatView.logic";
  
-@@ -620,6 +624,178 @@ describe("resolveComposerProviderSelection", () => {
+@@ -619,6 +623,178 @@ describe("resolveComposerProviderSelection", () => {
    });
  });
  
@@ -3194,19 +3195,6 @@ index 363e5db0b..44b0af08c 100644
  describe("checkout Git memory", () => {
    it("does not confuse an environment id containing the separator with a path", () => {
      rememberCheckoutIsRepo(EnvironmentId.make("env"), "a:b", false);
-diff --git a/apps/web/src/components/ChatView.logic.ts b/apps/web/src/components/ChatView.logic.ts
-index 0e36a3ef4..306215e5d 100644
---- a/apps/web/src/components/ChatView.logic.ts
-+++ b/apps/web/src/components/ChatView.logic.ts
-@@ -1165,6 +1165,8 @@ export function hasServerAcknowledgedLocalDispatch(input: {
-   );
- }
- 
-+// Returning to the window should focus the composer unless a text field, terminal, device
-+// screen, dialog, or popup owns focus. A plain button outside those yields to the composer.
- export function shouldRefocusComposerOnWindowFocus(
-   activeElement:
-     | (Pick<Element, "tagName" | "closest" | "getAttribute"> & { isContentEditable?: boolean })
 diff --git a/apps/web/src/components/chat/V2FileChangeDiffView.tsx b/apps/web/src/components/chat/V2FileChangeDiffView.tsx
 new file mode 100644
 index 000000000..d987861c3
@@ -3253,19 +3241,19 @@ index 000000000..d987861c3
 +  );
 +}
 diff --git a/apps/web/src/components/chat/V2ItemInspector.tsx b/apps/web/src/components/chat/V2ItemInspector.tsx
-index 8df6eeb24..4da1355e8 100644
+index 958a56077..274f8e3ba 100644
 --- a/apps/web/src/components/chat/V2ItemInspector.tsx
 +++ b/apps/web/src/components/chat/V2ItemInspector.tsx
-@@ -14,7 +14,7 @@ import {
+@@ -9,7 +9,7 @@ import {
  import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
  import { isJavaScriptReplTool } from "@t3tools/shared/toolActivity";
- import { ExternalLinkIcon, GitBranchIcon, RotateCcwIcon } from "lucide-react";
+ import { ExternalLinkIcon } from "lucide-react";
 -import { memo, type ReactNode, Suspense, use } from "react";
 +import { lazy, memo, type ReactNode, Suspense, use, useState } from "react";
  
  import { useRenderedAppearance } from "../../hooks/useTheme";
  import { cn } from "../../lib/utils";
-@@ -33,6 +33,78 @@ import type { ExpandedImagePreview } from "./ExpandedImagePreview";
+@@ -27,6 +27,78 @@ import type { ExpandedImagePreview } from "./ExpandedImagePreview";
  import { ShellCommandBlock } from "./ShellCommandBlock";
  import type { TurnItemSource } from "./timelineRowContext";
  
@@ -3344,7 +3332,7 @@ index 8df6eeb24..4da1355e8 100644
  interface V2ItemInspectorProps {
    readonly projectedItem: OrchestrationV2ProjectedTurnItem;
    readonly environmentId: EnvironmentId;
-@@ -294,44 +366,12 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
+@@ -278,44 +350,12 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
        ) : null}
  
        {item.type === "file_change" ? (
@@ -3412,7 +3400,7 @@ index 9f791f944..36f164827 100644
  }
  
 diff --git a/apps/web/src/components/chat/useChatShortcuts.ts b/apps/web/src/components/chat/useChatShortcuts.ts
-index 6e4241ec6..3578d86ca 100644
+index 7e90fc957..738f78125 100644
 --- a/apps/web/src/components/chat/useChatShortcuts.ts
 +++ b/apps/web/src/components/chat/useChatShortcuts.ts
 @@ -10,7 +10,7 @@ import {
@@ -3885,10 +3873,10 @@ index e237a4690..5a81575f8 100644
          }}
          onKeyUp={(event) => {
 diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
-index daa240cbf..a1a1361ae 100644
+index 502dc8c6a..0d7b1d816 100644
 --- a/apps/web/src/components/settings/ConnectionsSettings.tsx
 +++ b/apps/web/src/components/settings/ConnectionsSettings.tsx
-@@ -249,6 +249,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
+@@ -247,6 +247,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
    const [removingSavedEnvironmentId, setRemovingSavedEnvironmentId] =
      useState<EnvironmentId | null>(null);
    const [isUpdatingDesktopServerExposure, setIsUpdatingDesktopServerExposure] = useState(false);
@@ -3896,7 +3884,7 @@ index daa240cbf..a1a1361ae 100644
    const [isUpdatingTailscaleServe, setIsUpdatingTailscaleServe] = useState(false);
    const [isUpdatingWslBackend, setIsUpdatingWslBackend] = useState(false);
    const [desktopWslMutationError, setDesktopWslMutationError] = useState<string | null>(null);
-@@ -634,6 +635,41 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
+@@ -632,6 +633,41 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
    const handleSetDefaultAdvertisedEndpoint = (endpoint: AdvertisedEndpoint) => {
      setDefaultAdvertisedEndpointKey(endpointDefaultPreferenceKey(endpoint));
    };
@@ -3938,7 +3926,7 @@ index daa240cbf..a1a1361ae 100644
  
    const renderNetworkAccessToggle = () => (
      <Switch
-@@ -989,6 +1025,67 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
+@@ -985,6 +1021,67 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
        control={renderNetworkAccessToggle()}
      />
    );
@@ -4006,19 +3994,19 @@ index daa240cbf..a1a1361ae 100644
    const renderDisabledNetworkAccessRow = () => (
      <SettingsRow
        title={searchableSetting("network-access").title}
-@@ -1120,6 +1217,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
+@@ -1113,6 +1210,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
              {canManageLocalBackend && desktopBridge ? (
                <>
                  {renderNetworkAccessRow()}
 +                {renderPreferredLanInterfaceRow()}
-                 {renderEndpointRows("endpoint-rail")}
+                 {renderEndpointRows()}
                  {renderTailscaleRow()}
                  {renderWslRow()}
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index 5840566dc..925055f4d 100644
+index 25b5b7cc6..52cbc0116 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
-@@ -1014,6 +1014,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+@@ -1031,6 +1031,14 @@ export const SETTINGS_SEARCH_ITEMS = [
      searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
      localBackendManagementOnly: true,
    },
@@ -4676,7 +4664,7 @@ index dc1720725..6c48c0c4e 100644
        }
      },
 diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
-index b353eca72..1bbd6958c 100644
+index 89fc70f2b..dc51d01d5 100644
 --- a/packages/contracts/src/ipc.ts
 +++ b/packages/contracts/src/ipc.ts
 @@ -486,6 +486,7 @@ export interface DesktopServerExposureState {
@@ -4695,7 +4683,7 @@ index b353eca72..1bbd6958c 100644
    tailscaleServeEnabled: Schema.Boolean,
    tailscaleServePort: Schema.Number,
  });
-@@ -1070,6 +1072,7 @@ export interface DesktopBridge {
+@@ -1065,6 +1067,7 @@ export interface DesktopBridge {
    resolveSshPasswordPrompt: (requestId: string, password: string | null) => Promise<void>;
    getServerExposureState: () => Promise<DesktopServerExposureState>;
    setServerExposureMode: (mode: DesktopServerExposureMode) => Promise<DesktopServerExposureState>;
@@ -4729,10 +4717,10 @@ index 11bb5e41d..4cc790443 100644
    type AcpRegistryLiveConfiguration,
  } from "./server/probe.ts";
 diff --git a/packages/shared/src/advertisedEndpoint.ts b/packages/shared/src/advertisedEndpoint.ts
-index dfec546fa..3e5df487b 100644
+index 14537ed69..6457c5005 100644
 --- a/packages/shared/src/advertisedEndpoint.ts
 +++ b/packages/shared/src/advertisedEndpoint.ts
-@@ -18,6 +18,8 @@ export interface CreateAdvertisedEndpointInput {
+@@ -17,6 +17,8 @@ export interface CreateAdvertisedEndpointInput {
    readonly source: AdvertisedEndpointSource;
    readonly status?: AdvertisedEndpointStatus;
    readonly isDefault?: boolean;
@@ -4741,7 +4729,7 @@ index dfec546fa..3e5df487b 100644
    readonly description?: string;
  }
  
-@@ -73,6 +75,7 @@ export function createAdvertisedEndpoint(input: CreateAdvertisedEndpointInput):
+@@ -72,6 +74,7 @@ export function createAdvertisedEndpoint(input: CreateAdvertisedEndpointInput):
      source: input.source,
      status: input.status ?? "available",
      ...(input.isDefault === undefined ? {} : { isDefault: input.isDefault }),
@@ -4750,10 +4738,10 @@ index dfec546fa..3e5df487b 100644
    };
  }
 diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
-index fe5956f3f..c245eeada 100644
+index 6bdece6bd..49adaf6e6 100644
 --- a/pnpm-lock.yaml
 +++ b/pnpm-lock.yaml
-@@ -579,6 +579,9 @@ importers:
+@@ -590,6 +590,9 @@ importers:
        '@t3tools/mobile-terminal-native':
          specifier: file:./modules/t3-terminal
          version: file:apps/mobile/modules/t3-terminal
