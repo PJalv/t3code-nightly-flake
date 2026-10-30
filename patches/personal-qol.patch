@@ -1,5 +1,5 @@
 diff --git a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
-index 7464d8fbe..29ea98300 100644
+index 7464d8fbe9..29ea983006 100644
 --- a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
 +++ b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
 @@ -38,6 +38,7 @@ const layerServerExposure = Layer.succeed(DesktopServerExposure.DesktopServerExp
@@ -11,7 +11,7 @@ index 7464d8fbe..29ea98300 100644
    getAdvertisedEndpoints: Effect.succeed([]),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 diff --git a/apps/desktop/src/backend/DesktopServerExposure.test.ts b/apps/desktop/src/backend/DesktopServerExposure.test.ts
-index f53cde3e4..2c1b28d50 100644
+index f53cde3e45..2c1b28d504 100644
 --- a/apps/desktop/src/backend/DesktopServerExposure.test.ts
 +++ b/apps/desktop/src/backend/DesktopServerExposure.test.ts
 @@ -40,6 +40,30 @@ const tailnetNetworkInterfaces: DesktopNetworkInterfaces.NetworkInterfaces = {
@@ -391,7 +391,7 @@ index f53cde3e4..2c1b28d50 100644
 +  );
  });
 diff --git a/apps/desktop/src/backend/DesktopServerExposure.ts b/apps/desktop/src/backend/DesktopServerExposure.ts
-index 8d178c605..29eadec50 100644
+index 8d178c605c..29eadec500 100644
 --- a/apps/desktop/src/backend/DesktopServerExposure.ts
 +++ b/apps/desktop/src/backend/DesktopServerExposure.ts
 @@ -45,6 +45,9 @@ interface DesktopAdvertisedEndpointInput {
@@ -705,7 +705,7 @@ index 8d178c605..29eadec50 100644
      getAdvertisedEndpoints,
    });
 diff --git a/apps/desktop/src/ipc/DesktopIpcHandlers.ts b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
-index 35333ac3d..389ac08c2 100644
+index 35333ac3d3..389ac08c2f 100644
 --- a/apps/desktop/src/ipc/DesktopIpcHandlers.ts
 +++ b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
 @@ -12,6 +12,7 @@ import {
@@ -725,7 +725,7 @@ index 35333ac3d..389ac08c2 100644
    yield* ipc.handle(getAdvertisedEndpoints);
  
 diff --git a/apps/desktop/src/ipc/channels.ts b/apps/desktop/src/ipc/channels.ts
-index bba4f6449..2fcb0fa49 100644
+index bba4f6449b..2fcb0fa498 100644
 --- a/apps/desktop/src/ipc/channels.ts
 +++ b/apps/desktop/src/ipc/channels.ts
 @@ -65,6 +65,7 @@ export const FETCH_SSH_SESSION_STATE_CHANNEL = "desktop:fetch-ssh-session-state"
@@ -737,7 +737,7 @@ index bba4f6449..2fcb0fa49 100644
  export const SET_TAILSCALE_SERVE_ENABLED_CHANNEL = "desktop:set-tailscale-serve-enabled";
  export const GET_ADVERTISED_ENDPOINTS_CHANNEL = "desktop:get-advertised-endpoints";
 diff --git a/apps/desktop/src/ipc/methods/serverExposure.ts b/apps/desktop/src/ipc/methods/serverExposure.ts
-index 9a9ce7689..b69c1e76c 100644
+index 9a9ce76897..b69c1e76ca 100644
 --- a/apps/desktop/src/ipc/methods/serverExposure.ts
 +++ b/apps/desktop/src/ipc/methods/serverExposure.ts
 @@ -41,6 +41,19 @@ export const setServerExposureMode = DesktopIpc.makeIpcMethod({
@@ -761,7 +761,7 @@ index 9a9ce7689..b69c1e76c 100644
    channel: IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL,
    payload: SetTailscaleServeEnabledInput,
 diff --git a/apps/desktop/src/preload.ts b/apps/desktop/src/preload.ts
-index a3e1e711c..ed5bdd71e 100644
+index 965b7db5d6..d53f879e16 100644
 --- a/apps/desktop/src/preload.ts
 +++ b/apps/desktop/src/preload.ts
 @@ -174,6 +174,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
@@ -774,7 +774,7 @@ index a3e1e711c..ed5bdd71e 100644
      ipcRenderer.invoke(IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL, input),
    getAdvertisedEndpoints: () => ipcRenderer.invoke(IpcChannels.GET_ADVERTISED_ENDPOINTS_CHANNEL),
 diff --git a/apps/desktop/src/settings/DesktopAppSettings.test.ts b/apps/desktop/src/settings/DesktopAppSettings.test.ts
-index 0135225f9..97e874265 100644
+index 0135225f90..97e8742651 100644
 --- a/apps/desktop/src/settings/DesktopAppSettings.test.ts
 +++ b/apps/desktop/src/settings/DesktopAppSettings.test.ts
 @@ -3,6 +3,7 @@ import { assert, describe, it } from "@effect/vitest";
@@ -1069,7 +1069,7 @@ index 0135225f9..97e874265 100644
      withSettings(
        Effect.gen(function* () {
 diff --git a/apps/desktop/src/settings/DesktopAppSettings.ts b/apps/desktop/src/settings/DesktopAppSettings.ts
-index 5767057b4..b5a3076b3 100644
+index a0624ced66..b45be39811 100644
 --- a/apps/desktop/src/settings/DesktopAppSettings.ts
 +++ b/apps/desktop/src/settings/DesktopAppSettings.ts
 @@ -31,6 +31,13 @@ export interface DesktopSettings {
@@ -1179,7 +1179,7 @@ index 5767057b4..b5a3076b3 100644
            return update((settings) => setTailscaleServe(settings, input));
          }),
 diff --git a/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts b/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
-index 78f41968b..557bf1612 100644
+index 78f41968ba..557bf1612b 100644
 --- a/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
 +++ b/apps/desktop/src/snapShot/GlobalShiftShortcutWorker.ts
 @@ -3,6 +3,7 @@ import { SNAP_SHOT_MODIFIERS, type SnapShotModifier } from "@t3tools/contracts";
@@ -1207,7 +1207,7 @@ index 78f41968b..557bf1612 100644
      active = pressed;
    }, POLL_INTERVAL_MS);
 diff --git a/apps/desktop/src/snapShot/RegionSnapShotWorker.ts b/apps/desktop/src/snapShot/RegionSnapShotWorker.ts
-index f0ac7b9c1..0585ac0fd 100644
+index f0ac7b9c1b..0585ac0fd4 100644
 --- a/apps/desktop/src/snapShot/RegionSnapShotWorker.ts
 +++ b/apps/desktop/src/snapShot/RegionSnapShotWorker.ts
 @@ -1,12 +1,13 @@
@@ -1240,7 +1240,7 @@ index f0ac7b9c1..0585ac0fd 100644
      message: error instanceof Error ? error.message : "Windows window capture failed.",
    } satisfies RegionSnapShotResult),
 diff --git a/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts b/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts
-index 41c344bc2..a3cab095c 100644
+index 41c344bc2f..a3cab095c6 100644
 --- a/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts
 +++ b/apps/desktop/src/snapShot/SnapShotAccessibilityWorker.ts
 @@ -2,12 +2,13 @@ import {
@@ -1279,7 +1279,7 @@ index 41c344bc2..a3cab095c 100644
  }
 diff --git a/apps/desktop/src/snapShot/WorkerIpc.test.ts b/apps/desktop/src/snapShot/WorkerIpc.test.ts
 new file mode 100644
-index 000000000..3d186d9ec
+index 0000000000..3d186d9ec0
 --- /dev/null
 +++ b/apps/desktop/src/snapShot/WorkerIpc.test.ts
 @@ -0,0 +1,63 @@
@@ -1348,7 +1348,7 @@ index 000000000..3d186d9ec
 +});
 diff --git a/apps/desktop/src/snapShot/WorkerIpc.ts b/apps/desktop/src/snapShot/WorkerIpc.ts
 new file mode 100644
-index 000000000..f6309dcb8
+index 0000000000..f6309dcb8c
 --- /dev/null
 +++ b/apps/desktop/src/snapShot/WorkerIpc.ts
 @@ -0,0 +1,47 @@
@@ -1400,10 +1400,10 @@ index 000000000..f6309dcb8
 +  }
 +}
 diff --git a/apps/desktop/src/updates/updatesTestHarness.ts b/apps/desktop/src/updates/updatesTestHarness.ts
-index 1d8c21a42..03d38d3fe 100644
+index d8d16b7dbf..ad7edf0d31 100644
 --- a/apps/desktop/src/updates/updatesTestHarness.ts
 +++ b/apps/desktop/src/updates/updatesTestHarness.ts
-@@ -187,6 +187,8 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
+@@ -207,6 +207,8 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
            load: Effect.sync(() => testSettings),
            setMainWindowBounds: () => Effect.die("unexpected main window bounds update"),
            setServerExposureMode: () => Effect.die("unexpected server exposure update"),
@@ -1413,7 +1413,7 @@ index 1d8c21a42..03d38d3fe 100644
            setUpdateChannel: (channel) =>
              setUpdateChannelError
 diff --git a/apps/desktop/src/window/DesktopWindow.test.ts b/apps/desktop/src/window/DesktopWindow.test.ts
-index 8b6ab7c7d..f3e392d1f 100644
+index 8b6ab7c7d8..f3e392d1f0 100644
 --- a/apps/desktop/src/window/DesktopWindow.test.ts
 +++ b/apps/desktop/src/window/DesktopWindow.test.ts
 @@ -177,6 +177,7 @@ const layerDesktopServerExposure = Layer.succeed(DesktopServerExposure.DesktopSe
@@ -1433,7 +1433,7 @@ index 8b6ab7c7d..f3e392d1f 100644
      setUpdateChannel: () => Effect.die("unexpected update channel change"),
      setWslBackendEnabled: () => Effect.die("unexpected WSL backend toggle"),
 diff --git a/apps/desktop/src/wsl/DesktopWslBackend.test.ts b/apps/desktop/src/wsl/DesktopWslBackend.test.ts
-index 8468a9538..2ec3b9aa1 100644
+index 8468a95386..2ec3b9aa12 100644
 --- a/apps/desktop/src/wsl/DesktopWslBackend.test.ts
 +++ b/apps/desktop/src/wsl/DesktopWslBackend.test.ts
 @@ -61,6 +61,7 @@ const layerServerExposure = Layer.succeed(DesktopServerExposure.DesktopServerExp
@@ -1445,7 +1445,7 @@ index 8468a9538..2ec3b9aa1 100644
    getAdvertisedEndpoints: Effect.succeed([]),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 diff --git a/apps/mobile/package.json b/apps/mobile/package.json
-index f5c1c6521..9223b0d94 100644
+index f5c1c65218..9223b0d949 100644
 --- a/apps/mobile/package.json
 +++ b/apps/mobile/package.json
 @@ -74,6 +74,7 @@
@@ -1458,7 +1458,7 @@ index f5c1c6521..9223b0d94 100644
      "clsx": "^2.1.1",
 diff --git a/apps/mobile/src/features/agent-awareness/localNotifications.test.ts b/apps/mobile/src/features/agent-awareness/localNotifications.test.ts
 new file mode 100644
-index 000000000..3d1995e38
+index 0000000000..3d1995e38b
 --- /dev/null
 +++ b/apps/mobile/src/features/agent-awareness/localNotifications.test.ts
 @@ -0,0 +1,94 @@
@@ -1558,7 +1558,7 @@ index 000000000..3d1995e38
 +});
 diff --git a/apps/mobile/src/features/agent-awareness/localNotifications.ts b/apps/mobile/src/features/agent-awareness/localNotifications.ts
 new file mode 100644
-index 000000000..4b062e0d9
+index 0000000000..4b062e0d92
 --- /dev/null
 +++ b/apps/mobile/src/features/agent-awareness/localNotifications.ts
 @@ -0,0 +1,83 @@
@@ -1646,7 +1646,7 @@ index 000000000..4b062e0d9
 +  );
 +}
 diff --git a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
-index fc24d180a..be2b63ba2 100644
+index fc24d180a3..be2b63ba2a 100644
 --- a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 +++ b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 @@ -3,6 +3,7 @@ import {
@@ -1667,7 +1667,7 @@ index fc24d180a..be2b63ba2 100644
      appStateSubscription?.remove();
 diff --git a/apps/mobile/src/features/devices/device-stream.browser.test.ts b/apps/mobile/src/features/devices/device-stream.browser.test.ts
 new file mode 100644
-index 000000000..ec51295ab
+index 0000000000..ec51295ab3
 --- /dev/null
 +++ b/apps/mobile/src/features/devices/device-stream.browser.test.ts
 @@ -0,0 +1,151 @@
@@ -1823,7 +1823,7 @@ index 000000000..ec51295ab
 +  expect(vi.getTimerCount()).toBe(0);
 +});
 diff --git a/apps/mobile/src/features/devices/device-stream.browser.ts b/apps/mobile/src/features/devices/device-stream.browser.ts
-index ed2092148..388dfe934 100644
+index ed2092148d..388dfe9347 100644
 --- a/apps/mobile/src/features/devices/device-stream.browser.ts
 +++ b/apps/mobile/src/features/devices/device-stream.browser.ts
 @@ -182,9 +182,22 @@ export function start(configuration: DeviceStreamConfiguration) {
@@ -1850,7 +1850,7 @@ index ed2092148..388dfe934 100644
    window.addEventListener("pagehide", stop, { once: true });
    post({ type: "input", connected: false });
 diff --git a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
-index 4aa5cc4c7..056c74e30 100644
+index 4aa5cc4c70..056c74e30d 100644
 --- a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 @@ -8,11 +8,12 @@ import * as Notifications from "expo-notifications";
@@ -2143,7 +2143,7 @@ index 4aa5cc4c7..056c74e30 100644
              <SettingsRow
                icon="bolt.circle"
 diff --git a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
-index 6dfb8745e..4ed804b4c 100644
+index 6dfb8745ed..4ed804b4ca 100644
 --- a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
 @@ -27,6 +27,7 @@ import { serverEnvironment } from "../../state/server";
@@ -2164,14 +2164,15 @@ index 6dfb8745e..4ed804b4c 100644
                        .map((provider, index) => (
 diff --git a/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx b/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx
 new file mode 100644
-index 000000000..a2344f9cb
+index 0000000000..30250f664a
 --- /dev/null
 +++ b/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx
-@@ -0,0 +1,196 @@
+@@ -0,0 +1,190 @@
 +import {
 +  ProviderDriverKind,
 +  ProviderInstanceId,
 +  type ProviderInstanceConfig,
++  type ProviderInstanceEnvironmentVariable,
 +} from "@t3tools/contracts";
 +import { AcpRegistrySettings } from "@t3tools/provider-acp-registry/settings";
 +import * as Schema from "effect/Schema";
@@ -2182,9 +2183,14 @@ index 000000000..a2344f9cb
 +import { useAtomCommand } from "../../../state/use-atom-command";
 +import type { SettingsTarget } from "../settings-environment-filter";
 +import { ListActionRow as SettingsActionRow } from "../../../components/ui/ListActionRow";
++import {
++  appendNewEnvironmentVariables,
++  buildEnvironmentVariables,
++  environmentEditorSeed,
++  parseEnvironmentOverrides,
++} from "../lib/acp-environment";
 +
 +const decodeSettings = Schema.decodeUnknownSync(AcpRegistrySettings);
-+const decodeEnvironment = Schema.decodeUnknownSync(Schema.Record(Schema.String, Schema.String));
 +
 +// These helpers stay at module scope so the component body has no value blocks
 +// inside its try/catch, which the React Compiler cannot yet compile.
@@ -2212,18 +2218,14 @@ index 000000000..a2344f9cb
 +  commandArgs: JSON.parse(args),
 +});
 +
-+const parseEnvironmentOverrides = (env: string) => decodeEnvironment(JSON.parse(env));
-+
-+const buildEnvironmentVariables = (
++const mergeEnvironment = (
 +  existing: ProviderInstanceConfig | undefined,
-+  overrides: Record<string, string>,
-+) => {
-+  const variables = new Map((existing?.environment ?? []).map((entry) => [entry.name, entry]));
-+  for (const [name, value] of Object.entries(overrides)) {
-+    variables.set(name, { name, value, sensitive: variables.get(name)?.sensitive ?? false });
-+  }
-+  return [...variables.values()].filter(
-+    (entry) => entry.valueRedacted || Object.hasOwn(overrides, entry.name),
++  env: string,
++): ReadonlyArray<ProviderInstanceEnvironmentVariable> => {
++  const overrides = parseEnvironmentOverrides(env);
++  return appendNewEnvironmentVariables(
++    buildEnvironmentVariables(existing?.environment, overrides),
++    overrides,
 +  );
 +};
 +
@@ -2245,7 +2247,7 @@ index 000000000..a2344f9cb
 +      config: decodeSettings(
 +        acpSettingsInput(existing, fields.source, fields.agentId, fields.command, fields.args),
 +      ),
-+      environment: buildEnvironmentVariables(existing, parseEnvironmentOverrides(fields.env)),
++      environment: mergeEnvironment(existing, fields.env),
 +    },
 +  };
 +};
@@ -2300,15 +2302,7 @@ index 000000000..a2344f9cb
 +              setSource(config.source);
 +              setAgentId(config.agentId);
 +              setArgs(JSON.stringify(config.commandArgs));
-+              setEnv(
-+                JSON.stringify(
-+                  Object.fromEntries(
-+                    (instance.environment ?? [])
-+                      .filter((entry) => !entry.valueRedacted)
-+                      .map((entry) => [entry.name, entry.value]),
-+                  ),
-+                ),
-+              );
++              setEnv(environmentEditorSeed(instance.environment));
 +              setMessage(null);
 +            }}
 +          />
@@ -2364,8 +2358,191 @@ index 000000000..a2344f9cb
 +    </View>
 +  );
 +}
+diff --git a/apps/mobile/src/features/settings/lib/acp-environment.test.ts b/apps/mobile/src/features/settings/lib/acp-environment.test.ts
+new file mode 100644
+index 0000000000..6ad1ecaca5
+--- /dev/null
++++ b/apps/mobile/src/features/settings/lib/acp-environment.test.ts
+@@ -0,0 +1,108 @@
++import type { ProviderInstanceEnvironmentVariable, SecretReference } from "@t3tools/contracts";
++import { describe, expect, it } from "vite-plus/test";
++
++import {
++  appendNewEnvironmentVariables,
++  buildEnvironmentVariables,
++  environmentEditorSeed,
++  parseEnvironmentOverrides,
++} from "./acp-environment";
++
++const reference: SecretReference = {
++  provider: "personal" as SecretReference["provider"],
++  reference: "op://Vault/Maki/TOKEN",
++};
++
++const save = (
++  existing: ReadonlyArray<ProviderInstanceEnvironmentVariable> | undefined,
++  env: string,
++) => {
++  const overrides = parseEnvironmentOverrides(env);
++  return appendNewEnvironmentVariables(buildEnvironmentVariables(existing, overrides), overrides);
++};
++
++describe("custom ACP environment editing", () => {
++  it("keeps an untouched secret reference when only other fields are saved", () => {
++    const existing: ProviderInstanceEnvironmentVariable[] = [
++      { name: "API_TOKEN", value: reference, sensitive: true },
++      { name: "PLAIN", value: "plain", sensitive: false },
++    ];
++
++    expect(save(existing, environmentEditorSeed(existing))).toEqual([
++      { name: "API_TOKEN", value: reference, sensitive: true },
++      { name: "PLAIN", value: "plain", sensitive: false },
++    ]);
++  });
++
++  it("round-trips a reference through the editor JSON without flattening it", () => {
++    const seed = environmentEditorSeed([{ name: "API_TOKEN", value: reference, sensitive: true }]);
++
++    expect(JSON.parse(seed)).toEqual({ API_TOKEN: reference });
++    expect(parseEnvironmentOverrides(seed)).toEqual({ API_TOKEN: reference });
++  });
++
++  it("replaces a reference when the user supplies a plain value", () => {
++    const existing: ProviderInstanceEnvironmentVariable[] = [
++      { name: "API_TOKEN", value: reference, sensitive: true },
++    ];
++
++    const saved = save(existing, JSON.stringify({ API_TOKEN: "plain-now" }));
++
++    expect(saved).toEqual([{ name: "API_TOKEN", value: "plain-now", sensitive: true }]);
++  });
++
++  it("deletes a reference row the user removed from the editor", () => {
++    const existing: ProviderInstanceEnvironmentVariable[] = [
++      { name: "KEEP", value: reference, sensitive: true },
++      { name: "DROP", value: reference, sensitive: true },
++    ];
++
++    const saved = save(existing, JSON.stringify({ KEEP: reference }));
++
++    expect(saved).toEqual([{ name: "KEEP", value: reference, sensitive: true }]);
++  });
++
++  it("preserves a redacted value that has no editable form", () => {
++    const existing: ProviderInstanceEnvironmentVariable[] = [
++      { name: "SECRET", value: "", sensitive: true, valueRedacted: true },
++    ];
++
++    const saved = save(existing, environmentEditorSeed(existing));
++
++    expect(saved).toEqual([{ name: "SECRET", value: "", sensitive: true, valueRedacted: true }]);
++  });
++
++  it("drops the stale redacted flag when the user supplies a new value", () => {
++    const existing: ProviderInstanceEnvironmentVariable[] = [
++      { name: "SECRET", value: "", sensitive: true, valueRedacted: true },
++    ];
++
++    const saved = save(existing, JSON.stringify({ SECRET: "typed" }));
++
++    expect(saved).toEqual([{ name: "SECRET", value: "typed", sensitive: true }]);
++  });
++
++  it("adds a new variable that names no existing entry", () => {
++    const existing: ProviderInstanceEnvironmentVariable[] = [
++      { name: "API_TOKEN", value: reference, sensitive: true },
++    ];
++
++    const saved = save(existing, JSON.stringify({ API_TOKEN: reference, ADDED: "fresh" }));
++
++    expect(saved).toEqual([
++      { name: "API_TOKEN", value: reference, sensitive: true },
++      { name: "ADDED", value: "fresh", sensitive: true },
++    ]);
++  });
++
++  it("does not shadow an existing reference with a same-named new entry", () => {
++    const existing: ProviderInstanceEnvironmentVariable[] = [
++      { name: "API_TOKEN", value: reference, sensitive: true },
++    ];
++
++    const saved = save(existing, environmentEditorSeed(existing));
++
++    expect(saved).toHaveLength(1);
++    expect(saved[0]!.value).toEqual(reference);
++  });
++});
+diff --git a/apps/mobile/src/features/settings/lib/acp-environment.ts b/apps/mobile/src/features/settings/lib/acp-environment.ts
+new file mode 100644
+index 0000000000..1e53e6cd55
+--- /dev/null
++++ b/apps/mobile/src/features/settings/lib/acp-environment.ts
+@@ -0,0 +1,63 @@
++import { type ProviderInstanceEnvironmentVariable, SecretReference } from "@t3tools/contracts";
++import * as Schema from "effect/Schema";
++
++const decodeEnvironmentValue = Schema.decodeUnknownSync(
++  Schema.Record(Schema.String, Schema.Union([Schema.String, SecretReference])),
++);
++
++/**
++ * The Environment JSON field is keyed by variable name. A plain string is a
++ * value; an object carrying `provider`/`reference` is a secret reference, which
++ * the editor round-trips as JSON instead of flattening to a string.
++ */
++export type EnvironmentOverrides = Readonly<Record<string, string | SecretReference>>;
++
++/** Parses the editor's Environment JSON, rejecting values that are neither. */
++export const parseEnvironmentOverrides = (env: string): EnvironmentOverrides =>
++  decodeEnvironmentValue(JSON.parse(env));
++
++export const formatEnvironmentOverride = (value: string | SecretReference): string =>
++  typeof value === "string" ? value : `${value.provider}:${value.reference}`;
++
++/**
++ * Seeds the editor field from an instance's environment. Redacted values have no
++ * readable form, so they are omitted here and preserved by the merge instead.
++ */
++export const environmentEditorSeed = (
++  environment: ReadonlyArray<ProviderInstanceEnvironmentVariable> | undefined,
++): string =>
++  JSON.stringify(
++    Object.fromEntries(
++      (environment ?? [])
++        .filter((entry) => !entry.valueRedacted)
++        .map((entry) => [entry.name, entry.value]),
++    ),
++  );
++
++/**
++ * Merges the editor's overrides into an instance's environment. The editor text
++ * is the whole truth for readable entries, so omitting one deletes it; only a
++ * redacted value, which has no text form, survives untouched.
++ */
++export const buildEnvironmentVariables = (
++  existing: ReadonlyArray<ProviderInstanceEnvironmentVariable> | undefined,
++  overrides: EnvironmentOverrides,
++): ReadonlyArray<ProviderInstanceEnvironmentVariable> =>
++  (existing ?? []).flatMap((entry) => {
++    if (Object.hasOwn(overrides, entry.name)) {
++      return [{ name: entry.name, value: overrides[entry.name]!, sensitive: entry.sensitive }];
++    }
++    return entry.valueRedacted ? [entry] : [];
++  });
++
++/** Adds overrides that name no existing entry, leaving preserved redactions alone. */
++export const appendNewEnvironmentVariables = (
++  variables: ReadonlyArray<ProviderInstanceEnvironmentVariable>,
++  overrides: EnvironmentOverrides,
++): ReadonlyArray<ProviderInstanceEnvironmentVariable> => {
++  const known = new Set(variables.map((entry) => entry.name));
++  const added = Object.entries(overrides)
++    .filter(([name]) => !known.has(name))
++    .map(([name, value]) => ({ name, value, sensitive: true }));
++  return [...variables, ...added];
++};
 diff --git a/apps/mobile/src/persistence/mobile-preferences.ts b/apps/mobile/src/persistence/mobile-preferences.ts
-index 43ac75e18..39096ef84 100644
+index 43ac75e185..39096ef84e 100644
 --- a/apps/mobile/src/persistence/mobile-preferences.ts
 +++ b/apps/mobile/src/persistence/mobile-preferences.ts
 @@ -92,6 +92,9 @@ export interface Preferences {
@@ -2401,10 +2578,10 @@ index 43ac75e18..39096ef84 100644
      typeof parsed.themeId === "string" &&
      (MOBILE_THEME_IDS as readonly string[]).includes(parsed.themeId)
 diff --git a/apps/server/src/guest/GuestShareService.test.ts b/apps/server/src/guest/GuestShareService.test.ts
-index 1ef25744c..3e49e7018 100644
+index ac5ffc76aa..339822c207 100644
 --- a/apps/server/src/guest/GuestShareService.test.ts
 +++ b/apps/server/src/guest/GuestShareService.test.ts
-@@ -146,8 +146,13 @@ const layerTest = GuestShareService.layer.pipe(
+@@ -147,8 +147,13 @@ const layerTest = GuestShareService.layer.pipe(
  
  const threadId = ThreadId.make("thread:guest-share-service");
  
@@ -2420,7 +2597,7 @@ index 1ef25744c..3e49e7018 100644
    const orchestrator = yield* Orchestrator.OrchestratorV2;
    yield* orchestrator.dispatch({
      type: "thread.create",
-@@ -165,37 +170,42 @@ const shareThreadFor = Effect.fn(function* (threadId: ThreadId) {
+@@ -166,37 +171,42 @@ const shareThreadFor = Effect.fn(function* (threadId: ThreadId) {
    });
    const guestShares = yield* GuestShareService.GuestShareService;
    const { url } = yield* guestShares.create({ threadId });
@@ -2488,7 +2665,7 @@ index 1ef25744c..3e49e7018 100644
  );
  
  it.effect("counts a guest joining and sending, without their name or text", () =>
-@@ -332,39 +342,111 @@ it.effect("closes an open guest stream when T3 Connect stops serving the link's
+@@ -333,39 +343,111 @@ it.effect("closes an open guest stream when T3 Connect stops serving the link's
    }).pipe(Effect.provide(layerTest)),
  );
  
@@ -2620,7 +2797,7 @@ index 1ef25744c..3e49e7018 100644
  it.effect("shows the guest the thread's new model", () =>
    Effect.gen(function* () {
      const { orchestrator, guestShares, credential } = yield* shareThread;
-@@ -586,14 +668,15 @@ const storedFiles = Effect.gen(function* () {
+@@ -671,14 +753,15 @@ const storedFiles = Effect.gen(function* () {
    return yield* fileSystem.readDirectory(attachmentsDir).pipe(Effect.orElseSucceed(() => []));
  });
  
@@ -2638,7 +2815,7 @@ index 1ef25744c..3e49e7018 100644
  
  const waitingMessages = Effect.gen(function* () {
    const orchestrator = yield* Orchestrator.OrchestratorV2;
-@@ -722,11 +805,17 @@ it.effect("deletes a waiting message's files when the owner dismisses it or stop
+@@ -807,11 +890,17 @@ it.effect("deletes a waiting message's files when the owner dismisses it or stop
    }).pipe(Effect.scoped, Effect.provide(layerTest)),
  );
  
@@ -2660,7 +2837,7 @@ index 1ef25744c..3e49e7018 100644
        const worker = yield* EffectWorker.OrchestrationEffectWorkerV2;
        const before = yield* storedFiles;
        yield* guestShares.submit(
-@@ -742,72 +831,78 @@ it.effect.each(["thread.archive", "thread.delete"] as const)(
+@@ -827,72 +916,78 @@ it.effect.each(["thread.archive", "thread.delete"] as const)(
        });
        yield* worker.drain();
        assert.deepEqual(yield* storedFiles, before);
@@ -2799,10 +2976,10 @@ index 1ef25744c..3e49e7018 100644
  
  it.effect("serves the shared thread's files to its guest, never another thread's", () =>
 diff --git a/apps/server/src/guest/GuestShareService.ts b/apps/server/src/guest/GuestShareService.ts
-index 347bdc11e..50d9f2912 100644
+index 2a1bf85350..e9945fac6f 100644
 --- a/apps/server/src/guest/GuestShareService.ts
 +++ b/apps/server/src/guest/GuestShareService.ts
-@@ -280,8 +280,13 @@ const make = Effect.gen(function* () {
+@@ -286,8 +286,13 @@ const make = Effect.gen(function* () {
        return decodeSessionClaims(base64UrlDecodeUtf8(parts.payload));
      });
  
@@ -2818,7 +2995,7 @@ index 347bdc11e..50d9f2912 100644
    );
    // A beta: while it is off, no link opens and every guest request is refused.
    const sharingEnabled = serverSettings.getSettings.pipe(
-@@ -307,7 +312,6 @@ const make = Effect.gen(function* () {
+@@ -313,7 +318,6 @@ const make = Effect.gen(function* () {
        Effect.orDie,
      );
  
@@ -2826,7 +3003,7 @@ index 347bdc11e..50d9f2912 100644
    const authorize = Effect.fn("GuestShareService.authorize")(function* (
      token: string,
      kind: "invite" | "session",
-@@ -329,7 +333,7 @@ const make = Effect.gen(function* () {
+@@ -335,7 +339,7 @@ const make = Effect.gen(function* () {
        thread.deletedAt !== null ||
        DateTime.toEpochMillis(now) >= Date.parse(share.expiresAt) ||
        (kind === "session" && share.guestName === null) ||
@@ -2835,7 +3012,7 @@ index 347bdc11e..50d9f2912 100644
      ) {
        return yield* inactive;
      }
-@@ -340,7 +344,7 @@ const make = Effect.gen(function* () {
+@@ -346,7 +350,7 @@ const make = Effect.gen(function* () {
      if (!(yield* sharingEnabled)) {
        return yield* new GuestShareCreateError({ reason: "disabled" });
      }
@@ -2844,7 +3021,7 @@ index 347bdc11e..50d9f2912 100644
      if (host === null) {
        return yield* new GuestShareCreateError({ reason: "connect_unavailable" });
      }
-@@ -597,11 +601,8 @@ const make = Effect.gen(function* () {
+@@ -603,11 +607,8 @@ const make = Effect.gen(function* () {
          }),
        ),
        Stream.takeUntil((event) => event.type === "ended"),
@@ -2858,7 +3035,7 @@ index 347bdc11e..50d9f2912 100644
              schedule: Schedule.spaced(ACCESS_RECHECK_INTERVAL),
              until: ([host, enabled]) => host !== share.host || !enabled,
 diff --git a/apps/server/src/orchestration-v2/CheckpointService.test.ts b/apps/server/src/orchestration-v2/CheckpointService.test.ts
-index 39643ff38..eb7ab14df 100644
+index 39643ff38c..eb7ab14dfd 100644
 --- a/apps/server/src/orchestration-v2/CheckpointService.test.ts
 +++ b/apps/server/src/orchestration-v2/CheckpointService.test.ts
 @@ -1,5 +1,8 @@
@@ -3000,7 +3177,7 @@ index 39643ff38..eb7ab14df 100644
    "skips unsupported baseline and turn checkpoints without swallowing capture failures",
    () =>
 diff --git a/apps/server/src/orchestration-v2/CheckpointService.ts b/apps/server/src/orchestration-v2/CheckpointService.ts
-index 2747fcefa..0529c76ba 100644
+index 2747fcefac..0529c76ba1 100644
 --- a/apps/server/src/orchestration-v2/CheckpointService.ts
 +++ b/apps/server/src/orchestration-v2/CheckpointService.ts
 @@ -241,8 +241,11 @@ export const layer: Layer.Layer<
@@ -3018,7 +3195,7 @@ index 2747fcefa..0529c76ba 100644
        withWorkspaceLock(
 diff --git a/apps/server/src/provider/acp/MakiCustom.integration.test.ts b/apps/server/src/provider/acp/MakiCustom.integration.test.ts
 new file mode 100644
-index 000000000..d848a2bb6
+index 0000000000..d848a2bb67
 --- /dev/null
 +++ b/apps/server/src/provider/acp/MakiCustom.integration.test.ts
 @@ -0,0 +1,134 @@
@@ -3157,10 +3334,10 @@ index 000000000..d848a2bb6
 +  ),
 +);
 diff --git a/apps/server/src/serverSettings.test.ts b/apps/server/src/serverSettings.test.ts
-index bd985cab2..3e5ef8c5d 100644
+index 0ae14fae5d..b3fdf8273c 100644
 --- a/apps/server/src/serverSettings.test.ts
 +++ b/apps/server/src/serverSettings.test.ts
-@@ -94,6 +94,33 @@ const recordProviderUsage = (provider: string, instanceId: string | null = provi
+@@ -97,6 +97,33 @@ const recordProviderUsage = (provider: string, instanceId: string | null = provi
    });
  
  it.layer(NodeServices.layer)("server settings", (it) => {
@@ -3194,7 +3371,7 @@ index bd985cab2..3e5ef8c5d 100644
    it.effect("serializes concurrent model preference edits without cancelling duplicate adds", () =>
      Effect.gen(function* () {
        const service = yield* ServerSettingsModule.ServerSettingsService;
-@@ -176,6 +203,45 @@ it.layer(NodeServices.layer)("server settings", (it) => {
+@@ -179,6 +206,45 @@ it.layer(NodeServices.layer)("server settings", (it) => {
        }),
      ).pipe(Effect.provide(layerServerSettings())),
    );
@@ -3241,10 +3418,10 @@ index bd985cab2..3e5ef8c5d 100644
      Effect.gen(function* () {
        const config = yield* ServerConfig.ServerConfig;
 diff --git a/apps/server/src/serverSettings.ts b/apps/server/src/serverSettings.ts
-index a1e0d34c7..bcfdbbb8f 100644
+index 67a1c3c341..619dd27906 100644
 --- a/apps/server/src/serverSettings.ts
 +++ b/apps/server/src/serverSettings.ts
-@@ -74,8 +74,45 @@ const textDecoder = new TextDecoder();
+@@ -76,8 +76,45 @@ const textDecoder = new TextDecoder();
  const foldProviderInstanceEnabledFlags = (settings: ServerSettings): ServerSettings => {
    let changed = false;
    const providerInstances: Record<string, ProviderInstanceConfig> = {};
@@ -3293,7 +3470,7 @@ index a1e0d34c7..bcfdbbb8f 100644
      if (
        config === null ||
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index 6a8f80d6d..cec236994 100644
+index 6a8f80d6d1..cec236994b 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
 @@ -77,6 +77,7 @@ import React, {
@@ -3464,7 +3641,7 @@ index 6a8f80d6d..cec236994 100644
      if (mediaKind === "audio") {
        const filePath = imageSource._tag === "WorkspaceFile" ? imageSource.path : null;
 diff --git a/apps/web/src/components/ChatView.logic.test.ts b/apps/web/src/components/ChatView.logic.test.ts
-index 330489921..30e2af1c1 100644
+index 3304899216..30e2af1c1e 100644
 --- a/apps/web/src/components/ChatView.logic.test.ts
 +++ b/apps/web/src/components/ChatView.logic.test.ts
 @@ -34,11 +34,14 @@ import { Atom } from "effect/reactivity";
@@ -3672,7 +3849,7 @@ index 330489921..30e2af1c1 100644
      rememberCheckoutIsRepo(EnvironmentId.make("env"), "a:b", false);
 diff --git a/apps/web/src/components/chat/V2FileChangeDiffView.tsx b/apps/web/src/components/chat/V2FileChangeDiffView.tsx
 new file mode 100644
-index 000000000..d987861c3
+index 0000000000..d987861c39
 --- /dev/null
 +++ b/apps/web/src/components/chat/V2FileChangeDiffView.tsx
 @@ -0,0 +1,39 @@
@@ -3716,7 +3893,7 @@ index 000000000..d987861c3
 +  );
 +}
 diff --git a/apps/web/src/components/chat/V2ItemInspector.tsx b/apps/web/src/components/chat/V2ItemInspector.tsx
-index ee6072b92..5825cf51d 100644
+index ee6072b926..5825cf51dc 100644
 --- a/apps/web/src/components/chat/V2ItemInspector.tsx
 +++ b/apps/web/src/components/chat/V2ItemInspector.tsx
 @@ -10,7 +10,7 @@ import {
@@ -3886,12 +4063,12 @@ index ee6072b92..5825cf51d 100644
  
        {item.type === "file_search" && item.pattern?.trim() ? (
 diff --git a/apps/web/src/components/chat/composerFocusRedirect.ts b/apps/web/src/components/chat/composerFocusRedirect.ts
-index 9f791f944..36f164827 100644
+index f7730b3679..a9260d1162 100644
 --- a/apps/web/src/components/chat/composerFocusRedirect.ts
 +++ b/apps/web/src/components/chat/composerFocusRedirect.ts
-@@ -72,6 +72,11 @@ export function shouldTypeToFocusComposer(event: KeyboardEvent): boolean {
+@@ -76,6 +76,11 @@ export function shouldTypeToFocusComposer(event: KeyboardEvent): boolean {
    if (!shouldRedirectInputToComposer(event)) return false;
-   if (isSurfaceLauncherKey(event.key)) return false;
+   if (isSurfaceLauncherKey(event)) return false;
  
 +  const launcherKeys = document
 +    .querySelector("[data-surface-launcher-keys]")
@@ -3902,7 +4079,7 @@ index 9f791f944..36f164827 100644
  }
  
 diff --git a/apps/web/src/components/chat/useChatShortcuts.ts b/apps/web/src/components/chat/useChatShortcuts.ts
-index 7e90fc957..738f78125 100644
+index 7e90fc957a..738f781250 100644
 --- a/apps/web/src/components/chat/useChatShortcuts.ts
 +++ b/apps/web/src/components/chat/useChatShortcuts.ts
 @@ -10,7 +10,7 @@ import {
@@ -3924,7 +4101,7 @@ index 7e90fc957..738f78125 100644
      const shortcutContext = input.getShortcutContext(event.target);
 diff --git a/apps/web/src/components/chat/v2FileChangeDiff.test.ts b/apps/web/src/components/chat/v2FileChangeDiff.test.ts
 new file mode 100644
-index 000000000..f5e096a5c
+index 0000000000..f5e096a5c4
 --- /dev/null
 +++ b/apps/web/src/components/chat/v2FileChangeDiff.test.ts
 @@ -0,0 +1,36 @@
@@ -3966,7 +4143,7 @@ index 000000000..f5e096a5c
 +});
 diff --git a/apps/web/src/components/chat/v2FileChangeDiff.ts b/apps/web/src/components/chat/v2FileChangeDiff.ts
 new file mode 100644
-index 000000000..5f2284e73
+index 0000000000..5f2284e73d
 --- /dev/null
 +++ b/apps/web/src/components/chat/v2FileChangeDiff.ts
 @@ -0,0 +1,42 @@
@@ -4014,7 +4191,7 @@ index 000000000..5f2284e73
 +}
 diff --git a/apps/web/src/components/device/DeviceStreamView.browser.test.tsx b/apps/web/src/components/device/DeviceStreamView.browser.test.tsx
 new file mode 100644
-index 000000000..b3453839b
+index 0000000000..b3453839b1
 --- /dev/null
 +++ b/apps/web/src/components/device/DeviceStreamView.browser.test.tsx
 @@ -0,0 +1,320 @@
@@ -4339,7 +4516,7 @@ index 000000000..b3453839b
 +  expect(vi.getTimerCount()).toBe(0);
 +});
 diff --git a/apps/web/src/components/device/DeviceStreamView.tsx b/apps/web/src/components/device/DeviceStreamView.tsx
-index 4b0b5c84c..20d471f96 100644
+index 4b0b5c84ca..20d471f96d 100644
 --- a/apps/web/src/components/device/DeviceStreamView.tsx
 +++ b/apps/web/src/components/device/DeviceStreamView.tsx
 @@ -307,9 +307,20 @@ export function DeviceStreamView(props: {
@@ -4375,7 +4552,7 @@ index 4b0b5c84c..20d471f96 100644
          }}
          onKeyUp={(event) => {
 diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
-index 502dc8c6a..0d7b1d816 100644
+index 502dc8c6a6..6d9e152ee9 100644
 --- a/apps/web/src/components/settings/ConnectionsSettings.tsx
 +++ b/apps/web/src/components/settings/ConnectionsSettings.tsx
 @@ -247,6 +247,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
@@ -4411,6 +4588,7 @@ index 502dc8c6a..0d7b1d816 100644
 +    try {
 +      await desktopBridge.setPreferredLanInterfaceName(value === "auto" ? null : value);
 +      refreshDesktopNetworkAccessState();
++      setIsUpdatingLanInterface(false);
 +    } catch (error) {
 +      const message =
 +        error instanceof Error ? error.message : "Failed to update the network interface.";
@@ -4421,7 +4599,6 @@ index 502dc8c6a..0d7b1d816 100644
 +          description: message,
 +        }),
 +      );
-+    } finally {
 +      setIsUpdatingLanInterface(false);
 +    }
 +  };
@@ -4505,14 +4682,10 @@ index 502dc8c6a..0d7b1d816 100644
                  {renderTailscaleRow()}
                  {renderWslRow()}
 diff --git a/apps/web/src/components/settings/LabsSettingsPanel.tsx b/apps/web/src/components/settings/LabsSettingsPanel.tsx
-index 1f51e20c0..e9f4622e9 100644
+index ce3f68eac4..636052cf84 100644
 --- a/apps/web/src/components/settings/LabsSettingsPanel.tsx
 +++ b/apps/web/src/components/settings/LabsSettingsPanel.tsx
-@@ -90,12 +90,12 @@ function ThreadDetailsUsageRow() {
-   );
- }
- 
--/** Signed out of T3 Connect, the row offers to sign in instead of its switch. */
+@@ -73,8 +73,9 @@ function BoringSidebarMultilineRow() {
  function GuestLinksRowWithSignIn() {
    const { isSignedIn } = useAuth();
    const { openAuthPrompt } = useT3ConnectAuthPrompt();
@@ -4523,7 +4696,7 @@ index 1f51e20c0..e9f4622e9 100644
    return (
      <SettingsRow
        {...searchableSetting("guest-links")}
-@@ -120,11 +120,19 @@ function GuestLinksRow() {
+@@ -99,11 +100,19 @@ function GuestLinksRow() {
        description={
          <>
            Share a thread with a guest who watches it live in their browser and sends messages you
@@ -4549,10 +4722,10 @@ index 1f51e20c0..e9f4622e9 100644
        }
        control={
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index 0d87e9bd3..15c89f774 100644
+index dc494caf53..63bad16402 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
-@@ -1052,6 +1052,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+@@ -1064,6 +1064,14 @@ export const SETTINGS_SEARCH_ITEMS = [
      searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
      localBackendManagementOnly: true,
    },
@@ -4569,7 +4742,7 @@ index 0d87e9bd3..15c89f774 100644
      title: "Tailscale HTTPS",
 diff --git a/apps/web/src/lib/composerInputFocus.test.ts b/apps/web/src/lib/composerInputFocus.test.ts
 new file mode 100644
-index 000000000..6f4135d75
+index 0000000000..6f4135d754
 --- /dev/null
 +++ b/apps/web/src/lib/composerInputFocus.test.ts
 @@ -0,0 +1,101 @@
@@ -4676,7 +4849,7 @@ index 000000000..6f4135d75
 +});
 diff --git a/apps/web/src/workspaceBasenameResolution.test.ts b/apps/web/src/workspaceBasenameResolution.test.ts
 new file mode 100644
-index 000000000..0eb789aae
+index 0000000000..0eb789aaef
 --- /dev/null
 +++ b/apps/web/src/workspaceBasenameResolution.test.ts
 @@ -0,0 +1,30 @@
@@ -4712,7 +4885,7 @@ index 000000000..0eb789aae
 +});
 diff --git a/apps/web/src/workspaceBasenameResolution.ts b/apps/web/src/workspaceBasenameResolution.ts
 new file mode 100644
-index 000000000..ba2482567
+index 0000000000..ba24825679
 --- /dev/null
 +++ b/apps/web/src/workspaceBasenameResolution.ts
 @@ -0,0 +1,18 @@
@@ -4735,7 +4908,7 @@ index 000000000..ba2482567
 +  return result;
 +}
 diff --git a/docs/user/devices.md b/docs/user/devices.md
-index ce5a7d8d0..10b5edf1a 100644
+index 46a5a427cc..ec2d0acb17 100644
 --- a/docs/user/devices.md
 +++ b/docs/user/devices.md
 @@ -54,6 +54,11 @@ to the other screen switches the live display and touch input to that screen.
@@ -4751,7 +4924,7 @@ index ce5a7d8d0..10b5edf1a 100644
  ## Tools
  
 diff --git a/docs/user/guest-links.md b/docs/user/guest-links.md
-index a8631a6c9..c1ce56b61 100644
+index a8631a6c93..c1ce56b619 100644
 --- a/docs/user/guest-links.md
 +++ b/docs/user/guest-links.md
 @@ -7,8 +7,9 @@ until you send or dismiss it.
@@ -4803,7 +4976,7 @@ index a8631a6c9..c1ce56b61 100644
  ## What the guest sees
  
 diff --git a/docs/user/mobile-notifications.md b/docs/user/mobile-notifications.md
-index 9c5e30ef7..d53c8f970 100644
+index 9c5e30ef76..d53c8f9702 100644
 --- a/docs/user/mobile-notifications.md
 +++ b/docs/user/mobile-notifications.md
 @@ -8,4 +8,4 @@ Ordinary alerts stay quiet while the mobile app is in the foreground. Ongoing ac
@@ -4813,7 +4986,7 @@ index 9c5e30ef7..d53c8f970 100644
 -Notification permission and Android notification channels are controlled in system Settings. Background delivery requires T3 Connect; a direct or Tailscale connection alone does not enable push notifications. The mobile app does not need to maintain a connection to your environment. Force-stopping the Android app in system Settings prevents push delivery until you open it again.
 +Notification permission and Android notification channels are controlled in system Settings. Android can also configure device-local notifications without a T3 Connect account from **Settings → Notifications**. This does not use a relay or require an account, but delivery still requires a local sender configured with the Firebase project; the mobile app does not send notifications itself. Without that sender, notifications are not delivered. A direct or Tailscale connection alone does not enable push notifications. Force-stopping the Android app in system Settings prevents push delivery until you open it again.
 diff --git a/packages/client-runtime/src/device/stream.test.ts b/packages/client-runtime/src/device/stream.test.ts
-index 737daf515..942e3a751 100644
+index 09f04c5278..256ea61fcf 100644
 --- a/packages/client-runtime/src/device/stream.test.ts
 +++ b/packages/client-runtime/src/device/stream.test.ts
 @@ -102,6 +102,169 @@ describe("native device stream transport", () => {
@@ -4986,7 +5159,18 @@ index 737daf515..942e3a751 100644
    it("renews an expired Android ticket when the HTTP upgrade is rejected instead of retrying it forever", async () => {
      const { client, opened, events } = setup("android");
      client.start();
-@@ -439,6 +602,175 @@ describe("shared device stream readiness and recovery", () => {
+@@ -250,7 +413,9 @@ function recoveryFixture(
+   const signals: AbortSignal[] = [];
+   const fetch = vi.fn((url: string, init: RequestInit) => {
+     const signal = init.signal!;
+-    signals.push(signal);
++    // The transport probe is a short-lived capability read, not a stream
++    // transfer, so it is excluded from the abort-on-teardown assertion.
++    if (!url.includes("/api?")) signals.push(signal);
+     if (url.includes("/api?")) return Promise.resolve(Response.json({}));
+     if (!url.includes("stream.avcc")) return Promise.resolve(new Response("prime"));
+     return Promise.resolve(
+@@ -440,6 +605,189 @@ describe("shared device stream readiness and recovery", () => {
      client.stop();
    });
  
@@ -5046,6 +5230,8 @@ index 737daf515..942e3a751 100644
 +    async (platform, preferMjpeg) => {
 +      const { client, events, signals, sockets, image } = recoveryFixture(platform, preferMjpeg);
 +      client.start();
++      // Android now probes the hub before opening its socket.
++      await vi.advanceTimersByTimeAsync(0);
 +      await vi.advanceTimersByTimeAsync(14_999);
 +      expect(events.onStatus.mock.calls.some(([status]) => status === "error")).toBe(false);
 +      await vi.advanceTimersByTimeAsync(1);
@@ -5054,7 +5240,13 @@ index 737daf515..942e3a751 100644
 +        expect.stringContaining("No video"),
 +      );
 +      expect(events.onInputConnected).toHaveBeenLastCalledWith(false, expect.any(String));
-+      expect(signals.every((signal) => signal.aborted)).toBe(true);
++      // iOS transfers video over fetch, so the abort assertion has real targets.
++      // Android SEMU streams over the socket, so an empty list is legitimate there
++      // and only the close assertion below carries weight.
++      if (platform === "ios") {
++        expect(signals.length).toBeGreaterThan(0);
++        expect(signals.every((signal) => signal.aborted)).toBe(true);
++      }
 +      expect(sockets[0]!.close).toHaveBeenCalledOnce();
 +      expect(image.src).toBe("");
 +      expect(vi.getTimerCount()).toBe(0);
@@ -5064,6 +5256,8 @@ index 737daf515..942e3a751 100644
 +  it("does not extend the first-frame deadline each time a socket reconnects", async () => {
 +    const { client, sockets, events } = recoveryFixture("android");
 +    client.start();
++    // Android now probes the hub before opening its socket.
++    await vi.advanceTimersByTimeAsync(0);
 +    sockets[0]!.onopen?.();
 +    sockets[0]!.onclose?.({ code: 1000, reason: "restart" });
 +    await vi.advanceTimersByTimeAsync(14_999);
@@ -5118,6 +5312,8 @@ index 737daf515..942e3a751 100644
 +    const { client, sockets, sps, Decoder, events } = recoveryFixture("android");
 +    Decoder.isConfigSupported.mockResolvedValue({ supported: false });
 +    client.start();
++    // Android now probes the hub before opening its socket.
++    await vi.advanceTimersByTimeAsync(0);
 +    sockets[0]!.onmessage?.({ data: sps });
 +    await vi.advanceTimersByTimeAsync(0);
 +    expect(events.onStatus).toHaveBeenLastCalledWith(
@@ -5133,6 +5329,8 @@ index 737daf515..942e3a751 100644
 +    const { client, sockets, sps, events, decodedFrame, drawImage, decoders } =
 +      recoveryFixture("android");
 +    client.start();
++    // Android now probes the hub before opening its socket.
++    await vi.advanceTimersByTimeAsync(0);
 +    sockets[0]!.onmessage?.({ data: sps });
 +    await vi.advanceTimersByTimeAsync(0);
 +    expect(events.onStatus.mock.calls.some(([status]) => status === "streaming")).toBe(false);
@@ -5163,7 +5361,7 @@ index 737daf515..942e3a751 100644
      const { client, sockets, sps, events, Decoder, decoders, decodedFrame, drawImage } =
        recoveryFixture("android");
 diff --git a/packages/client-runtime/src/device/stream.ts b/packages/client-runtime/src/device/stream.ts
-index c4b807859..670c4338c 100644
+index a8913d5a41..7229aaaf91 100644
 --- a/packages/client-runtime/src/device/stream.ts
 +++ b/packages/client-runtime/src/device/stream.ts
 @@ -410,6 +410,7 @@ export function createDeviceStreamClient(
@@ -5195,18 +5393,22 @@ index c4b807859..670c4338c 100644
    };
  
    const scheduleRetry = (channel: "video" | "input", run: () => void) => {
-@@ -1163,6 +1170,8 @@ export function createDeviceStreamClient(
- 
-   const connectAndroid = () => {
+@@ -1167,6 +1174,12 @@ export function createDeviceStreamClient(
+   /** `inputOnly` keeps a socket for input beside a WebRTC feed, so its reconnects leave video alone. */
+   const connectAndroid = (inputOnly = false) => {
      if (stopped) return;
-+    awaitingSessionAck = false;
-+    lastKeyframeRequestAt = -Infinity;
-     const ws = new WebSocket(wsUrl(`/ws?device=${device}&frame-meta=1`));
-     ws.binaryType = "arraybuffer";
-     socket = ws;
-@@ -1174,13 +1183,16 @@ export function createDeviceStreamClient(
++    // Only a full video socket starts a new video session; the input-only
++    // sidecar beside a WebRTC feed must not reset the keyframe throttle.
++    if (!inputOnly) {
++      awaitingSessionAck = false;
++      lastKeyframeRequestAt = -Infinity;
++    }
+     const ws = new WebSocket(
+       wsUrl(`/ws?device=${device}&${inputOnly ? "video=0" : "frame-meta=1"}`),
+     );
+@@ -1180,13 +1193,16 @@ export function createDeviceStreamClient(
      ws.onmessage = (event) => {
-       if (stopped || socket !== ws) return;
+       if (stopped || socket !== ws || inputOnly) return;
        if (typeof event.data === "string") {
 -        // The encoder restarts at a new size when the device rotates; the
 -        // next keyframe carries a fresh SPS, so the decoder is rebuilt from it.
@@ -5224,7 +5426,7 @@ index c4b807859..670c4338c 100644
          }
          return;
        }
-@@ -1201,7 +1213,11 @@ export function createDeviceStreamClient(
+@@ -1207,7 +1223,11 @@ export function createDeviceStreamClient(
              if (!isCurrent() || epoch !== decoderEpoch) return;
              configuring = false;
              awaitingKeyframe = true;
@@ -5237,7 +5439,7 @@ index c4b807859..670c4338c 100644
            },
          );
          return;
-@@ -1353,9 +1369,20 @@ export function createDeviceStreamClient(
+@@ -1371,9 +1391,20 @@ export function createDeviceStreamClient(
        }
        if (phase !== "down") return;
        if (event.key === "Escape") return send(JSON.stringify({ type: "back" }));
@@ -5262,7 +5464,7 @@ index c4b807859..670c4338c 100644
        }
      },
 diff --git a/packages/contracts/src/guestShare.ts b/packages/contracts/src/guestShare.ts
-index fd991fe1e..c9be47dea 100644
+index 715a837dae..1d95161535 100644
 --- a/packages/contracts/src/guestShare.ts
 +++ b/packages/contracts/src/guestShare.ts
 @@ -42,7 +42,6 @@ export type ThreadGuestMessage = typeof ThreadGuestMessage.Type;
@@ -5284,10 +5486,10 @@ index fd991fe1e..c9be47dea 100644
    read_failed: "Failed to read the shared thread.",
    changed: "The guest link changed while it was being created.",
 diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
-index 89fc70f2b..dc51d01d5 100644
+index f460619f11..522083aa2f 100644
 --- a/packages/contracts/src/ipc.ts
 +++ b/packages/contracts/src/ipc.ts
-@@ -486,6 +486,7 @@ export interface DesktopServerExposureState {
+@@ -495,6 +495,7 @@ export interface DesktopServerExposureState {
    mode: DesktopServerExposureMode;
    endpointUrl: string | null;
    advertisedHost: string | null;
@@ -5295,7 +5497,7 @@ index 89fc70f2b..dc51d01d5 100644
    tailscaleServeEnabled: boolean;
    tailscaleServePort: number;
  }
-@@ -494,6 +495,7 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
+@@ -503,6 +504,7 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
    mode: DesktopServerExposureModeSchema,
    endpointUrl: Schema.NullOr(Schema.String),
    advertisedHost: Schema.NullOr(Schema.String),
@@ -5303,7 +5505,7 @@ index 89fc70f2b..dc51d01d5 100644
    tailscaleServeEnabled: Schema.Boolean,
    tailscaleServePort: Schema.Number,
  });
-@@ -1065,6 +1067,7 @@ export interface DesktopBridge {
+@@ -1074,6 +1076,7 @@ export interface DesktopBridge {
    resolveSshPasswordPrompt: (requestId: string, password: string | null) => Promise<void>;
    getServerExposureState: () => Promise<DesktopServerExposureState>;
    setServerExposureMode: (mode: DesktopServerExposureMode) => Promise<DesktopServerExposureState>;
@@ -5312,7 +5514,7 @@ index 89fc70f2b..dc51d01d5 100644
      readonly enabled: boolean;
      readonly port?: number;
 diff --git a/packages/contracts/src/remoteAccess.ts b/packages/contracts/src/remoteAccess.ts
-index e3de3c29e..a603f3361 100644
+index e3de3c29e1..a603f3361d 100644
 --- a/packages/contracts/src/remoteAccess.ts
 +++ b/packages/contracts/src/remoteAccess.ts
 @@ -63,6 +63,8 @@ export const AdvertisedEndpoint = Schema.Struct({
@@ -5325,10 +5527,10 @@ index e3de3c29e..a603f3361 100644
  });
  export type AdvertisedEndpoint = typeof AdvertisedEndpoint.Type;
 diff --git a/packages/contracts/src/settings.test.ts b/packages/contracts/src/settings.test.ts
-index 25523c2d0..0a99668d2 100644
+index 859644a54c..c2371e3838 100644
 --- a/packages/contracts/src/settings.test.ts
 +++ b/packages/contracts/src/settings.test.ts
-@@ -359,6 +359,53 @@ describe("requiredScopesForProjectMutation", () => {
+@@ -473,6 +473,53 @@ describe("requiredScopesForProjectMutation", () => {
    });
  });
  
@@ -5383,10 +5585,10 @@ index 25523c2d0..0a99668d2 100644
    it("distinguishes unmigrated lists from deliberately cleared lists", () => {
      expect(decodeServerSettings({})).toMatchObject({
 diff --git a/packages/contracts/src/settings.ts b/packages/contracts/src/settings.ts
-index d789770f1..30c87cb4c 100644
+index 643d27296f..81cabc2bff 100644
 --- a/packages/contracts/src/settings.ts
 +++ b/packages/contracts/src/settings.ts
-@@ -49,6 +49,29 @@ import {
+@@ -50,6 +50,29 @@ import {
  } from "./providerInstance.ts";
  import { PullRequestMergeMethod } from "./pullRequest.ts";
  
@@ -5416,7 +5618,7 @@ index d789770f1..30c87cb4c 100644
  export const TimestampFormat = Schema.Literals(["locale", "12-hour", "24-hour"]);
  export type TimestampFormat = typeof TimestampFormat.Type;
  const DEFAULT_TIMESTAMP_FORMAT: TimestampFormat = "locale";
-@@ -1216,6 +1239,9 @@ export const ServerSettings = Schema.Struct({
+@@ -1254,6 +1277,9 @@ export const ServerSettings = Schema.Struct({
    ),
    /** Beta: guest links for this machine's threads. Off refuses new links and pauses existing ones. */
    guestSharingEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
@@ -5426,7 +5628,7 @@ index d789770f1..30c87cb4c 100644
    /**
     * Beta: links to the user's other machines, both ways. Off refuses new links, calls over links
     * and tasks on another machine; tasks already running there finish.
-@@ -1570,6 +1596,7 @@ export const ServerSettingsPatch = Schema.Struct({
+@@ -1614,6 +1640,7 @@ export const ServerSettingsPatch = Schema.Struct({
    snoozeLimitedThreads: Schema.optionalKey(Schema.Boolean),
    snoozePresets: Schema.optionalKey(SnoozePresetSettings),
    guestSharingEnabled: Schema.optionalKey(Schema.Boolean),
@@ -5435,7 +5637,7 @@ index d789770f1..30c87cb4c 100644
    backgroundActivity: Schema.optionalKey(
      Schema.Struct({
 diff --git a/packages/provider-acp-registry/src/testing.ts b/packages/provider-acp-registry/src/testing.ts
-index 11bb5e41d..4cc790443 100644
+index 11bb5e41d9..4cc790443e 100644
 --- a/packages/provider-acp-registry/src/testing.ts
 +++ b/packages/provider-acp-registry/src/testing.ts
 @@ -18,6 +18,7 @@ export {
@@ -5447,7 +5649,7 @@ index 11bb5e41d..4cc790443 100644
    type AcpRegistryLiveConfiguration,
  } from "./server/probe.ts";
 diff --git a/packages/shared/src/advertisedEndpoint.ts b/packages/shared/src/advertisedEndpoint.ts
-index 14537ed69..6457c5005 100644
+index 14537ed69c..6457c50057 100644
 --- a/packages/shared/src/advertisedEndpoint.ts
 +++ b/packages/shared/src/advertisedEndpoint.ts
 @@ -17,6 +17,8 @@ export interface CreateAdvertisedEndpointInput {
@@ -5468,10 +5670,10 @@ index 14537ed69..6457c5005 100644
    };
  }
 diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
-index 087858aea..0b82fd5d1 100644
+index 381ff78688..575cdd1cdf 100644
 --- a/pnpm-lock.yaml
 +++ b/pnpm-lock.yaml
-@@ -590,6 +590,9 @@ importers:
+@@ -593,6 +593,9 @@ importers:
        '@t3tools/mobile-terminal-native':
          specifier: file:./modules/t3-terminal
          version: file:apps/mobile/modules/t3-terminal
