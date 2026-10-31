@@ -11,7 +11,7 @@ index 7464d8fbe9..29ea983006 100644
    getAdvertisedEndpoints: Effect.succeed([]),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 diff --git a/apps/desktop/src/backend/DesktopServerExposure.test.ts b/apps/desktop/src/backend/DesktopServerExposure.test.ts
-index f53cde3e45..2c1b28d504 100644
+index 67ac6a51e6..f9ffe39d45 100644
 --- a/apps/desktop/src/backend/DesktopServerExposure.test.ts
 +++ b/apps/desktop/src/backend/DesktopServerExposure.test.ts
 @@ -40,6 +40,30 @@ const tailnetNetworkInterfaces: DesktopNetworkInterfaces.NetworkInterfaces = {
@@ -53,9 +53,9 @@ index f53cde3e45..2c1b28d504 100644
            tailscaleServeEnabled: false,
            tailscaleServePort: 443,
          });
-@@ -238,6 +263,159 @@ describe("DesktopServerExposure", () => {
-     ),
-   );
+@@ -266,6 +291,159 @@ describe("DesktopServerExposure", () => {
+     );
+   });
  
 +  it.effect("advertises one endpoint per physical interface and skips virtual bridges", () =>
 +    withHarness(
@@ -213,7 +213,7 @@ index f53cde3e45..2c1b28d504 100644
    it.effect("persists tailscale serve preferences atomically and reports no-op updates", () =>
      withHarness(
        emptyNetworkInterfaces,
-@@ -269,6 +447,71 @@ describe("DesktopServerExposure", () => {
+@@ -297,6 +475,71 @@ describe("DesktopServerExposure", () => {
      ),
    );
  
@@ -285,7 +285,7 @@ index f53cde3e45..2c1b28d504 100644
    it.effect("keeps a Tailscale Serve change made while a mode change is saving", () =>
      Effect.gen(function* () {
        const modeWriteStarted = yield* Deferred.make<void>();
-@@ -443,4 +686,104 @@ describe("DesktopServerExposure", () => {
+@@ -471,4 +714,104 @@ describe("DesktopServerExposure", () => {
        },
      ),
    );
@@ -391,7 +391,7 @@ index f53cde3e45..2c1b28d504 100644
 +  );
  });
 diff --git a/apps/desktop/src/backend/DesktopServerExposure.ts b/apps/desktop/src/backend/DesktopServerExposure.ts
-index 8d178c605c..29eadec500 100644
+index 288d969d66..49b008de9d 100644
 --- a/apps/desktop/src/backend/DesktopServerExposure.ts
 +++ b/apps/desktop/src/backend/DesktopServerExposure.ts
 @@ -45,6 +45,9 @@ interface DesktopAdvertisedEndpointInput {
@@ -626,7 +626,15 @@ index 8d178c605c..29eadec500 100644
    });
    const unavailable =
      input.requestedMode === "network-accessible" &&
-@@ -554,13 +654,68 @@ export const make = Effect.gen(function* () {
+@@ -425,6 +525,7 @@ const withCurrentAdvertisedHost = (
+     port: state.port,
+     networkInterfaces,
+     ...(override ? { advertisedHostOverride: override } : {}),
++    preferredLanInterfaceName: state.preferredLanInterfaceName,
+   });
+   return {
+     ...state,
+@@ -588,6 +689,34 @@ export const make = Effect.gen(function* () {
      changePermit.withPermit,
    );
  
@@ -659,44 +667,18 @@ index 8d178c605c..29eadec500 100644
 +  });
 +
    const getAdvertisedEndpoints = Effect.gen(function* () {
-     const state = yield* Ref.get(stateRef);
      const currentNetworkInterfaces = yield* readNetworkInterfaces;
-+    // Re-resolve the LAN host against live interfaces: the persisted state
-+    // was resolved at bootstrap (or at the last settings change), so a
-+    // preferred interface that vanished or changed address afterwards must
-+    // not keep advertising a dead pairing URL.
-+    const advertisedHostOverride = Option.getOrUndefined(config.desktopLanHostOverride);
-+    const exposure =
-+      state.mode === "network-accessible"
-+        ? resolveDesktopServerExposure({
-+            mode: state.mode,
-+            port: state.port,
-+            networkInterfaces: currentNetworkInterfaces,
-+            ...(advertisedHostOverride ? { advertisedHostOverride } : {}),
-+            preferredLanInterfaceName: (yield* desktopSettings.get).preferredLanInterfaceName,
-+          })
-+        : toResolvedExposure(state);
-+    if (
-+      exposure.endpointUrl !== Option.getOrNull(state.endpointUrl) ||
-+      exposure.advertisedHost !== Option.getOrNull(state.advertisedHost)
-+    ) {
-+      yield* Ref.set(stateRef, {
-+        ...state,
-+        endpointUrl: Option.fromNullishOr(exposure.endpointUrl),
-+        advertisedHost: Option.fromNullishOr(exposure.advertisedHost),
-+      });
-+    }
-     const coreEndpoints = resolveDesktopCoreAdvertisedEndpoints({
+     const state = yield* readCurrentState(currentNetworkInterfaces);
+@@ -595,6 +724,8 @@ export const make = Effect.gen(function* () {
        port: state.port,
--      exposure: toResolvedExposure(state),
-+      exposure,
+       exposure: toResolvedExposure(state),
        customHttpsEndpointUrls: config.desktopHttpsEndpointUrls,
 +      networkInterfaces: currentNetworkInterfaces,
 +      advertisedHostOverride: Option.getOrNull(config.desktopLanHostOverride),
      });
  
      // Spawning Mac App Store Tailscale can prompt for TCC access even when exposure is disabled.
-@@ -589,6 +744,7 @@ export const make = Effect.gen(function* () {
+@@ -623,6 +754,7 @@ export const make = Effect.gen(function* () {
      backendConfig,
      configureFromSettings,
      setMode,
@@ -725,10 +707,10 @@ index 35333ac3d3..389ac08c2f 100644
    yield* ipc.handle(getAdvertisedEndpoints);
  
 diff --git a/apps/desktop/src/ipc/channels.ts b/apps/desktop/src/ipc/channels.ts
-index bba4f6449b..2fcb0fa498 100644
+index 538dd06b0b..0dce3b664a 100644
 --- a/apps/desktop/src/ipc/channels.ts
 +++ b/apps/desktop/src/ipc/channels.ts
-@@ -65,6 +65,7 @@ export const FETCH_SSH_SESSION_STATE_CHANNEL = "desktop:fetch-ssh-session-state"
+@@ -66,6 +66,7 @@ export const FETCH_SSH_SESSION_STATE_CHANNEL = "desktop:fetch-ssh-session-state"
  export const SSH_PASSWORD_PROMPT_CHANNEL = "desktop:ssh-password-prompt";
  export const RESOLVE_SSH_PASSWORD_PROMPT_CHANNEL = "desktop:resolve-ssh-password-prompt";
  export const GET_SERVER_EXPOSURE_STATE_CHANNEL = "desktop:get-server-exposure-state";
@@ -761,10 +743,10 @@ index 9a9ce76897..b69c1e76ca 100644
    channel: IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL,
    payload: SetTailscaleServeEnabledInput,
 diff --git a/apps/desktop/src/preload.ts b/apps/desktop/src/preload.ts
-index 965b7db5d6..d53f879e16 100644
+index 950ed972c6..3c16dec701 100644
 --- a/apps/desktop/src/preload.ts
 +++ b/apps/desktop/src/preload.ts
-@@ -174,6 +174,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
+@@ -179,6 +179,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
    getServerExposureState: () => ipcRenderer.invoke(IpcChannels.GET_SERVER_EXPOSURE_STATE_CHANNEL),
    setServerExposureMode: (mode) =>
      ipcRenderer.invoke(IpcChannels.SET_SERVER_EXPOSURE_MODE_CHANNEL, mode),
@@ -1413,10 +1395,10 @@ index d8d16b7dbf..ad7edf0d31 100644
            setUpdateChannel: (channel) =>
              setUpdateChannelError
 diff --git a/apps/desktop/src/window/DesktopWindow.test.ts b/apps/desktop/src/window/DesktopWindow.test.ts
-index 8b6ab7c7d8..f3e392d1f0 100644
+index 0dcb2b85ac..b95daced6e 100644
 --- a/apps/desktop/src/window/DesktopWindow.test.ts
 +++ b/apps/desktop/src/window/DesktopWindow.test.ts
-@@ -177,6 +177,7 @@ const layerDesktopServerExposure = Layer.succeed(DesktopServerExposure.DesktopSe
+@@ -184,6 +184,7 @@ const layerDesktopServerExposure = Layer.succeed(DesktopServerExposure.DesktopSe
    }),
    configureFromSettings: () => Effect.die("unexpected configureFromSettings"),
    setMode: () => Effect.die("unexpected setMode"),
@@ -1424,7 +1406,7 @@ index 8b6ab7c7d8..f3e392d1f0 100644
    setTailscaleServeEnabled: () => Effect.die("unexpected setTailscaleServeEnabled"),
    getAdvertisedEndpoints: Effect.die("unexpected getAdvertisedEndpoints"),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
-@@ -255,6 +256,7 @@ function layerTest(input: {
+@@ -262,6 +263,7 @@ function layerTest(input: {
          return { settings: desktopSettings, changed };
        }),
      setServerExposureMode: () => Effect.die("unexpected server exposure update"),
@@ -1445,7 +1427,7 @@ index 8468a95386..2ec3b9aa12 100644
    getAdvertisedEndpoints: Effect.succeed([]),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 diff --git a/apps/mobile/package.json b/apps/mobile/package.json
-index f5c1c65218..9223b0d949 100644
+index a49c385686..3cc96c3ed7 100644
 --- a/apps/mobile/package.json
 +++ b/apps/mobile/package.json
 @@ -74,6 +74,7 @@
@@ -3177,10 +3159,10 @@ index 39643ff38c..eb7ab14dfd 100644
    "skips unsupported baseline and turn checkpoints without swallowing capture failures",
    () =>
 diff --git a/apps/server/src/orchestration-v2/CheckpointService.ts b/apps/server/src/orchestration-v2/CheckpointService.ts
-index 2747fcefac..0529c76ba1 100644
+index 5990456e64..19ddf5b13a 100644
 --- a/apps/server/src/orchestration-v2/CheckpointService.ts
 +++ b/apps/server/src/orchestration-v2/CheckpointService.ts
-@@ -241,8 +241,11 @@ export const layer: Layer.Layer<
+@@ -244,8 +244,11 @@ export const layer: Layer.Layer<
      const withWorkspaceLock = <A, E, R>(cwd: string, effect: Effect.Effect<A, E, R>) =>
        workspaceLocks.withLock(cwd, effect);
  
@@ -3334,7 +3316,7 @@ index 0000000000..d848a2bb67
 +  ),
 +);
 diff --git a/apps/server/src/serverSettings.test.ts b/apps/server/src/serverSettings.test.ts
-index 0ae14fae5d..b3fdf8273c 100644
+index ef8b4d6afa..179e030323 100644
 --- a/apps/server/src/serverSettings.test.ts
 +++ b/apps/server/src/serverSettings.test.ts
 @@ -97,6 +97,33 @@ const recordProviderUsage = (provider: string, instanceId: string | null = provi
@@ -3470,7 +3452,7 @@ index 67a1c3c341..619dd27906 100644
      if (
        config === null ||
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index 6a8f80d6d1..cec236994b 100644
+index 9413b13a08..e6543bd605 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
 @@ -77,6 +77,7 @@ import React, {
@@ -3492,7 +3474,7 @@ index 6a8f80d6d1..cec236994b 100644
  import {
    claimWorkspaceBasenameLookup,
    needsWorkspaceBasenameLookup,
-@@ -494,6 +499,14 @@ function useChatMarkdownState({
+@@ -546,6 +551,14 @@ function useChatMarkdownState({
    const searchProjectEntries = useAtomQueryRunner(projectEnvironment.searchEntries, {
      reportFailure: false,
    });
@@ -3507,7 +3489,7 @@ index 6a8f80d6d1..cec236994b 100644
    const getFilesystemMetadata = useAtomQueryRunner(filesystemEnvironment.getMetadata, {
      reportFailure: false,
      refresh: true,
-@@ -778,6 +791,80 @@ function useChatMarkdownState({
+@@ -795,6 +808,80 @@ function useChatMarkdownState({
      });
      return metadata._tag === "Success" && metadata.value.entries[0] === null ? match : null;
    };
@@ -3588,7 +3570,7 @@ index 6a8f80d6d1..cec236994b 100644
    const openFileInPanel = (fileLinkMeta: MarkdownFileLinkMeta, panelPath: string) => {
      if (!threadRef) return;
      // Every open supersedes pending lookups, including synchronous opens.
-@@ -800,10 +887,11 @@ function useChatMarkdownState({
+@@ -817,10 +904,11 @@ function useChatMarkdownState({
      })();
    };
    const fileLinkChip = (
@@ -3601,7 +3583,7 @@ index 6a8f80d6d1..cec236994b 100644
      const resolveHostPath = () =>
        resolveMarkdownFileHostPath({
          meta: fileLinkMeta,
-@@ -909,6 +997,7 @@ function useChatMarkdownState({
+@@ -926,6 +1014,7 @@ function useChatMarkdownState({
      skills,
      threadRef,
      updateThreadPullRequestLink,
@@ -3609,7 +3591,7 @@ index 6a8f80d6d1..cec236994b 100644
    };
    return {
      componentState,
-@@ -948,6 +1037,9 @@ function selectInlineCode(event: ReactMouseEvent<HTMLElement>) {
+@@ -964,6 +1053,9 @@ function selectInlineCode(event: ReactMouseEvent<HTMLElement>) {
    window.getSelection()?.selectAllChildren(event.currentTarget);
  }
  
@@ -3619,7 +3601,7 @@ index 6a8f80d6d1..cec236994b 100644
  const CHAT_MARKDOWN_COMPONENTS = {
    h1: markdownHeadingRenderer(1),
    h2: markdownHeadingRenderer(2),
-@@ -1363,6 +1455,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1380,6 +1472,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
        workspaceMutationId,
        renderContextReference,
        fileLinkChip,
@@ -3627,7 +3609,7 @@ index 6a8f80d6d1..cec236994b 100644
      } = use(ChatMarkdownRendererContext);
      const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
      const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
-@@ -1387,7 +1480,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1404,7 +1497,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
      const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
      const { className, style: _style, width, height, ...imageProps } = props;
      const authoredSizeStyle = authoredImageSizeStyle(width, height);
@@ -3641,10 +3623,10 @@ index 6a8f80d6d1..cec236994b 100644
      if (mediaKind === "audio") {
        const filePath = imageSource._tag === "WorkspaceFile" ? imageSource.path : null;
 diff --git a/apps/web/src/components/ChatView.logic.test.ts b/apps/web/src/components/ChatView.logic.test.ts
-index 3304899216..30e2af1c1e 100644
+index 14125c6840..24821af2a5 100644
 --- a/apps/web/src/components/ChatView.logic.test.ts
 +++ b/apps/web/src/components/ChatView.logic.test.ts
-@@ -34,11 +34,14 @@ import { Atom } from "effect/reactivity";
+@@ -35,11 +35,14 @@ import { Atom } from "effect/reactivity";
  import { appAtomRegistry } from "../rpc/atomRegistry";
  import { environmentThreadDetails } from "../state/threads";
  
@@ -3660,7 +3642,7 @@ index 3304899216..30e2af1c1e 100644
    resolveWorktreeSetupProgress,
    peekRememberedThreadTimeline,
    rememberReadyThreadTimeline,
-@@ -50,6 +53,7 @@ import {
+@@ -51,6 +54,7 @@ import {
    deriveComposerSendState,
    deriveLockedProvider,
    hasServerAcknowledgedLocalDispatch,
@@ -3668,7 +3650,7 @@ index 3304899216..30e2af1c1e 100644
    waitForRevertedMessage,
  } from "./ChatView.logic";
  
-@@ -619,6 +623,178 @@ describe("resolveComposerProviderSelection", () => {
+@@ -636,6 +640,178 @@ describe("resolveComposerProviderSelection", () => {
    });
  });
  
@@ -4079,10 +4061,10 @@ index f7730b3679..a9260d1162 100644
  }
  
 diff --git a/apps/web/src/components/chat/useChatShortcuts.ts b/apps/web/src/components/chat/useChatShortcuts.ts
-index 7e90fc957a..738f781250 100644
+index 637546f65d..5f17fd7fba 100644
 --- a/apps/web/src/components/chat/useChatShortcuts.ts
 +++ b/apps/web/src/components/chat/useChatShortcuts.ts
-@@ -10,7 +10,7 @@ import {
+@@ -11,7 +11,7 @@ import { isInSideChatPane } from "../../lib/sideChatPane";
  import { getTerminalFocusOwner, type TerminalFocusOwner } from "../../lib/terminalFocus";
  import type { ComposerHandleRef } from "../../composerHandleContext";
  import type { BranchToolbarHandle } from "../BranchToolbar";
@@ -4091,10 +4073,11 @@ index 7e90fc957a..738f781250 100644
  import { composerShortcutCommands } from "./composerShortcuts";
  
  /** Returning false lets the key event through untouched. */
-@@ -56,6 +56,7 @@ export function useChatShortcuts(input: ChatShortcutsInput) {
+@@ -65,6 +65,8 @@ export function useChatShortcuts(input: ChatShortcutsInput) {
        return;
      }
-     if (!input.enabled || isCommandPaletteOpen()) return;
+     if (!input.enabled || isCommandPaletteOpen() || isInSideChatPane(event.target)) return;
++    // A device stream canvas owns its own keys; chat shortcuts must not fire over it.
 +    if (eventPathContainsSelector(event, '[role="application"]')) return;
      const terminalFocusOwner = getTerminalFocusOwner();
      if (event.defaultPrevented && terminalFocusOwner === null) return;
@@ -4190,17 +4173,21 @@ index 0000000000..5f2284e73d
 +  return `${header}\n${body.join("\n")}`;
 +}
 diff --git a/apps/web/src/components/device/DeviceStreamView.browser.test.tsx b/apps/web/src/components/device/DeviceStreamView.browser.test.tsx
-new file mode 100644
-index 0000000000..b3453839b1
---- /dev/null
+index 71052227da..43faa82b39 100644
+--- a/apps/web/src/components/device/DeviceStreamView.browser.test.tsx
 +++ b/apps/web/src/components/device/DeviceStreamView.browser.test.tsx
-@@ -0,0 +1,320 @@
+@@ -1,47 +1,184 @@
+-import { RegistryContext } from "@effect/atom-react";
+-import { AtomRegistry } from "effect/reactivity";
+-import "~/index.css";
 +import { useEffect, useSyncExternalStore } from "react";
-+import { EnvironmentId } from "@t3tools/contracts";
+ import { EnvironmentId } from "@t3tools/contracts";
+-import { expect, it, vi } from "vite-plus/test";
 +import { expect, it, onTestFinished, vi } from "vite-plus/test";
-+
+ 
+-import { act, render, stubGlobal } from "../../../test/render";
 +import { act, fakeTimers, render } from "../../../test/render";
-+
+ 
 +const accessStore = {
 +  value: { httpBase: "http://test", wsBase: "ws://test", query: {}, credentials: true },
 +  listeners: new Set<() => void>(),
@@ -4213,11 +4200,14 @@ index 0000000000..b3453839b1
 +    return () => accessStore.listeners.delete(listener);
 +  },
 +};
-+vi.mock(import("~/state/device"), async (original) => ({
-+  ...(await original()),
+ vi.mock(import("~/state/device"), async (original) => ({
+   ...(await original()),
+-  useDeviceHubAccess: () => access,
 +  useDeviceHubAccess: () => useSyncExternalStore(accessStore.subscribe, () => accessStore.value),
 +  refreshDeviceHubAccess: () => accessStore.refresh(),
-+}));
+ }));
+-vi.mock(import("./DevicePhoneViewport"), () => ({
+-  DevicePhoneViewport: () => <></>,
 +// Counts of access primes and viewer mounts, reset by each setup().
 +let primes = 0;
 +let viewerMounts = 0;
@@ -4234,8 +4224,22 @@ index 0000000000..b3453839b1
 +    }, []);
 +    return <></>;
 +  },
-+}));
-+import { DeviceStreamView } from "./DeviceStreamView";
+ }));
+-import { DeviceStreamView } from "./DeviceStreamView";
+-
+-const access = { httpBase: "http://test", wsBase: "ws://test", query: {}, credentials: true };
+-function setup() {
+-  const registry = AtomRegistry.make();
+-  const touches: unknown[] = [];
+-  const image = vi.spyOn(HTMLImageElement.prototype, "src", "set").mockImplementation(() => {});
+-  // Select MJPEG without starting a WebCodecs decoder. Input uses the real stream client.
+-  const decoder = stubGlobal("VideoDecoder", undefined);
+-  Reflect.deleteProperty(globalThis, "VideoDecoder");
+-  const fetch = stubGlobal("fetch", () => Promise.resolve(new Response("prime")));
+-  // The client opens its input socket only after the MJPEG prime resolves.
+-  type InputSocket = {
+-    onmessage?: (event: { data: ArrayBuffer }) => void;
++import { DeviceStreamView, type DeviceViewControls } from "./DeviceStreamView";
 +
 +// MJPEG frames come from the device hub, so images keep their src without loading it and a
 +// test publishes a frame by setting the natural size and firing "load".
@@ -4275,7 +4279,10 @@ index 0000000000..b3453839b1
 +  Element.prototype.removeAttribute = function (this: Element, name: string) {
 +    if (this instanceof HTMLImageElement && name === "src") imageSources.delete(this);
 +    return removeAttribute.call(this, name);
-+  };
+   };
+-  let open!: (socket: InputSocket) => void;
+-  const opened = new Promise<InputSocket>((resolve) => {
+-    open = resolve;
 +}
 +function restoreImages() {
 +  Object.defineProperty(HTMLImageElement.prototype, "src", srcDescriptor);
@@ -4290,6 +4297,7 @@ index 0000000000..b3453839b1
 +// Each test renders through the shared helper so the React root and the DOM
 +// stubs are disposed together; only the image stubs need restoring by hand.
 +let messages: Array<string | Uint8Array> = [];
++let touches: unknown[] = [];
 +
 +function sizedContainer() {
 +  const element = document.createElement("div");
@@ -4303,16 +4311,18 @@ index 0000000000..b3453839b1
 +  return render(view(true), { container });
 +}
 +
-+async function setup(platform: "ios" | "android" = "ios", h264 = false) {
++async function setup(platform: "ios" | "android" = "ios", h264 = false, withControls = false) {
 +  onTestFinished(() => {
 +    vi.unstubAllGlobals();
 +    restoreImages();
-+  });
+   });
+-  const socket = stubGlobal(
 +  primes = 0;
 +  viewerMounts = 0;
 +  viewerUnmounts = 0;
 +  images = [];
 +  messages = [];
++  touches = [];
 +  stubImages();
 +  let videoBody: ReadableStreamDefaultController<Uint8Array> | undefined;
 +  let output: VideoFrameOutputCallback | undefined;
@@ -4362,19 +4372,45 @@ index 0000000000..b3453839b1
 +  });
 +  const sockets: Array<{ onmessage?: (event: { data: ArrayBuffer }) => void }> = [];
 +  vi.stubGlobal(
-+    "WebSocket",
-+    class {
-+      static OPEN = 1;
-+      readyState = 1;
-+      constructor() {
+     "WebSocket",
+     class {
+       static OPEN = 1;
+       readyState = 1;
+       constructor() {
+-        open(this);
 +        sockets.push(this);
-+      }
-+      onmessage?: (event: { data: ArrayBuffer }) => void;
-+      send(message: string | Uint8Array) {
++        openInput(this);
+       }
+       onmessage?: (event: { data: ArrayBuffer }) => void;
+       send(message: string | Uint8Array) {
 +        messages.push(message);
-+      }
-+      close() {}
-+    },
++        // Input frames are 0x03-prefixed JSON; the flat-pointer suite reads those.
+         if (typeof message !== "string" && message[0] === 0x03) {
+           touches.push(JSON.parse(new TextDecoder().decode(message.subarray(1))));
+         }
+@@ -49,54 +186,83 @@ function setup() {
+       close() {}
+     },
+   );
+-  return {
+-    view: () => (
+-      <RegistryContext.Provider value={registry}>
+-        <div style={{ width: 400, height: 800 }}>{view()}</div>
+-      </RegistryContext.Provider>
+-    ),
+-    [Symbol.dispose]() {
+-      registry.dispose();
+-      image.mockRestore();
+-      socket[Symbol.dispose]();
+-      fetch[Symbol.dispose]();
+-      decoder[Symbol.dispose]();
++  // The client opens its input socket only after the MJPEG prime resolves, so the
++  // flat-pointer suite waits for the first socket instead of indexing synchronously.
++  let openInput!: (socket: { onmessage?: (event: { data: ArrayBuffer }) => void }) => void;
++  const inputOpened = new Promise<{ onmessage?: (event: { data: ArrayBuffer }) => void }>(
++    (resolve) => {
++      openInput = resolve;
+     },
 +  );
 +  const view = (visible: boolean) => (
 +    <DeviceStreamView
@@ -4384,6 +4420,17 @@ index 0000000000..b3453839b1
 +      platform={platform}
 +      visible={visible}
 +      allowPhoneView={h264}
++      // Only the flat-pointer suite reads input-connection state, so the personal
++      // tests keep rendering exactly the tree they always did.
++      {...(withControls
++        ? {
++            renderControls: (controls: DeviceViewControls) => (
++              <output>
++                {controls.handle?.inputConnected ? "Input connected" : "Input disconnected"}
++              </output>
++            ),
++          }
++        : {})}
 +    />
 +  );
 +  container = sizedContainer();
@@ -4391,6 +4438,11 @@ index 0000000000..b3453839b1
 +    images,
 +    view,
 +    messages,
+     touches,
+-    async configure(inputUnavailable = false) {
++    // `using input = await setup()` needs a disposer; globals and image stubs are
++    // also unwound by the onTestFinished hook, which keeps the personal suite working.
++    [Symbol.dispose]() {},
 +    configure() {
 +      const json = new TextEncoder().encode(
 +        JSON.stringify({ width: 400, height: 800, orientation: "portrait" }),
@@ -4402,14 +4454,42 @@ index 0000000000..b3453839b1
 +      sockets[0]?.onmessage?.({ data: packet.buffer });
 +      videoBody?.enqueue(new Uint8Array([0, 0, 0, 5, 1, 1, 0x64, 0, 0x1f]));
 +    },
++    // The flat-pointer suite drives the input socket once the client opened it.
++    async configureInput(inputUnavailable = false) {
+       const json = new TextEncoder().encode(
+         JSON.stringify({ width: 400, height: 800, orientation: "portrait", inputUnavailable }),
+       );
+       const packet = new Uint8Array(1 + json.length);
+       packet[0] = 0x82;
+       packet.set(json, 1);
+-      const input = await opened;
++      const input = await inputOpened;
+       input.onmessage?.({ data: Uint8Array.of(0x83).buffer });
+       input.onmessage?.({ data: packet.buffer });
+     },
 +    frame() {
 +      const source = new OffscreenCanvas(400, 800);
 +      source.getContext("2d")!.fillRect(0, 0, 400, 800);
 +      output?.(new VideoFrame(source, { timestamp: 0 }));
 +    },
-+  };
-+}
-+
+   };
+ }
+ 
+-function view() {
+-  return (
+-    <DeviceStreamView
+-      hostId="local"
+-      environmentId={EnvironmentId.make("test")}
+-      deviceId="test"
+-      platform="ios"
+-      visible
+-      allowPhoneView={false}
+-      renderControls={(controls) => (
+-        <output>
+-          {controls.handle?.inputConnected ? "Input connected" : "Input disconnected"}
+-        </output>
+-      )}
+-    />
 +let container: HTMLElement;
 +const alert = () => container.querySelector('[role="alert"]');
 +const reconnect = () =>
@@ -4417,7 +4497,87 @@ index 0000000000..b3453839b1
 +    [...container.querySelectorAll("button")]
 +      .find((button) => button.textContent?.includes("Reconnect"))!
 +      .click(),
-+  );
+   );
+-}
+-
+-// router: false because the device view renders no links and never navigates.
+-const options = { router: false } as const;
+ 
+ function flatPointer(container: HTMLElement) {
+   const surface = container.querySelector("canvas")!.parentElement!.parentElement!;
+@@ -120,10 +286,10 @@ function flatPointer(container: HTMLElement) {
+ }
+ 
+ it("keeps the first flat pointer active when a second finger moves and lifts", async () => {
+-  using input = setup();
+-  const { configure, touches } = input;
+-  await using screen = await render(input.view(), options);
+-  await act(async () => configure());
++  using input = await setup("ios", false, true);
++  const { configureInput, touches, view } = input;
++  await using screen = await renderView(view);
++  await act(async () => configureInput());
+   await expect.element(screen.getByText("Input connected", { exact: true })).toBeVisible();
+   const { send } = flatPointer(screen.container);
+   send("pointerdown", 1);
+@@ -142,12 +308,12 @@ it("keeps the first flat pointer active when a second finger moves and lifts", a
+ });
+ 
+ it("ignores a flat pointer that goes down before input connects", async () => {
+-  using input = setup();
+-  const { configure, touches } = input;
+-  await using screen = await render(input.view(), options);
++  using input = await setup("ios", false, true);
++  const { configureInput, touches, view } = input;
++  await using screen = await renderView(view);
+   const { send } = flatPointer(screen.container);
+   send("pointerdown", 1);
+-  await act(async () => configure());
++  await act(async () => configureInput());
+   await expect.element(screen.getByText("Input connected", { exact: true })).toBeVisible();
+   send("pointerdown", 2, 0.5, 0.5);
+   send("pointerup", 2, 0.75, 0.75);
+@@ -160,10 +326,10 @@ it("ignores a flat pointer that goes down before input connects", async () => {
+ it.each(["pointerup", "pointercancel", "lostpointercapture"])(
+   "ends the owned flat pointer exactly once on %s, then accepts a new pointer",
+   async (ending) => {
+-    using input = setup();
+-    const { configure, touches } = input;
+-    await using screen = await render(input.view(), options);
+-    await act(async () => configure());
++    using input = await setup("ios", false, true);
++    const { configureInput, touches, view } = input;
++    await using screen = await renderView(view);
++    await act(async () => configureInput());
+     await expect.element(screen.getByText("Input connected", { exact: true })).toBeVisible();
+     const { send } = flatPointer(screen.container);
+     send("pointerdown", 7);
+@@ -188,15 +354,16 @@ it.each(["pointerup", "pointercancel", "lostpointercapture"])(
+ );
+ 
+ it("releases flat pointer ownership when input disconnects", async () => {
+-  using input = setup();
+-  await using screen = await render(input.view(), options);
+-  await act(() => input.configure());
++  using input = await setup("ios", false, true);
++  const { view } = input;
++  await using screen = await renderView(view);
++  await act(() => input.configureInput());
+   await expect.element(screen.getByText("Input connected", { exact: true })).toBeVisible();
+   const { send } = flatPointer(screen.container);
+   send("pointerdown", 1);
+-  await act(() => input.configure(true));
++  await act(() => input.configureInput(true));
+   await expect.element(screen.getByText("Input disconnected", { exact: true })).toBeVisible();
+-  await act(() => input.configure());
++  await act(() => input.configureInput());
+   await expect.element(screen.getByText("Input connected", { exact: true })).toBeVisible();
+   send("pointerdown", 2, 0.5, 0.5);
+   send("pointerup", 2, 0.75, 0.75);
+@@ -206,3 +373,100 @@ it("releases flat pointer ownership when input disconnects", async () => {
+     { type: "end", x: 0.75, y: 0.75 },
+   ]);
+ });
 +
 +it("removes MJPEG requests while hidden and reconnects when shown", async () => {
 +  using _timers = fakeTimers();
@@ -4516,10 +4676,10 @@ index 0000000000..b3453839b1
 +  expect(vi.getTimerCount()).toBe(0);
 +});
 diff --git a/apps/web/src/components/device/DeviceStreamView.tsx b/apps/web/src/components/device/DeviceStreamView.tsx
-index 4b0b5c84ca..20d471f96d 100644
+index 33d7ca9d76..850d86a4ef 100644
 --- a/apps/web/src/components/device/DeviceStreamView.tsx
 +++ b/apps/web/src/components/device/DeviceStreamView.tsx
-@@ -307,9 +307,20 @@ export function DeviceStreamView(props: {
+@@ -322,9 +322,20 @@ export function DeviceStreamView(props: {
          )}
          tabIndex={0}
          role="application"
@@ -4540,7 +4700,7 @@ index 4b0b5c84ca..20d471f96d 100644
            if (event.metaKey && !["r", "R"].includes(event.key)) return;
            // Let browser paste chords fire the paste event.
            if (
-@@ -322,8 +333,9 @@ export function DeviceStreamView(props: {
+@@ -337,8 +348,9 @@ export function DeviceStreamView(props: {
            client?.sendKey(event.nativeEvent, "down");
          }}
          onPaste={(event) => {
@@ -4552,10 +4712,10 @@ index 4b0b5c84ca..20d471f96d 100644
          }}
          onKeyUp={(event) => {
 diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
-index 502dc8c6a6..6d9e152ee9 100644
+index a0ebd14845..3872ef4d18 100644
 --- a/apps/web/src/components/settings/ConnectionsSettings.tsx
 +++ b/apps/web/src/components/settings/ConnectionsSettings.tsx
-@@ -247,6 +247,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
+@@ -248,6 +248,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
    const [removingSavedEnvironmentId, setRemovingSavedEnvironmentId] =
      useState<EnvironmentId | null>(null);
    const [isUpdatingDesktopServerExposure, setIsUpdatingDesktopServerExposure] = useState(false);
@@ -4563,7 +4723,7 @@ index 502dc8c6a6..6d9e152ee9 100644
    const [isUpdatingTailscaleServe, setIsUpdatingTailscaleServe] = useState(false);
    const [isUpdatingWslBackend, setIsUpdatingWslBackend] = useState(false);
    const [desktopWslMutationError, setDesktopWslMutationError] = useState<string | null>(null);
-@@ -632,6 +633,41 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
+@@ -624,6 +625,41 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
    const handleSetDefaultAdvertisedEndpoint = (endpoint: AdvertisedEndpoint) => {
      setDefaultAdvertisedEndpointKey(endpointDefaultPreferenceKey(endpoint));
    };
@@ -4605,7 +4765,7 @@ index 502dc8c6a6..6d9e152ee9 100644
  
    const renderNetworkAccessToggle = () => (
      <Switch
-@@ -985,6 +1021,67 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
+@@ -977,6 +1013,67 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
        control={renderNetworkAccessToggle()}
      />
    );
@@ -4673,7 +4833,7 @@ index 502dc8c6a6..6d9e152ee9 100644
    const renderDisabledNetworkAccessRow = () => (
      <SettingsRow
        title={searchableSetting("network-access").title}
-@@ -1113,6 +1210,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
+@@ -1105,6 +1202,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
              {canManageLocalBackend && desktopBridge ? (
                <>
                  {renderNetworkAccessRow()}
@@ -4722,7 +4882,7 @@ index ce3f68eac4..636052cf84 100644
        }
        control={
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index dc494caf53..63bad16402 100644
+index aabfd0300e..ff1f9c25b5 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
 @@ -1064,6 +1064,14 @@ export const SETTINGS_SEARCH_ITEMS = [
@@ -4986,7 +5146,7 @@ index 9c5e30ef76..d53c8f9702 100644
 -Notification permission and Android notification channels are controlled in system Settings. Background delivery requires T3 Connect; a direct or Tailscale connection alone does not enable push notifications. The mobile app does not need to maintain a connection to your environment. Force-stopping the Android app in system Settings prevents push delivery until you open it again.
 +Notification permission and Android notification channels are controlled in system Settings. Android can also configure device-local notifications without a T3 Connect account from **Settings → Notifications**. This does not use a relay or require an account, but delivery still requires a local sender configured with the Firebase project; the mobile app does not send notifications itself. Without that sender, notifications are not delivered. A direct or Tailscale connection alone does not enable push notifications. Force-stopping the Android app in system Settings prevents push delivery until you open it again.
 diff --git a/packages/client-runtime/src/device/stream.test.ts b/packages/client-runtime/src/device/stream.test.ts
-index 09f04c5278..256ea61fcf 100644
+index ff43ba45d9..86e994f5fe 100644
 --- a/packages/client-runtime/src/device/stream.test.ts
 +++ b/packages/client-runtime/src/device/stream.test.ts
 @@ -102,6 +102,169 @@ describe("native device stream transport", () => {
@@ -5159,7 +5319,7 @@ index 09f04c5278..256ea61fcf 100644
    it("renews an expired Android ticket when the HTTP upgrade is rejected instead of retrying it forever", async () => {
      const { client, opened, events } = setup("android");
      client.start();
-@@ -250,7 +413,9 @@ function recoveryFixture(
+@@ -340,7 +503,9 @@ function recoveryFixture(
    const signals: AbortSignal[] = [];
    const fetch = vi.fn((url: string, init: RequestInit) => {
      const signal = init.signal!;
@@ -5170,7 +5330,7 @@ index 09f04c5278..256ea61fcf 100644
      if (url.includes("/api?")) return Promise.resolve(Response.json({}));
      if (!url.includes("stream.avcc")) return Promise.resolve(new Response("prime"));
      return Promise.resolve(
-@@ -440,6 +605,189 @@ describe("shared device stream readiness and recovery", () => {
+@@ -530,6 +695,189 @@ describe("shared device stream readiness and recovery", () => {
      client.stop();
    });
  
@@ -5361,10 +5521,10 @@ index 09f04c5278..256ea61fcf 100644
      const { client, sockets, sps, events, Decoder, decoders, decodedFrame, drawImage } =
        recoveryFixture("android");
 diff --git a/packages/client-runtime/src/device/stream.ts b/packages/client-runtime/src/device/stream.ts
-index a8913d5a41..7229aaaf91 100644
+index fdfb61ddb2..1a2ab50afd 100644
 --- a/packages/client-runtime/src/device/stream.ts
 +++ b/packages/client-runtime/src/device/stream.ts
-@@ -410,6 +410,7 @@ export function createDeviceStreamClient(
+@@ -427,6 +427,7 @@ export function createDeviceStreamClient(
    let decodedVideoGeneration: number | null = null;
    let iosInputAdmitted = false;
    let iosInputUnavailable = false;
@@ -5372,7 +5532,7 @@ index a8913d5a41..7229aaaf91 100644
    let timestamp = 0;
    let awaitingKeyframe = true;
    let screen: DeviceScreenSize | null = null;
-@@ -665,10 +666,16 @@ export function createDeviceStreamClient(
+@@ -682,10 +683,16 @@ export function createDeviceStreamClient(
      }
    };
  
@@ -5393,7 +5553,7 @@ index a8913d5a41..7229aaaf91 100644
    };
  
    const scheduleRetry = (channel: "video" | "input", run: () => void) => {
-@@ -1167,6 +1174,12 @@ export function createDeviceStreamClient(
+@@ -1184,6 +1191,12 @@ export function createDeviceStreamClient(
    /** `inputOnly` keeps a socket for input beside a WebRTC feed, so its reconnects leave video alone. */
    const connectAndroid = (inputOnly = false) => {
      if (stopped) return;
@@ -5406,7 +5566,7 @@ index a8913d5a41..7229aaaf91 100644
      const ws = new WebSocket(
        wsUrl(`/ws?device=${device}&${inputOnly ? "video=0" : "frame-meta=1"}`),
      );
-@@ -1180,13 +1193,16 @@ export function createDeviceStreamClient(
+@@ -1197,13 +1210,16 @@ export function createDeviceStreamClient(
      ws.onmessage = (event) => {
        if (stopped || socket !== ws || inputOnly) return;
        if (typeof event.data === "string") {
@@ -5426,7 +5586,7 @@ index a8913d5a41..7229aaaf91 100644
          }
          return;
        }
-@@ -1207,7 +1223,11 @@ export function createDeviceStreamClient(
+@@ -1224,7 +1240,11 @@ export function createDeviceStreamClient(
              if (!isCurrent() || epoch !== decoderEpoch) return;
              configuring = false;
              awaitingKeyframe = true;
@@ -5439,7 +5599,7 @@ index a8913d5a41..7229aaaf91 100644
            },
          );
          return;
-@@ -1371,9 +1391,20 @@ export function createDeviceStreamClient(
+@@ -1388,9 +1408,20 @@ export function createDeviceStreamClient(
        }
        if (phase !== "down") return;
        if (event.key === "Escape") return send(JSON.stringify({ type: "back" }));
@@ -5486,7 +5646,7 @@ index 715a837dae..1d95161535 100644
    read_failed: "Failed to read the shared thread.",
    changed: "The guest link changed while it was being created.",
 diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
-index f460619f11..522083aa2f 100644
+index f14452fec5..eb0f83e640 100644
 --- a/packages/contracts/src/ipc.ts
 +++ b/packages/contracts/src/ipc.ts
 @@ -495,6 +495,7 @@ export interface DesktopServerExposureState {
@@ -5505,7 +5665,7 @@ index f460619f11..522083aa2f 100644
    tailscaleServeEnabled: Schema.Boolean,
    tailscaleServePort: Schema.Number,
  });
-@@ -1074,6 +1076,7 @@ export interface DesktopBridge {
+@@ -1075,6 +1077,7 @@ export interface DesktopBridge {
    resolveSshPasswordPrompt: (requestId: string, password: string | null) => Promise<void>;
    getServerExposureState: () => Promise<DesktopServerExposureState>;
    setServerExposureMode: (mode: DesktopServerExposureMode) => Promise<DesktopServerExposureState>;
@@ -5585,7 +5745,7 @@ index 859644a54c..c2371e3838 100644
    it("distinguishes unmigrated lists from deliberately cleared lists", () => {
      expect(decodeServerSettings({})).toMatchObject({
 diff --git a/packages/contracts/src/settings.ts b/packages/contracts/src/settings.ts
-index 643d27296f..81cabc2bff 100644
+index fff25149b2..277f57f965 100644
 --- a/packages/contracts/src/settings.ts
 +++ b/packages/contracts/src/settings.ts
 @@ -50,6 +50,29 @@ import {
@@ -5618,7 +5778,7 @@ index 643d27296f..81cabc2bff 100644
  export const TimestampFormat = Schema.Literals(["locale", "12-hour", "24-hour"]);
  export type TimestampFormat = typeof TimestampFormat.Type;
  const DEFAULT_TIMESTAMP_FORMAT: TimestampFormat = "locale";
-@@ -1254,6 +1277,9 @@ export const ServerSettings = Schema.Struct({
+@@ -1256,6 +1279,9 @@ export const ServerSettings = Schema.Struct({
    ),
    /** Beta: guest links for this machine's threads. Off refuses new links and pauses existing ones. */
    guestSharingEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
@@ -5628,7 +5788,7 @@ index 643d27296f..81cabc2bff 100644
    /**
     * Beta: links to the user's other machines, both ways. Off refuses new links, calls over links
     * and tasks on another machine; tasks already running there finish.
-@@ -1614,6 +1640,7 @@ export const ServerSettingsPatch = Schema.Struct({
+@@ -1616,6 +1642,7 @@ export const ServerSettingsPatch = Schema.Struct({
    snoozeLimitedThreads: Schema.optionalKey(Schema.Boolean),
    snoozePresets: Schema.optionalKey(SnoozePresetSettings),
    guestSharingEnabled: Schema.optionalKey(Schema.Boolean),
@@ -5670,10 +5830,10 @@ index 14537ed69c..6457c50057 100644
    };
  }
 diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
-index 381ff78688..575cdd1cdf 100644
+index fb4789ac81..e6a7904ee3 100644
 --- a/pnpm-lock.yaml
 +++ b/pnpm-lock.yaml
-@@ -593,6 +593,9 @@ importers:
+@@ -597,6 +597,9 @@ importers:
        '@t3tools/mobile-terminal-native':
          specifier: file:./modules/t3-terminal
          version: file:apps/mobile/modules/t3-terminal
