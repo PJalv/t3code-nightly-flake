@@ -53,6 +53,9 @@ stdenv.mkDerivation {
     chmod u+w "$out/lib/node_modules/t3/dist"
     cp -r resource-monitor "$out/lib/node_modules/t3/dist/resource-monitor"
     rm -rf "$out/lib/node_modules/t3/node_modules/@ff-labs/fff-bin-linux-x64-musl"
+    # ffi-rs selects its binding with isMusl(), so a glibc host never loads the
+    # musl prebuild; autoPatchelf still tries to satisfy its musl libc and fails.
+    rm -rf "$out/lib/node_modules/t3/node_modules/@yuuang/ffi-rs-linux-x64-musl"
     test -f "$out/lib/node_modules/t3/node_modules/node-pty/prebuilds/linux-x64/pty.node"
     test -f "$out/lib/node_modules/t3/node_modules/@ff-labs/fff-bin-linux-x64-gnu/libfff_c.so"
     test -f "$out/lib/node_modules/t3/${binPath}"
