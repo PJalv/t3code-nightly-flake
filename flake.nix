@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     t3code-source = {
-      url = "github:pingdotgg/t3code/30654b3e91a51937d1dba18fc83af19d8003f5ca";
+      url = "github:pingdotgg/t3code/cefb544af3c98224874419198c0359b652ca3c94";
       flake = false;
     };
   };
@@ -157,9 +157,12 @@
           touch "$out"
         '';
         source-features = pkgs.runCommand "t3code-source-features" { } ''
-          grep -a -q 'Pi started agent work outside an active T3 turn' ${sourceAssets}/apps/server/dist/binCli-*.mjs
-          grep -a -q 'delegate_task' ${sourceAssets}/apps/server/dist/binCli-*.mjs
-          grep -a -q 'T3_DISABLE_CHECKPOINTS' ${sourceAssets}/apps/server/dist/binCli-*.mjs
+          # Rollup picks which chunk a module lands in, so assert over the whole
+          # server dist. Pinning a chunk name made this check fail when upstream
+          # reshuffled the bundles.
+          grep -a -R -q 'Pi started agent work outside an active T3 turn' ${sourceAssets}/apps/server/dist
+          grep -a -R -q 'delegate_task' ${sourceAssets}/apps/server/dist
+          grep -a -R -q 'T3_DISABLE_CHECKPOINTS' ${sourceAssets}/apps/server/dist
           grep -q 'T3_DISABLE_CHECKPOINTS' ${server}/bin/t3code-server
           grep -q 'T3_DISABLE_CHECKPOINTS' ${t3code}/bin/.t3code-wrapped
           grep -q 'preferredLanInterfaceName' ${sourceAssets}/apps/desktop/dist-electron/main.cjs

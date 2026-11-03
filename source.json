@@ -1,13 +1,13 @@
 {
-  "version": "0.1.7-nightly.20261102.4066",
-  "tag": "v0.1.7-nightly.20261102.4066",
-  "publishedAt": "2026-11-02T06:52:31Z",
-  "sourceRevision": "30654b3e91a51937d1dba18fc83af19d8003f5ca",
-  "personalRevision": "43556e6d209aca31385a76e3549f48de910c0ac2",
+  "version": "0.1.7-nightly.20261103.4119",
+  "tag": "v0.1.7-nightly.20261103.4119",
+  "publishedAt": "2026-11-03T08:49:52Z",
+  "sourceRevision": "cefb544af3c98224874419198c0359b652ca3c94",
+  "personalRevision": "dc9ef17dc3cf44f1036ad91ff9a24fd723a1b202",
   "personalPatch": "patches/personal-qol.patch",
-  "personalPatchSha256": "375297c8067953b92d8a373dd4b123a9dbe5c3724022d36ca275a2f3964e2610",
-  "url": "https://github.com/pingdotgg/t3code/releases/download/v0.1.7-nightly.20261102.4066/T3-Code-0.1.7-nightly.20261102.4066-x86_64.AppImage",
-  "hash": "sha256-OlfBuS5s5j8iGB3R7dnfiTvfq2jRaPG9Y6fhrRM8cQw=",
-  "serverUrl": "https://github.com/pingdotgg/t3code/releases/download/v0.1.7-nightly.20261102.4066/t3-0.1.7-nightly.20261102.4066-linux-x64.tar.gz",
-  "serverHash": "sha256-9U96g/CVEqlL/xNOaKgDTqaOEGZ/odoeFh4nDXaYJ3A="
+  "personalPatchSha256": "430d7e60eb9ccc209f1e17cea42391d8a4afe531960276d3bd491cea0f2e99cd",
+  "url": "https://github.com/pingdotgg/t3code/releases/download/v0.1.7-nightly.20261103.4119/T3-Code-0.1.7-nightly.20261103.4119-x86_64.AppImage",
+  "hash": "sha256-FTAzyBkyzgEfuO0Q+IiW9PanwNUEepuI8HPp9Lo1Ty4=",
+  "serverUrl": "https://github.com/pingdotgg/t3code/releases/download/v0.1.7-nightly.20261103.4119/t3-0.1.7-nightly.20261103.4119-linux-x64.tar.gz",
+  "serverHash": "sha256-zGTlc9JdvsSCvVhNV0VCTr3l3pDqJ1wjsh++8ZYLStc="
 }
