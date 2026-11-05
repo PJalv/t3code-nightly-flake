@@ -1,8 +1,8 @@
 diff --git a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
-index aabc374798..f3dea97aa7 100644
+index e71d838188..888a2e80b5 100644
 --- a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
 +++ b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
-@@ -43,6 +43,7 @@ const layerServerExposure = Layer.succeed(DesktopServerExposure.DesktopServerExp
+@@ -44,6 +44,7 @@ const layerServerExposure = Layer.succeed(DesktopServerExposure.DesktopServerExp
    }),
    configureFromSettings: () => Effect.die("unexpected configureFromSettings"),
    setMode: () => Effect.die("unexpected setMode"),
@@ -707,7 +707,7 @@ index a46dbafab0..afd40736e2 100644
    yield* ipc.handle(getAdvertisedEndpoints);
  
 diff --git a/apps/desktop/src/ipc/channels.ts b/apps/desktop/src/ipc/channels.ts
-index 0f125c05de..7a56f185b5 100644
+index 05c72eb707..4ba04962f5 100644
 --- a/apps/desktop/src/ipc/channels.ts
 +++ b/apps/desktop/src/ipc/channels.ts
 @@ -67,6 +67,7 @@ export const FETCH_SSH_SESSION_STATE_CHANNEL = "desktop:fetch-ssh-session-state"
@@ -743,7 +743,7 @@ index 9a9ce76897..b69c1e76ca 100644
    channel: IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL,
    payload: SetTailscaleServeEnabledInput,
 diff --git a/apps/desktop/src/preload.ts b/apps/desktop/src/preload.ts
-index da56807186..e2aa86c0a3 100644
+index 72245779b9..2274be858a 100644
 --- a/apps/desktop/src/preload.ts
 +++ b/apps/desktop/src/preload.ts
 @@ -179,6 +179,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
@@ -1427,7 +1427,7 @@ index 8468a95386..2ec3b9aa12 100644
    getAdvertisedEndpoints: Effect.succeed([]),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 diff --git a/apps/mobile/package.json b/apps/mobile/package.json
-index a49c385686..3cc96c3ed7 100644
+index a58e0e5036..6ad3073114 100644
 --- a/apps/mobile/package.json
 +++ b/apps/mobile/package.json
 @@ -74,6 +74,7 @@
@@ -1628,7 +1628,7 @@ index 0000000000..4b062e0d92
 +  );
 +}
 diff --git a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
-index fc24d180a3..be2b63ba2a 100644
+index 437a00be9e..e2a8ae8cbf 100644
 --- a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 +++ b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 @@ -3,6 +3,7 @@ import {
@@ -1638,8 +1638,8 @@ index fc24d180a3..be2b63ba2a 100644
 +import { restoreLocalAgentNotifications } from "./localNotifications";
  import Constants from "expo-constants";
  import * as Notifications from "expo-notifications";
- import * as Effect from "effect/Effect";
-@@ -185,6 +186,7 @@ export function setAgentAwarenessRelayTokenProvider(
+ import * as Clock from "effect/Clock";
+@@ -191,6 +192,7 @@ export function setAgentAwarenessRelayTokenProvider(
    relayTokenProviderIdentity = provider ? (identity ?? null) : null;
    if (!provider) {
      clearAndroidAgentNotifications();
@@ -1648,14 +1648,26 @@ index fc24d180a3..be2b63ba2a 100644
      pushTokenSubscription = null;
      appStateSubscription?.remove();
 diff --git a/apps/mobile/src/features/devices/device-stream.browser.test.ts b/apps/mobile/src/features/devices/device-stream.browser.test.ts
-new file mode 100644
-index 0000000000..ec51295ab3
---- /dev/null
+index 91a8e3bb82..ec51295ab3 100644
+--- a/apps/mobile/src/features/devices/device-stream.browser.test.ts
 +++ b/apps/mobile/src/features/devices/device-stream.browser.test.ts
-@@ -0,0 +1,151 @@
+@@ -1,108 +1,151 @@
+-import { describe, expect, it, vi } from "vite-plus/test";
+-
 +import { afterEach, expect, it, vi } from "vite-plus/test";
-+import { start, stop } from "./device-stream.browser";
-+
+ import { start, stop } from "./device-stream.browser";
+ 
+-const envelope = (tag: number, payload: number[]) => {
+-  const length = 1 + payload.length;
+-  return [
+-    length >>> 24,
+-    (length >>> 16) & 0xff,
+-    (length >>> 8) & 0xff,
+-    length & 0xff,
+-    tag,
+-    ...payload,
+-  ];
+-};
 +class Element extends EventTarget {
 +  readonly style = {};
 +  naturalWidth = 0;
@@ -1675,9 +1687,35 @@ index 0000000000..ec51295ab3
 +  }
 +  append() {}
 +}
-+
+ 
+-function viewerFixture(supported: boolean) {
 +async function setup(platform: "ios" | "android" = "ios") {
-+  vi.useFakeTimers();
+   vi.useFakeTimers();
+-  const configured: string[] = [];
+-  vi.stubGlobal(
+-    "VideoDecoder",
+-    class {
+-      static isConfigSupported = async () => ({ supported });
+-      state = "unconfigured";
+-      decodeQueueSize = 0;
+-      configure(config: VideoDecoderConfig) {
+-        configured.push(config.codec);
+-        this.state = "configured";
+-      }
+-      decode() {}
+-      close() {
+-        this.state = "closed";
+-      }
+-    },
+-  );
+-  vi.stubGlobal("EncodedVideoChunk", vi.fn());
+-  vi.stubGlobal(
+-    "WebSocket",
+-    class {
+-      static OPEN = 1;
+-      readyState = 0;
+-      send() {}
+-      close() {}
 +  if (platform === "android") {
 +    vi.stubGlobal("VideoDecoder", vi.fn());
 +    vi.stubGlobal("EncodedVideoChunk", vi.fn());
@@ -1690,8 +1728,28 @@ index 0000000000..ec51295ab3
 +      const element = new Element(tag);
 +      elements.push(element);
 +      return element;
-+    },
-+  });
+     },
+-  );
+-  const videoBodies: ReadableStreamDefaultController<Uint8Array>[] = [];
+-  const requested: string[] = [];
+-  vi.stubGlobal("fetch", (url: string, init: RequestInit) => {
+-    requested.push(new URL(url).pathname);
+-    if (!url.includes("stream.avcc")) return Promise.resolve(new Response(null));
+-    return Promise.resolve(
+-      new Response(
+-        new ReadableStream<Uint8Array>({
+-          start(body) {
+-            videoBodies.push(body);
+-            init.signal?.addEventListener("abort", () => body.error(new Error("aborted")));
+-          },
+-        }),
+-      ),
+-    );
+   });
+-  vi.stubGlobal("ReactNativeWebView", { postMessage() {} });
+-  start({
+-    platform: "ios",
+-    deviceId: "sim",
 +  const postMessage = vi.fn();
 +  vi.stubGlobal("window", { ReactNativeWebView: { postMessage }, addEventListener() {} });
 +  vi.stubGlobal("fetch", () => Promise.resolve(new Response("prime")));
@@ -1711,20 +1769,28 @@ index 0000000000..ec51295ab3
 +  const configuration = {
 +    platform,
 +    deviceId: "fixture-device",
-+    access: {
+     access: {
+-      httpBase: "https://environment.test/api/device-hub",
+-      wsBase: "wss://environment.test/api/device-hub",
 +      httpBase: "https://device.test",
 +      wsBase: "wss://device.test",
-+      credentials: false,
-+      query: {},
-+    },
-+    colors: {
+       credentials: false,
+       query: {},
+     },
+     colors: {
+-      background: "black",
+-      foreground: "white",
 +      background: "white",
 +      foreground: "black",
-+      muted: "gray",
+       muted: "gray",
+-      buttonBackground: "black",
+-      buttonForeground: "white",
 +      buttonBackground: "gray",
 +      buttonForeground: "black",
-+      buttonBorder: "gray",
-+    },
+       buttonBorder: "gray",
+     },
+-  });
+-  return { configured, requested, videoBodies };
 +  };
 +  start(configuration);
 +  await vi.advanceTimersByTimeAsync(0);
@@ -1737,8 +1803,31 @@ index 0000000000..ec51295ab3
 +        ([message]) => JSON.parse(message as string) as { type: string; status?: string },
 +      ),
 +  };
-+}
-+
+ }
+ 
+-describe("native iOS simulator viewer", () => {
+-  it.each([
+-    { supported: true, image: "" },
+-    { supported: false, image: "/api/device-hub/vendor/serve-sim/helper/sim/stream.mjpeg" },
+-  ])(
+-    "streams H.264 when WebCodecs decodes it, else MJPEG (supported: $supported)",
+-    async ({ supported, image }) => {
+-      try {
+-        const { configured, requested, videoBodies } = viewerFixture(supported);
+-        await vi.advanceTimersByTimeAsync(0);
+-        expect(requested).toContain("/api/device-hub/vendor/serve-sim/helper/sim/stream.avcc");
+-        videoBodies[0]!.enqueue(new Uint8Array(envelope(1, [1, 0x64, 0x00, 0x33])));
+-        await vi.advanceTimersByTimeAsync(0);
+-        expect(configured).toEqual(supported ? ["avc1.640033"] : []);
+-        const img = document.querySelector("img")!;
+-        expect(img.src && new URL(img.src).pathname).toBe(image);
+-        expect(img.style.display).toBe(supported ? "none" : "block");
+-      } finally {
+-        stop();
+-        vi.useRealTimers();
+-        vi.unstubAllGlobals();
+-      }
+-    },
 +afterEach(() => {
 +  stop();
 +  vi.useRealTimers();
@@ -1760,7 +1849,7 @@ index 0000000000..ec51295ab3
 +    Object.assign(new Event("paste", { cancelable: true }), {
 +      clipboardData: { getData: () => "Clipboard text" },
 +    }),
-+  );
+   );
 +  expect(
 +    sockets[0]!.send.mock.calls.map(([message]) => JSON.parse(message as string) as unknown),
 +  ).toEqual([
@@ -1803,12 +1892,12 @@ index 0000000000..ec51295ab3
 +  stop();
 +  expect(replacement.src).toBe("");
 +  expect(vi.getTimerCount()).toBe(0);
-+});
+ });
 diff --git a/apps/mobile/src/features/devices/device-stream.browser.ts b/apps/mobile/src/features/devices/device-stream.browser.ts
-index ed2092148d..388dfe9347 100644
+index 2434c35168..880458abe4 100644
 --- a/apps/mobile/src/features/devices/device-stream.browser.ts
 +++ b/apps/mobile/src/features/devices/device-stream.browser.ts
-@@ -182,9 +182,22 @@ export function start(configuration: DeviceStreamConfiguration) {
+@@ -178,9 +178,22 @@ export function start(configuration: DeviceStreamConfiguration) {
    frame.addEventListener("pointercancel", endTouch);
    frame.addEventListener("lostpointercapture", endTouch);
    frame.addEventListener("keydown", (event) => {
@@ -2125,7 +2214,7 @@ index cabe229f9a..9703b008e2 100644
              <SettingsRow
                icon="bolt.circle"
 diff --git a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
-index d7e847a182..20422f99af 100644
+index 2d7e639d8b..e9012e2e5e 100644
 --- a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
 @@ -28,6 +28,7 @@ import { serverEnvironment } from "../../state/server";
@@ -2136,14 +2225,24 @@ index d7e847a182..20422f99af 100644
  import {
    useSettingsEnvironmentMenu,
    SettingsEnvironmentFilterHeader,
-@@ -66,6 +67,7 @@ export function SettingsProviderAccountsRouteScreen() {
+@@ -67,10 +68,13 @@ export function SettingsProviderAccountsRouteScreen() {
+                     </Text>
                    </View>
                  ) : (
-                   <>
+-                  <EnvironmentProviders
+-                    environment={environment}
+-                    providers={managedProviders(environment, providersByEnvironment)}
+-                  />
++                  <>
 +                    <CustomAcpCommandEditor environment={environment} />
-                     {managedProviders(environment, providersByEnvironment)
-                       .filter(canManageProvider)
-                       .map((provider, index) => (
++                    <EnvironmentProviders
++                      environment={environment}
++                      providers={managedProviders(environment, providersByEnvironment)}
++                    />
++                  </>
+                 )}
+               </SettingsSection>
+             ))
 diff --git a/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx b/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx
 new file mode 100644
 index 0000000000..30250f664a
@@ -2524,10 +2623,10 @@ index 0000000000..1e53e6cd55
 +  return [...variables, ...added];
 +};
 diff --git a/apps/mobile/src/persistence/mobile-preferences.ts b/apps/mobile/src/persistence/mobile-preferences.ts
-index 43ac75e185..39096ef84e 100644
+index 3760ae10c3..e9076f67a4 100644
 --- a/apps/mobile/src/persistence/mobile-preferences.ts
 +++ b/apps/mobile/src/persistence/mobile-preferences.ts
-@@ -92,6 +92,9 @@ export interface Preferences {
+@@ -93,6 +93,9 @@ export interface Preferences {
    readonly pullRequestHideTestFiles?: boolean;
    readonly pullRequestMergeMethod?: PullRequestMergeMethod;
    readonly liveActivitiesEnabled?: boolean;
@@ -2537,7 +2636,7 @@ index 43ac75e185..39096ef84e 100644
    readonly themeId?: MobileThemeId;
    readonly lightThemeId?: MobileThemeId;
    readonly darkThemeId?: MobileThemeId;
-@@ -174,6 +177,8 @@ function sanitizePreferences(parsed: Preferences): Preferences {
+@@ -177,6 +180,8 @@ function sanitizePreferences(parsed: Preferences): Preferences {
      pullRequestHideTestFiles?: boolean;
      pullRequestMergeMethod?: PullRequestMergeMethod;
      liveActivitiesEnabled?: boolean;
@@ -2546,7 +2645,7 @@ index 43ac75e185..39096ef84e 100644
      themeId?: MobileThemeId;
      lightThemeId?: MobileThemeId;
      darkThemeId?: MobileThemeId;
-@@ -234,6 +239,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
+@@ -237,6 +242,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
    if (typeof parsed.liveActivitiesEnabled === "boolean") {
      preferences.liveActivitiesEnabled = parsed.liveActivitiesEnabled;
    }
@@ -2560,10 +2659,10 @@ index 43ac75e185..39096ef84e 100644
      typeof parsed.themeId === "string" &&
      (MOBILE_THEME_IDS as readonly string[]).includes(parsed.themeId)
 diff --git a/apps/server/src/guest/GuestShareService.test.ts b/apps/server/src/guest/GuestShareService.test.ts
-index cfd8ca1363..a3f1616798 100644
+index 7140222478..44f16b6452 100644
 --- a/apps/server/src/guest/GuestShareService.test.ts
 +++ b/apps/server/src/guest/GuestShareService.test.ts
-@@ -151,8 +151,13 @@ const layerTest = GuestShareService.layer.pipe(
+@@ -152,8 +152,13 @@ const layerTest = GuestShareService.layer.pipe(
  
  const threadId = ThreadId.make("thread:guest-share-service");
  
@@ -2579,7 +2678,7 @@ index cfd8ca1363..a3f1616798 100644
    const orchestrator = yield* Orchestrator.OrchestratorV2;
    yield* orchestrator.dispatch({
      type: "thread.create",
-@@ -170,37 +175,42 @@ const shareThreadFor = Effect.fn(function* (threadId: ThreadId) {
+@@ -171,37 +176,42 @@ const shareThreadFor = Effect.fn(function* (threadId: ThreadId) {
    });
    const guestShares = yield* GuestShareService.GuestShareService;
    const { url } = yield* guestShares.create({ threadId });
@@ -2647,7 +2746,7 @@ index cfd8ca1363..a3f1616798 100644
  );
  
  it.effect("counts a guest joining and sending, without their name or text", () =>
-@@ -337,39 +347,111 @@ it.effect("closes an open guest stream when T3 Connect stops serving the link's
+@@ -338,39 +348,111 @@ it.effect("closes an open guest stream when T3 Connect stops serving the link's
    }).pipe(Effect.provide(layerTest)),
  );
  
@@ -2779,7 +2878,7 @@ index cfd8ca1363..a3f1616798 100644
  it.effect("shows the guest the thread's new model", () =>
    Effect.gen(function* () {
      const { orchestrator, guestShares, credential } = yield* shareThread;
-@@ -675,14 +757,15 @@ const storedFiles = Effect.gen(function* () {
+@@ -676,14 +758,15 @@ const storedFiles = Effect.gen(function* () {
    return yield* fileSystem.readDirectory(attachmentsDir).pipe(Effect.orElseSucceed(() => []));
  });
  
@@ -2797,7 +2896,7 @@ index cfd8ca1363..a3f1616798 100644
  
  const waitingMessages = Effect.gen(function* () {
    const orchestrator = yield* Orchestrator.OrchestratorV2;
-@@ -811,11 +894,17 @@ it.effect("deletes a waiting message's files when the owner dismisses it or stop
+@@ -812,11 +895,17 @@ it.effect("deletes a waiting message's files when the owner dismisses it or stop
    }).pipe(Effect.scoped, Effect.provide(layerTest)),
  );
  
@@ -2819,7 +2918,7 @@ index cfd8ca1363..a3f1616798 100644
        const worker = yield* EffectWorker.OrchestrationEffectWorkerV2;
        const before = yield* storedFiles;
        yield* guestShares.submit(
-@@ -831,72 +920,78 @@ it.effect.each(["thread.archive", "thread.delete"] as const)(
+@@ -832,72 +921,78 @@ it.effect.each(["thread.archive", "thread.delete"] as const)(
        });
        yield* worker.drain();
        assert.deepEqual(yield* storedFiles, before);
@@ -2958,12 +3057,12 @@ index cfd8ca1363..a3f1616798 100644
  
  it.effect("serves the shared thread's files to its guest, never another thread's", () =>
 diff --git a/apps/server/src/guest/GuestShareService.ts b/apps/server/src/guest/GuestShareService.ts
-index fd9a0efc3b..176b92a0ab 100644
+index 75c4962f3c..9062194028 100644
 --- a/apps/server/src/guest/GuestShareService.ts
 +++ b/apps/server/src/guest/GuestShareService.ts
-@@ -286,8 +286,13 @@ const make = Effect.gen(function* () {
-       return decodeSessionClaims(base64UrlDecodeUtf8(parts.payload));
-     });
+@@ -279,8 +279,13 @@ const make = Effect.gen(function* () {
+     return decodeSessionClaims(base64UrlDecodeUtf8(parts.payload));
+   });
  
 -  const connectHostname = managedEndpoint.inspectConnector.pipe(
 -    Effect.map((facts) => facts?.hostname ?? null),
@@ -2977,7 +3076,7 @@ index fd9a0efc3b..176b92a0ab 100644
    );
    // A beta: while it is off, no link opens and every guest request is refused.
    const sharingEnabled = serverSettings.getSettings.pipe(
-@@ -313,7 +318,6 @@ const make = Effect.gen(function* () {
+@@ -306,7 +311,6 @@ const make = Effect.gen(function* () {
        Effect.orDie,
      );
  
@@ -2985,7 +3084,7 @@ index fd9a0efc3b..176b92a0ab 100644
    const authorize = Effect.fn("GuestShareService.authorize")(function* (
      token: string,
      kind: "invite" | "session",
-@@ -335,7 +339,7 @@ const make = Effect.gen(function* () {
+@@ -328,7 +332,7 @@ const make = Effect.gen(function* () {
        thread.deletedAt !== null ||
        DateTime.toEpochMillis(now) >= Date.parse(share.expiresAt) ||
        (kind === "session" && share.guestName === null) ||
@@ -2994,7 +3093,7 @@ index fd9a0efc3b..176b92a0ab 100644
      ) {
        return yield* inactive;
      }
-@@ -346,7 +350,7 @@ const make = Effect.gen(function* () {
+@@ -339,7 +343,7 @@ const make = Effect.gen(function* () {
      if (!(yield* sharingEnabled)) {
        return yield* new GuestShareCreateError({ reason: "disabled" });
      }
@@ -3003,7 +3102,7 @@ index fd9a0efc3b..176b92a0ab 100644
      if (host === null) {
        return yield* new GuestShareCreateError({ reason: "connect_unavailable" });
      }
-@@ -601,11 +605,8 @@ const make = Effect.gen(function* () {
+@@ -594,11 +598,8 @@ const make = Effect.gen(function* () {
          }),
        ),
        Stream.takeUntil((event) => event.type === "ended"),
@@ -3017,7 +3116,7 @@ index fd9a0efc3b..176b92a0ab 100644
              schedule: Schedule.spaced(ACCESS_RECHECK_INTERVAL),
              until: ([host, enabled]) => host !== share.host || !enabled,
 diff --git a/apps/server/src/orchestration-v2/CheckpointService.test.ts b/apps/server/src/orchestration-v2/CheckpointService.test.ts
-index 39643ff38c..eb7ab14dfd 100644
+index 39643ff38c..8577c1520a 100644
 --- a/apps/server/src/orchestration-v2/CheckpointService.test.ts
 +++ b/apps/server/src/orchestration-v2/CheckpointService.test.ts
 @@ -1,5 +1,8 @@
@@ -3030,72 +3129,66 @@ index 39643ff38c..eb7ab14dfd 100644
  import {
    CheckpointScopeId,
    NodeId,
-@@ -18,6 +21,127 @@ import * as CheckpointStore from "../checkpointing/CheckpointStore.ts";
+@@ -18,6 +21,121 @@ import * as CheckpointStore from "../checkpointing/CheckpointStore.ts";
  import * as CheckpointService from "./CheckpointService.ts";
  import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
  
-+it.effect("disables baseline and completion snapshots without invoking Git", () =>
-+  Effect.gen(function* () {
-+    const previous = process.env.T3_DISABLE_CHECKPOINTS;
-+    process.env.T3_DISABLE_CHECKPOINTS = "1";
-+    try {
-+      const scope: OrchestrationV2CheckpointScope = {
-+        id: CheckpointScopeId.make("scope:disabled"),
-+        threadId: ThreadId.make("thread:disabled"),
-+        runId: RunId.make("run:disabled"),
-+        nodeId: NodeId.make("node:disabled"),
-+        parentScopeId: null,
-+        providerThreadId: ProviderThreadId.make("provider:disabled"),
-+        kind: "root_run",
-+        ordinalWithinParent: 0,
-+        advancesAppRunCount: true,
-+        cwd: "/repo",
-+        createdAt: DateTime.makeUnsafe("2026-07-28T00:00:00.000Z"),
-+      };
-+      const testLayer = CheckpointService.layer.pipe(
-+        Layer.provide(
-+          Layer.mergeAll(
-+            IdAllocator.layer,
-+            NodeCrypto.layer,
-+            Layer.mock(CheckpointStore.CheckpointStore)({
-+              isGitRepository: () => Effect.die("disabled checkpoints must not invoke Git"),
-+              hasCheckpointRef: () => Effect.die("disabled checkpoints must not look up refs"),
-+              captureCheckpoint: () => Effect.die("disabled checkpoints must not capture"),
-+              diffCheckpoints: () => Effect.die("disabled checkpoints must not diff"),
-+              listAuthoredPaths: () => Effect.die("disabled checkpoints must not list paths"),
-+            }),
-+          ),
++it.effect("disables baseline and completion snapshots without invoking Git", () => {
++  vi.stubEnv("T3_DISABLE_CHECKPOINTS", "1");
++  return Effect.gen(function* () {
++    const scope: OrchestrationV2CheckpointScope = {
++      id: CheckpointScopeId.make("scope:disabled"),
++      threadId: ThreadId.make("thread:disabled"),
++      runId: RunId.make("run:disabled"),
++      nodeId: NodeId.make("node:disabled"),
++      parentScopeId: null,
++      providerThreadId: ProviderThreadId.make("provider:disabled"),
++      kind: "root_run",
++      ordinalWithinParent: 0,
++      advancesAppRunCount: true,
++      cwd: "/repo",
++      createdAt: DateTime.makeUnsafe("2026-07-28T00:00:00.000Z"),
++    };
++    const testLayer = CheckpointService.layer.pipe(
++      Layer.provide(
++        Layer.mergeAll(
++          IdAllocator.layer,
++          NodeCrypto.layer,
++          Layer.mock(CheckpointStore.CheckpointStore)({
++            isGitRepository: () => Effect.die("disabled checkpoints must not invoke Git"),
++            hasCheckpointRef: () => Effect.die("disabled checkpoints must not look up refs"),
++            captureCheckpoint: () => Effect.die("disabled checkpoints must not capture"),
++            diffCheckpoints: () => Effect.die("disabled checkpoints must not diff"),
++            listAuthoredPaths: () => Effect.die("disabled checkpoints must not list paths"),
++          }),
 +        ),
-+      );
-+      yield* Effect.gen(function* () {
-+        const checkpoints = yield* CheckpointService.CheckpointServiceV2;
-+        yield* checkpoints.captureBaseline({ scope, ordinalWithinScope: 0 });
-+        const baseline = yield* checkpoints.materializeBaselineCheckpoint({
-+          scope,
-+          ordinalWithinScope: 0,
-+        });
-+        const completion = yield* checkpoints.capture({
-+          scope,
-+          ordinalWithinScope: 1,
-+          runId: scope.runId!,
-+          nodeId: scope.nodeId!,
-+          appRunOrdinal: 1,
-+          capturedAt: scope.createdAt,
-+        });
-+        assert.equal(baseline.status, "missing");
-+        assert.equal(completion.status, "missing");
-+        assert.deepEqual(completion.files, []);
-+      }).pipe(Effect.provide(testLayer));
-+    } finally {
-+      if (previous === undefined) delete process.env.T3_DISABLE_CHECKPOINTS;
-+      else process.env.T3_DISABLE_CHECKPOINTS = previous;
-+    }
-+  }),
-+);
++      ),
++    );
++    yield* Effect.gen(function* () {
++      const checkpoints = yield* CheckpointService.CheckpointServiceV2;
++      yield* checkpoints.captureBaseline({ scope, ordinalWithinScope: 0 });
++      const baseline = yield* checkpoints.materializeBaselineCheckpoint({
++        scope,
++        ordinalWithinScope: 0,
++      });
++      const completion = yield* checkpoints.capture({
++        scope,
++        ordinalWithinScope: 1,
++        runId: scope.runId!,
++        nodeId: scope.nodeId!,
++        appRunOrdinal: 1,
++        capturedAt: scope.createdAt,
++      });
++      assert.equal(baseline.status, "missing");
++      assert.equal(completion.status, "missing");
++      assert.deepEqual(completion.files, []);
++    }).pipe(Effect.provide(testLayer));
++  });
++});
 +
-+it.effect("captures baseline and completion snapshots when the opt-out is absent", () =>
-+  Effect.gen(function* () {
-+    assert.isUndefined(process.env.T3_DISABLE_CHECKPOINTS);
++it.effect("captures baseline and completion snapshots when the opt-out is absent", () => {
++  assert.isUndefined(process.env.T3_DISABLE_CHECKPOINTS);
++  return Effect.gen(function* () {
 +    const scope: OrchestrationV2CheckpointScope = {
 +      id: CheckpointScopeId.make("scope:enabled"),
 +      threadId: ThreadId.make("thread:enabled"),
@@ -3152,8 +3245,8 @@ index 39643ff38c..eb7ab14dfd 100644
 +        { path: "src/example.ts", kind: "modified", additions: 2, deletions: 1 },
 +      ]);
 +    }).pipe(Effect.provide(testLayer));
-+  }),
-+);
++  });
++});
 +
  it.effect(
    "skips unsupported baseline and turn checkpoints without swallowing capture failures",
@@ -3177,7 +3270,7 @@ index fc9d84cddf..638d9909fd 100644
        withWorkspaceLock(
 diff --git a/apps/server/src/provider/acp/MakiCustom.integration.test.ts b/apps/server/src/provider/acp/MakiCustom.integration.test.ts
 new file mode 100644
-index 0000000000..982bfda5b8
+index 0000000000..779e136cca
 --- /dev/null
 +++ b/apps/server/src/provider/acp/MakiCustom.integration.test.ts
 @@ -0,0 +1,139 @@
@@ -3206,9 +3299,9 @@ index 0000000000..982bfda5b8
 +// sets T3_MAKI_ACP_INTEGRATION=1. `runIf` gates the run rather than skipping a
 +// registered case, so the suite reports it filtered out, not skipped, and
 +// `it.effect` keeps the body off live-test timeouts.
-+it.effect("Nix Maki runs through T3 custom ACP transport with the existing profile", () =>
-+  Effect.gen(function* () {
-+    if (process.env.T3_MAKI_ACP_INTEGRATION !== "1") return;
++it.effect("Nix Maki runs through T3 custom ACP transport with the existing profile", () => {
++  if (process.env.T3_MAKI_ACP_INTEGRATION !== "1") return Effect.void;
++  return Effect.gen(function* () {
 +    const fs = yield* FileSystem.FileSystem;
 +    const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3-maki-custom-integration-" });
 +    const cwd = `${root}/workspace`;
@@ -3318,8 +3411,8 @@ index 0000000000..982bfda5b8
 +        Layer.provideMerge(NodeServices.layer),
 +      ),
 +    ),
-+  ),
-+);
++  );
++});
 diff --git a/apps/server/src/serverSettings.test.ts b/apps/server/src/serverSettings.test.ts
 index 0e7ce34df0..453371e1fe 100644
 --- a/apps/server/src/serverSettings.test.ts
@@ -3457,10 +3550,10 @@ index 831a5fad49..7cdb2e7150 100644
      if (
        config === null ||
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index dd37be3b4b..57e149a017 100644
+index 2f2cfea67f..41d39b7df1 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
-@@ -77,6 +77,7 @@ import React, {
+@@ -78,6 +78,7 @@ import React, {
    type MouseEvent as ReactMouseEvent,
    use,
    memo,
@@ -3468,7 +3561,7 @@ index dd37be3b4b..57e149a017 100644
    useLayoutEffect,
    useRef,
    useState,
-@@ -165,6 +166,10 @@ import { useAtomCommand } from "../state/use-atom-command";
+@@ -166,6 +167,10 @@ import { useAtomCommand } from "../state/use-atom-command";
  import { useAtomQueryRunner } from "../state/use-atom-query-runner";
  import { projectEnvironment } from "../state/projects";
  import { filesystemEnvironment } from "../state/filesystem";
@@ -3479,7 +3572,7 @@ index dd37be3b4b..57e149a017 100644
  import {
    claimWorkspaceBasenameLookup,
    needsWorkspaceBasenameLookup,
-@@ -546,6 +551,14 @@ function useChatMarkdownState({
+@@ -536,6 +541,14 @@ function useChatMarkdownState({
    const searchProjectEntries = useAtomQueryRunner(projectEnvironment.searchEntries, {
      reportFailure: false,
    });
@@ -3494,7 +3587,7 @@ index dd37be3b4b..57e149a017 100644
    const getFilesystemMetadata = useAtomQueryRunner(filesystemEnvironment.getMetadata, {
      reportFailure: false,
      refresh: true,
-@@ -795,6 +808,80 @@ function useChatMarkdownState({
+@@ -785,6 +798,80 @@ function useChatMarkdownState({
      });
      return metadata._tag === "Success" && metadata.value.entries[0] === null ? match : null;
    };
@@ -3575,7 +3668,7 @@ index dd37be3b4b..57e149a017 100644
    const openFileInPanel = (fileLinkMeta: MarkdownFileLinkMeta, panelPath: string) => {
      if (!threadRef) return;
      // Every open supersedes pending lookups, including synchronous opens.
-@@ -817,10 +904,11 @@ function useChatMarkdownState({
+@@ -807,10 +894,11 @@ function useChatMarkdownState({
      })();
    };
    const fileLinkChip = (
@@ -3588,7 +3681,7 @@ index dd37be3b4b..57e149a017 100644
      const resolveHostPath = () =>
        resolveMarkdownFileHostPath({
          meta: fileLinkMeta,
-@@ -926,6 +1014,7 @@ function useChatMarkdownState({
+@@ -916,6 +1004,7 @@ function useChatMarkdownState({
      skills,
      threadRef,
      updateThreadPullRequestLink,
@@ -3596,7 +3689,7 @@ index dd37be3b4b..57e149a017 100644
    };
    return {
      componentState,
-@@ -964,6 +1053,9 @@ function selectInlineCode(event: ReactMouseEvent<HTMLElement>) {
+@@ -954,6 +1043,9 @@ function selectInlineCode(event: ReactMouseEvent<HTMLElement>) {
    window.getSelection()?.selectAllChildren(event.currentTarget);
  }
  
@@ -3606,7 +3699,7 @@ index dd37be3b4b..57e149a017 100644
  const CHAT_MARKDOWN_COMPONENTS = {
    h1: markdownHeadingRenderer(1),
    h2: markdownHeadingRenderer(2),
-@@ -1381,6 +1473,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1371,6 +1463,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
        renderContextReference,
        fileLinkChip,
        resolvedTheme,
@@ -3614,7 +3707,7 @@ index dd37be3b4b..57e149a017 100644
      } = use(ChatMarkdownRendererContext);
      const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
      const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
-@@ -1408,7 +1501,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1398,7 +1491,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
      const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
      const { className, style: _style, width, height, ...imageProps } = props;
      const authoredSizeStyle = authoredImageSizeStyle(width, height);
@@ -4717,10 +4810,10 @@ index 33d7ca9d76..850d86a4ef 100644
          }}
          onKeyUp={(event) => {
 diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
-index 5409f6ec53..51010fdd4b 100644
+index 087f73589f..7f77beb3f8 100644
 --- a/apps/web/src/components/settings/ConnectionsSettings.tsx
 +++ b/apps/web/src/components/settings/ConnectionsSettings.tsx
-@@ -252,6 +252,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
+@@ -348,6 +348,7 @@ function ConnectionsSettingsContent({
    const [removingSavedEnvironmentId, setRemovingSavedEnvironmentId] =
      useState<EnvironmentId | null>(null);
    const [isUpdatingDesktopServerExposure, setIsUpdatingDesktopServerExposure] = useState(false);
@@ -4728,7 +4821,7 @@ index 5409f6ec53..51010fdd4b 100644
    const [isUpdatingTailscaleServe, setIsUpdatingTailscaleServe] = useState(false);
    const [isUpdatingWslBackend, setIsUpdatingWslBackend] = useState(false);
    const [desktopWslMutationError, setDesktopWslMutationError] = useState<string | null>(null);
-@@ -631,6 +632,41 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
+@@ -731,6 +732,41 @@ function ConnectionsSettingsContent({
    const handleSetDefaultAdvertisedEndpoint = (endpoint: AdvertisedEndpoint) => {
      setDefaultAdvertisedEndpointKey(endpointDefaultPreferenceKey(endpoint));
    };
@@ -4770,7 +4863,7 @@ index 5409f6ec53..51010fdd4b 100644
  
    const renderNetworkAccessToggle = () => (
      <Switch
-@@ -996,6 +1032,67 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
+@@ -1097,6 +1133,67 @@ function ConnectionsSettingsContent({
        managed={isLocalBackendNetworkAccessible ? undefined : remoteClientsDenial}
      />
    );
@@ -4838,7 +4931,7 @@ index 5409f6ec53..51010fdd4b 100644
    const renderDisabledNetworkAccessRow = () => (
      <SettingsRow
        title={searchableSetting("network-access").title}
-@@ -1129,6 +1226,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" |
+@@ -1230,6 +1327,7 @@ function ConnectionsSettingsContent({
              {canManageLocalBackend && desktopBridge ? (
                <>
                  {renderNetworkAccessRow()}
@@ -4887,10 +4980,10 @@ index 36c289b833..469e3a1e28 100644
        }
        control={
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index e61a064431..3819ab35fa 100644
+index 23d32bb35e..79bf7af24d 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
-@@ -1076,6 +1076,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+@@ -1083,6 +1083,14 @@ export const SETTINGS_SEARCH_ITEMS = [
      searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
      localBackendManagementOnly: true,
    },
@@ -5073,7 +5166,7 @@ index 0000000000..ba24825679
 +  return result;
 +}
 diff --git a/docs/user/devices.md b/docs/user/devices.md
-index 46a5a427cc..ec2d0acb17 100644
+index ac053b36c0..f38d98f6d0 100644
 --- a/docs/user/devices.md
 +++ b/docs/user/devices.md
 @@ -54,6 +54,11 @@ to the other screen switches the live display and touch input to that screen.
@@ -5651,7 +5744,7 @@ index 715a837dae..1d95161535 100644
    read_failed: "Failed to read the shared thread.",
    changed: "The guest link changed while it was being created.",
 diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
-index 5aa9acf277..bc703885ef 100644
+index b2f12cb83d..1b4e212a7b 100644
 --- a/packages/contracts/src/ipc.ts
 +++ b/packages/contracts/src/ipc.ts
 @@ -499,6 +499,7 @@ export interface DesktopServerExposureState {
@@ -5670,7 +5763,7 @@ index 5aa9acf277..bc703885ef 100644
    tailscaleServeEnabled: Schema.Boolean,
    tailscaleServePort: Schema.Number,
  });
-@@ -1086,6 +1088,7 @@ export interface DesktopBridge {
+@@ -1091,6 +1093,7 @@ export interface DesktopBridge {
    resolveSshPasswordPrompt: (requestId: string, password: string | null) => Promise<void>;
    getServerExposureState: () => Promise<DesktopServerExposureState>;
    setServerExposureMode: (mode: DesktopServerExposureMode) => Promise<DesktopServerExposureState>;
@@ -5750,7 +5843,7 @@ index 4ff7d2c961..e36513ff56 100644
    it("distinguishes unmigrated lists from deliberately cleared lists", () => {
      expect(decodeServerSettings({})).toMatchObject({
 diff --git a/packages/contracts/src/settings.ts b/packages/contracts/src/settings.ts
-index 7f6e8a4aea..fe80f17ebd 100644
+index 798e076495..45fd290ae2 100644
 --- a/packages/contracts/src/settings.ts
 +++ b/packages/contracts/src/settings.ts
 @@ -52,6 +52,29 @@ import {
@@ -5793,7 +5886,7 @@ index 7f6e8a4aea..fe80f17ebd 100644
    /**
     * Beta: links to the user's other machines, both ways. Off refuses new links, calls over links
     * and tasks on another machine; tasks already running there finish.
-@@ -1658,6 +1684,7 @@ export const ServerSettingsPatch = Schema.Struct({
+@@ -1660,6 +1686,7 @@ export const ServerSettingsPatch = Schema.Struct({
    hiddenThreadTags: Schema.optionalKey(Schema.Array(Schema.String)),
    hideTaggedThreads: Schema.optionalKey(Schema.Boolean),
    guestSharingEnabled: Schema.optionalKey(Schema.Boolean),
@@ -5835,10 +5928,10 @@ index 14537ed69c..6457c50057 100644
    };
  }
 diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
-index 6ddbc36224..cc28caa82e 100644
+index 71ad239cc0..eb43527ecd 100644
 --- a/pnpm-lock.yaml
 +++ b/pnpm-lock.yaml
-@@ -603,6 +603,9 @@ importers:
+@@ -593,6 +593,9 @@ importers:
        '@t3tools/mobile-terminal-native':
          specifier: file:./modules/t3-terminal
          version: file:apps/mobile/modules/t3-terminal
