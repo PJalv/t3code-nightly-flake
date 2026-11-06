@@ -7,6 +7,7 @@
 , nodejs_24
 , openssh
 , lsof
+, vulkan-loader
 , sourceAssets
 , seedTools
 , androidSdk
@@ -41,7 +42,9 @@ stdenv.mkDerivation {
   };
 
   nativeBuildInputs = [ makeWrapper autoPatchelfHook ];
-  buildInputs = [ stdenv.cc.cc.lib ];
+  # vulkan-loader satisfies libggml-vulkan.so in @transcribe-cpp/linux-x64-cpu-vulkan
+  # (the only linux-x64 variant that package ships).
+  buildInputs = [ stdenv.cc.cc.lib vulkan-loader ];
   dontBuild = true;
 
   installPhase = ''
@@ -56,8 +59,11 @@ stdenv.mkDerivation {
     # ffi-rs selects its binding with isMusl(), so a glibc host never loads the
     # musl prebuild; autoPatchelf still tries to satisfy its musl libc and fails.
     rm -rf "$out/lib/node_modules/t3/node_modules/@yuuang/ffi-rs-linux-x64-musl"
+    # koffi ships glibc and musl prebuilds; same reasoning as ffi-rs above.
+    rm -rf "$out/lib/node_modules/t3/node_modules/@koromix/koffi-linux-x64/musl_x64"
     test -f "$out/lib/node_modules/t3/node_modules/node-pty/prebuilds/linux-x64/pty.node"
     test -f "$out/lib/node_modules/t3/node_modules/@ff-labs/fff-bin-linux-x64-gnu/libfff_c.so"
+    test -f "$out/lib/node_modules/t3/node_modules/@koromix/koffi-linux-x64/linux_x64/koffi.node"
     test -f "$out/lib/node_modules/t3/${binPath}"
 
     makeWrapper ${nodejs_24}/bin/node "$out/bin/t3" \
