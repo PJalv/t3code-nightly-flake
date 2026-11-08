@@ -687,10 +687,10 @@ index 76c2392c0b..28c4bd0e10 100644
      getAdvertisedEndpoints,
    });
 diff --git a/apps/desktop/src/ipc/DesktopIpcHandlers.ts b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
-index 66c558e86f..7398e3caee 100644
+index db26c525c0..1779517215 100644
 --- a/apps/desktop/src/ipc/DesktopIpcHandlers.ts
 +++ b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
-@@ -12,6 +12,7 @@ import {
+@@ -13,6 +13,7 @@ import {
  import {
    getAdvertisedEndpoints,
    getServerExposureState,
@@ -698,7 +698,7 @@ index 66c558e86f..7398e3caee 100644
    setServerExposureMode,
    setTailscaleServeEnabled,
  } from "./methods/serverExposure.ts";
-@@ -130,6 +131,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
+@@ -132,6 +133,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
  
    yield* ipc.handle(getServerExposureState);
    yield* ipc.handle(setServerExposureMode);
@@ -707,10 +707,10 @@ index 66c558e86f..7398e3caee 100644
    yield* ipc.handle(getAdvertisedEndpoints);
  
 diff --git a/apps/desktop/src/ipc/channels.ts b/apps/desktop/src/ipc/channels.ts
-index 840e5f1168..4d404954ef 100644
+index 6a149e24ae..f6ff905c70 100644
 --- a/apps/desktop/src/ipc/channels.ts
 +++ b/apps/desktop/src/ipc/channels.ts
-@@ -68,6 +68,7 @@ export const FETCH_SSH_SESSION_STATE_CHANNEL = "desktop:fetch-ssh-session-state"
+@@ -69,6 +69,7 @@ export const FETCH_SSH_SESSION_STATE_CHANNEL = "desktop:fetch-ssh-session-state"
  export const SSH_PASSWORD_PROMPT_CHANNEL = "desktop:ssh-password-prompt";
  export const RESOLVE_SSH_PASSWORD_PROMPT_CHANNEL = "desktop:resolve-ssh-password-prompt";
  export const GET_SERVER_EXPOSURE_STATE_CHANNEL = "desktop:get-server-exposure-state";
@@ -743,10 +743,10 @@ index 9a9ce76897..b69c1e76ca 100644
    channel: IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL,
    payload: SetTailscaleServeEnabledInput,
 diff --git a/apps/desktop/src/preload.ts b/apps/desktop/src/preload.ts
-index 2d2bd4f516..1c5bf35fa6 100644
+index 7c44ec5133..a70e46b69e 100644
 --- a/apps/desktop/src/preload.ts
 +++ b/apps/desktop/src/preload.ts
-@@ -186,6 +186,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
+@@ -187,6 +187,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
    getServerExposureState: () => ipcRenderer.invoke(IpcChannels.GET_SERVER_EXPOSURE_STATE_CHANNEL),
    setServerExposureMode: (mode) =>
      ipcRenderer.invoke(IpcChannels.SET_SERVER_EXPOSURE_MODE_CHANNEL, mode),
@@ -2214,7 +2214,7 @@ index cabe229f9a..9703b008e2 100644
              <SettingsRow
                icon="bolt.circle"
 diff --git a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
-index ff4d44fcaa..01b078b47e 100644
+index a3b698dd9a..87930004fc 100644
 --- a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
 @@ -28,6 +28,7 @@ import { serverEnvironment } from "../../state/server";
@@ -4989,10 +4989,10 @@ index 3ab93229b2..4f6729de7d 100644
        }
        control={
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index e50bbace01..bcb9ca96a1 100644
+index 60c89ffc6b..a96a0011f1 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
-@@ -1192,6 +1192,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+@@ -1182,6 +1182,14 @@ export const SETTINGS_SEARCH_ITEMS = [
      searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
      localBackendManagementOnly: true,
    },
@@ -5753,7 +5753,7 @@ index 715a837dae..1d95161535 100644
    read_failed: "Failed to read the shared thread.",
    changed: "The guest link changed while it was being created.",
 diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
-index 182b238d15..12fda93ed3 100644
+index afb87b14bc..43e781fb08 100644
 --- a/packages/contracts/src/ipc.ts
 +++ b/packages/contracts/src/ipc.ts
 @@ -499,6 +499,7 @@ export interface DesktopServerExposureState {
@@ -5772,7 +5772,7 @@ index 182b238d15..12fda93ed3 100644
    tailscaleServeEnabled: Schema.Boolean,
    tailscaleServePort: Schema.Number,
  });
-@@ -1093,6 +1095,7 @@ export interface DesktopBridge {
+@@ -1095,6 +1097,7 @@ export interface DesktopBridge {
    resolveSshPasswordPrompt: (requestId: string, password: string | null) => Promise<void>;
    getServerExposureState: () => Promise<DesktopServerExposureState>;
    setServerExposureMode: (mode: DesktopServerExposureMode) => Promise<DesktopServerExposureState>;
@@ -5852,7 +5852,7 @@ index a5a27235bb..f8f2e4a432 100644
    it("distinguishes unmigrated lists from deliberately cleared lists", () => {
      expect(decodeServerSettings({})).toMatchObject({
 diff --git a/packages/contracts/src/settings.ts b/packages/contracts/src/settings.ts
-index b98ebe0fd7..c21b29eddb 100644
+index f6409a8707..1344ce68e8 100644
 --- a/packages/contracts/src/settings.ts
 +++ b/packages/contracts/src/settings.ts
 @@ -62,6 +62,29 @@ import {
@@ -5895,7 +5895,7 @@ index b98ebe0fd7..c21b29eddb 100644
    /**
     * Beta: links to the user's other machines, both ways. Off refuses new links, calls over links
     * and tasks on another machine; tasks already running there finish.
-@@ -1752,6 +1778,7 @@ export const ServerSettingsPatch = Schema.Struct({
+@@ -1749,6 +1775,7 @@ export const ServerSettingsPatch = Schema.Struct({
    hiddenThreadTags: Schema.optionalKey(Schema.Array(Schema.String)),
    hideTaggedThreads: Schema.optionalKey(Schema.Boolean),
    guestSharingEnabled: Schema.optionalKey(Schema.Boolean),
@@ -5937,7 +5937,7 @@ index 14537ed69c..6457c50057 100644
    };
  }
 diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
-index f56b9fb3f0..eb50b54c4c 100644
+index 697191c410..604a1b6baa 100644
 --- a/pnpm-lock.yaml
 +++ b/pnpm-lock.yaml
 @@ -594,6 +594,9 @@ importers:

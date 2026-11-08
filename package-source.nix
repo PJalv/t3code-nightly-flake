@@ -59,9 +59,10 @@ stdenvNoCC.mkDerivation {
     fetcherVersion = 4;
     # Unfiltered: filtered fetches skip packages the sandboxed install
     # resolves (observed with the Sep 13 lockfile and @effect/platform-bun).
-    # The 20261107.4314 lockfile only changed patch-hash metadata, so the
-    # fetched store (and hash) is identical to 20261106.4262 — proven by the
-    # real fetch below reporting this value as `got:`.
+    # The 20261108.4353 lockfile only dropped the @napi-rs/keyring importer
+    # lines; the fetched store (and hash) is identical to 20261107.4314 —
+    # proven by a real fetch with a placeholder hash reporting this value
+    # as `got:`.
     hash = "sha256-rOX3lMbvJsPmeqc/9yJM2kFDOopyCAjts5FSy/2gvdA=";
   }).overrideAttrs (old: {
     # The unpacked pnpm store, the virtual store, pnpm's download cache

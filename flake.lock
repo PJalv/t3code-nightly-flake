@@ -25,17 +25,17 @@
     "t3code-source": {
       "flake": false,
       "locked": {
-        "lastModified": 1794041109,
-        "narHash": "sha256-M9cVeHurjNl5OvGVcwlu9WzrhpndpELw5mBE16veHmU=",
+        "lastModified": 1794114724,
+        "narHash": "sha256-t3drsGtD+Hk5ibFcy2i8ZVeskOaxH8ODI4II36SUlqk=",
         "owner": "pingdotgg",
         "repo": "t3code",
-        "rev": "83a3674ffd84ffb33de768210c806cb1ac53fd80",
+        "rev": "3cd97a1ee230437b1bfd8441dffe65eac55be1e5",
         "type": "github"
       },
       "original": {
         "owner": "pingdotgg",
         "repo": "t3code",
-        "rev": "83a3674ffd84ffb33de768210c806cb1ac53fd80",
+        "rev": "3cd97a1ee230437b1bfd8441dffe65eac55be1e5",
         "type": "github"
       }
     }
