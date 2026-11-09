@@ -59,11 +59,11 @@ stdenvNoCC.mkDerivation {
     fetcherVersion = 4;
     # Unfiltered: filtered fetches skip packages the sandboxed install
     # resolves (observed with the Sep 13 lockfile and @effect/platform-bun).
-    # The 20261108.4353 lockfile only dropped the @napi-rs/keyring importer
-    # lines; the fetched store (and hash) is identical to 20261107.4314 —
-    # proven by a real fetch with a placeholder hash reporting this value
-    # as `got:`.
-    hash = "sha256-rOX3lMbvJsPmeqc/9yJM2kFDOopyCAjts5FSy/2gvdA=";
+    # The 20261109.4399 lockfile added the `pele` catalog dependency, bumped
+    # the vendored react-native-enriched-markdown tgz (t3.16 -> t3.18, patch
+    # dropped) and changed the pnpmfile checksum — proven by a real fetch
+    # with a placeholder hash reporting this value as `got:`.
+    hash = "sha256-NnaWoZuRlDKIDXxbOGQ0XekuN2Qch3ZBLU/nD+7TJQE=";
   }).overrideAttrs (old: {
     # The unpacked pnpm store, the virtual store, pnpm's download cache
     # (HOME) and the installed node_modules are all dead after the fixup
