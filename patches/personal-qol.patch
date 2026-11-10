@@ -687,7 +687,7 @@ index 76c2392c0b..28c4bd0e10 100644
      getAdvertisedEndpoints,
    });
 diff --git a/apps/desktop/src/ipc/DesktopIpcHandlers.ts b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
-index e313697709..584972da5f 100644
+index 6a1b1c62e7..23adb04d78 100644
 --- a/apps/desktop/src/ipc/DesktopIpcHandlers.ts
 +++ b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
 @@ -13,6 +13,7 @@ import {
@@ -698,7 +698,7 @@ index e313697709..584972da5f 100644
    setServerExposureMode,
    setTailscaleServeEnabled,
  } from "./methods/serverExposure.ts";
-@@ -133,6 +134,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
+@@ -134,6 +135,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
  
    yield* ipc.handle(getServerExposureState);
    yield* ipc.handle(setServerExposureMode);
@@ -707,10 +707,10 @@ index e313697709..584972da5f 100644
    yield* ipc.handle(getAdvertisedEndpoints);
  
 diff --git a/apps/desktop/src/ipc/channels.ts b/apps/desktop/src/ipc/channels.ts
-index 4f5117c21c..9ee8047ff3 100644
+index aebbc1c24f..592a5302c0 100644
 --- a/apps/desktop/src/ipc/channels.ts
 +++ b/apps/desktop/src/ipc/channels.ts
-@@ -70,6 +70,7 @@ export const FETCH_SSH_SESSION_STATE_CHANNEL = "desktop:fetch-ssh-session-state"
+@@ -71,6 +71,7 @@ export const FETCH_SSH_SESSION_STATE_CHANNEL = "desktop:fetch-ssh-session-state"
  export const SSH_PASSWORD_PROMPT_CHANNEL = "desktop:ssh-password-prompt";
  export const RESOLVE_SSH_PASSWORD_PROMPT_CHANNEL = "desktop:resolve-ssh-password-prompt";
  export const GET_SERVER_EXPOSURE_STATE_CHANNEL = "desktop:get-server-exposure-state";
@@ -743,10 +743,10 @@ index 9a9ce76897..b69c1e76ca 100644
    channel: IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL,
    payload: SetTailscaleServeEnabledInput,
 diff --git a/apps/desktop/src/preload.ts b/apps/desktop/src/preload.ts
-index 5d14ba0714..6ed55f8554 100644
+index 2dbc4eeda3..7573f9c76d 100644
 --- a/apps/desktop/src/preload.ts
 +++ b/apps/desktop/src/preload.ts
-@@ -187,6 +187,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
+@@ -199,6 +199,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
    getServerExposureState: () => ipcRenderer.invoke(IpcChannels.GET_SERVER_EXPOSURE_STATE_CHANNEL),
    setServerExposureMode: (mode) =>
      ipcRenderer.invoke(IpcChannels.SET_SERVER_EXPOSURE_MODE_CHANNEL, mode),
@@ -1395,10 +1395,10 @@ index 226f00f8cb..53cc0a01bf 100644
            setUpdateChannel: (channel) =>
              setUpdateChannelError
 diff --git a/apps/desktop/src/window/DesktopWindow.test.ts b/apps/desktop/src/window/DesktopWindow.test.ts
-index 4f8949823e..4726af58dc 100644
+index 3e46130355..67e1c5151b 100644
 --- a/apps/desktop/src/window/DesktopWindow.test.ts
 +++ b/apps/desktop/src/window/DesktopWindow.test.ts
-@@ -184,6 +184,7 @@ const layerDesktopServerExposure = Layer.succeed(DesktopServerExposure.DesktopSe
+@@ -186,6 +186,7 @@ const layerDesktopServerExposure = Layer.succeed(DesktopServerExposure.DesktopSe
    }),
    configureFromSettings: () => Effect.die("unexpected configureFromSettings"),
    setMode: () => Effect.die("unexpected setMode"),
@@ -1406,7 +1406,7 @@ index 4f8949823e..4726af58dc 100644
    setTailscaleServeEnabled: () => Effect.die("unexpected setTailscaleServeEnabled"),
    getAdvertisedEndpoints: Effect.die("unexpected getAdvertisedEndpoints"),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
-@@ -262,6 +263,7 @@ function layerTest(input: {
+@@ -264,6 +265,7 @@ function layerTest(input: {
          return { settings: desktopSettings, changed };
        }),
      setServerExposureMode: () => Effect.die("unexpected server exposure update"),
@@ -1427,10 +1427,10 @@ index 8468a95386..2ec3b9aa12 100644
    getAdvertisedEndpoints: Effect.succeed([]),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 diff --git a/apps/mobile/package.json b/apps/mobile/package.json
-index 5ef7cb37f8..10231c5fd5 100644
+index d5c98d8152..23f59ef3b9 100644
 --- a/apps/mobile/package.json
 +++ b/apps/mobile/package.json
-@@ -75,6 +75,7 @@
+@@ -73,6 +73,7 @@
      "@t3tools/mobile-review-diff-native": "file:./modules/t3-review-diff",
      "@t3tools/mobile-source-text": "file:./modules/t3-source-text",
      "@t3tools/mobile-terminal-native": "file:./modules/t3-terminal",
@@ -1628,7 +1628,7 @@ index 0000000000..4b062e0d92
 +  );
 +}
 diff --git a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
-index 437a00be9e..e2a8ae8cbf 100644
+index ec712608fa..fc6a9b249b 100644
 --- a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 +++ b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 @@ -3,6 +3,7 @@ import {
@@ -1639,7 +1639,7 @@ index 437a00be9e..e2a8ae8cbf 100644
  import Constants from "expo-constants";
  import * as Notifications from "expo-notifications";
  import * as Clock from "effect/Clock";
-@@ -191,6 +192,7 @@ export function setAgentAwarenessRelayTokenProvider(
+@@ -199,6 +200,7 @@ export function setAgentAwarenessRelayTokenProvider(
    relayTokenProviderIdentity = provider ? (identity ?? null) : null;
    if (!provider) {
      clearAndroidAgentNotifications();
@@ -2623,7 +2623,7 @@ index 0000000000..1e53e6cd55
 +  return [...variables, ...added];
 +};
 diff --git a/apps/mobile/src/persistence/mobile-preferences.ts b/apps/mobile/src/persistence/mobile-preferences.ts
-index 6dcfe21548..1899b6417d 100644
+index ed2d0b063c..db026b945c 100644
 --- a/apps/mobile/src/persistence/mobile-preferences.ts
 +++ b/apps/mobile/src/persistence/mobile-preferences.ts
 @@ -94,6 +94,9 @@ export interface Preferences {
@@ -3418,7 +3418,7 @@ index 0000000000..779e136cca
 +  );
 +});
 diff --git a/apps/server/src/serverSettings.test.ts b/apps/server/src/serverSettings.test.ts
-index d571244edf..6176fe617b 100644
+index 347b43dd6f..55f59d6306 100644
 --- a/apps/server/src/serverSettings.test.ts
 +++ b/apps/server/src/serverSettings.test.ts
 @@ -136,6 +136,33 @@ function strictSecretReferencePaths(
@@ -3554,7 +3554,7 @@ index 251becba12..5ff403ee8b 100644
      if (
        config === null ||
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index 6ec04fef68..2737e3bae2 100644
+index 06960b273a..98aff48d66 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
 @@ -78,6 +78,7 @@ import React, {
@@ -3703,7 +3703,7 @@ index 6ec04fef68..2737e3bae2 100644
  const CHAT_MARKDOWN_COMPONENTS = {
    h1: markdownHeadingRenderer(1),
    h2: markdownHeadingRenderer(2),
-@@ -1378,6 +1470,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1382,6 +1474,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
        renderContextReference,
        fileLinkChip,
        resolvedTheme,
@@ -3711,7 +3711,7 @@ index 6ec04fef68..2737e3bae2 100644
      } = use(ChatMarkdownRendererContext);
      const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
      const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
-@@ -1405,7 +1498,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1409,7 +1502,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
      const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
      const { className, style: _style, width, height, ...imageProps } = props;
      const authoredSizeStyle = authoredImageSizeStyle(width, height);
@@ -4771,10 +4771,10 @@ index 33d7ca9d76..850d86a4ef 100644
          }}
          onKeyUp={(event) => {
 diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
-index 087f73589f..7f77beb3f8 100644
+index da46823292..f4ac8be104 100644
 --- a/apps/web/src/components/settings/ConnectionsSettings.tsx
 +++ b/apps/web/src/components/settings/ConnectionsSettings.tsx
-@@ -348,6 +348,7 @@ function ConnectionsSettingsContent({
+@@ -343,6 +343,7 @@ function ConnectionsSettingsContent({
    const [removingSavedEnvironmentId, setRemovingSavedEnvironmentId] =
      useState<EnvironmentId | null>(null);
    const [isUpdatingDesktopServerExposure, setIsUpdatingDesktopServerExposure] = useState(false);
@@ -4782,7 +4782,7 @@ index 087f73589f..7f77beb3f8 100644
    const [isUpdatingTailscaleServe, setIsUpdatingTailscaleServe] = useState(false);
    const [isUpdatingWslBackend, setIsUpdatingWslBackend] = useState(false);
    const [desktopWslMutationError, setDesktopWslMutationError] = useState<string | null>(null);
-@@ -731,6 +732,41 @@ function ConnectionsSettingsContent({
+@@ -726,6 +727,41 @@ function ConnectionsSettingsContent({
    const handleSetDefaultAdvertisedEndpoint = (endpoint: AdvertisedEndpoint) => {
      setDefaultAdvertisedEndpointKey(endpointDefaultPreferenceKey(endpoint));
    };
@@ -4824,7 +4824,7 @@ index 087f73589f..7f77beb3f8 100644
  
    const renderNetworkAccessToggle = () => (
      <Switch
-@@ -1097,6 +1133,67 @@ function ConnectionsSettingsContent({
+@@ -1092,6 +1128,67 @@ function ConnectionsSettingsContent({
        managed={isLocalBackendNetworkAccessible ? undefined : remoteClientsDenial}
      />
    );
@@ -4892,7 +4892,7 @@ index 087f73589f..7f77beb3f8 100644
    const renderDisabledNetworkAccessRow = () => (
      <SettingsRow
        title={searchableSetting("network-access").title}
-@@ -1230,6 +1327,7 @@ function ConnectionsSettingsContent({
+@@ -1225,6 +1322,7 @@ function ConnectionsSettingsContent({
              {canManageLocalBackend && desktopBridge ? (
                <>
                  {renderNetworkAccessRow()}
@@ -4941,10 +4941,10 @@ index 38be7d6115..62a9c4ce94 100644
        }
        control={
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index eaabdefd38..8b1e2711ad 100644
+index f749203587..684c6943d6 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
-@@ -1189,6 +1189,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+@@ -1211,6 +1211,14 @@ export const SETTINGS_SEARCH_ITEMS = [
      searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
      localBackendManagementOnly: true,
    },
@@ -5195,10 +5195,10 @@ index a8631a6c93..c1ce56b619 100644
  ## What the guest sees
  
 diff --git a/docs/user/mobile-notifications.md b/docs/user/mobile-notifications.md
-index ce4b1fd85c..e5cafb8fdb 100644
+index 992efd5b7b..696ced27d9 100644
 --- a/docs/user/mobile-notifications.md
 +++ b/docs/user/mobile-notifications.md
-@@ -8,4 +8,4 @@ Ordinary alerts stay quiet while the mobile app is in the foreground. Ongoing ac
+@@ -12,4 +12,4 @@ Ordinary alerts stay quiet while the mobile app is in the foreground. Ongoing ac
  
  Android notifications require Android 7.0 or newer and Google Play services. Android 16 and newer can promote ongoing activity to a Live Update, subject to system settings and device support. Other devices show a regular ongoing notification. If Live Updates don't appear on Android 16 or newer, check **Live Update Settings** in T3 Code's **Settings → Notifications**. Android 7's battery-saving modes can delay removal of expired cards.
  
@@ -5804,7 +5804,7 @@ index a5a27235bb..f8f2e4a432 100644
    it("distinguishes unmigrated lists from deliberately cleared lists", () => {
      expect(decodeServerSettings({})).toMatchObject({
 diff --git a/packages/contracts/src/settings.ts b/packages/contracts/src/settings.ts
-index 6af8888b25..9e81216011 100644
+index cd112d84bf..4bc71d68bd 100644
 --- a/packages/contracts/src/settings.ts
 +++ b/packages/contracts/src/settings.ts
 @@ -62,6 +62,29 @@ import {
@@ -5837,7 +5837,7 @@ index 6af8888b25..9e81216011 100644
  export const TimestampFormat = Schema.Literals(["locale", "12-hour", "24-hour"]);
  export type TimestampFormat = typeof TimestampFormat.Type;
  const DEFAULT_TIMESTAMP_FORMAT: TimestampFormat = "locale";
-@@ -1369,6 +1392,9 @@ export const ServerSettings = Schema.Struct({
+@@ -1438,6 +1461,9 @@ export const ServerSettings = Schema.Struct({
    hideTaggedThreads: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
    /** Beta: guest links for this machine's threads. Off refuses new links and pauses existing ones. */
    guestSharingEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
@@ -5847,7 +5847,7 @@ index 6af8888b25..9e81216011 100644
    /**
     * Beta: links to the user's other machines, both ways. Off refuses new links, calls over links
     * and tasks on another machine; tasks already running there finish.
-@@ -1768,6 +1794,7 @@ export const ServerSettingsPatch = Schema.Struct({
+@@ -1861,6 +1887,7 @@ export const ServerSettingsPatch = Schema.Struct({
    hiddenThreadTags: Schema.optionalKey(Schema.Array(Schema.String)),
    hideTaggedThreads: Schema.optionalKey(Schema.Boolean),
    guestSharingEnabled: Schema.optionalKey(Schema.Boolean),
@@ -5889,10 +5889,10 @@ index 14537ed69c..6457c50057 100644
    };
  }
 diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
-index fa8574ccfe..dc316dae57 100644
+index efd4f84496..1960c01020 100644
 --- a/pnpm-lock.yaml
 +++ b/pnpm-lock.yaml
-@@ -596,6 +596,9 @@ importers:
+@@ -586,6 +586,9 @@ importers:
        '@t3tools/mobile-terminal-native':
          specifier: file:./modules/t3-terminal
          version: file:apps/mobile/modules/t3-terminal
