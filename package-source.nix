@@ -63,7 +63,7 @@ stdenvNoCC.mkDerivation {
     # the vendored react-native-enriched-markdown tgz (t3.16 -> t3.18, patch
     # dropped) and changed the pnpmfile checksum — proven by a real fetch
     # with a placeholder hash reporting this value as `got:`.
-    hash = "sha256-sBd4OiAk0kOWBMLAwIvI2Iwt1isPVvA1zMqyKyECiLM=";
+    hash = "sha256-cnGSrLYGgDGJ5Be/auq58Qi84u/yvTORGD2SynbVp4k=";
   }).overrideAttrs (old: {
     # The unpacked pnpm store, the virtual store, pnpm's download cache
     # (HOME) and the installed node_modules are all dead after the fixup
