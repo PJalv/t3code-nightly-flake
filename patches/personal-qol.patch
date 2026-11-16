@@ -1,5 +1,5 @@
 diff --git a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
-index 70f7ed87d2..eb635441d8 100644
+index ab57d5db32..313ccbd934 100644
 --- a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
 +++ b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
 @@ -49,6 +49,7 @@ const layerServerExposure = Layer.succeed(DesktopServerExposure.DesktopServerExp
@@ -1395,7 +1395,7 @@ index b118d15ced..87029d5426 100644
            setUpdateChannel: (channel) =>
              setUpdateChannelError
 diff --git a/apps/desktop/src/window/DesktopWindow.test.ts b/apps/desktop/src/window/DesktopWindow.test.ts
-index f66586503e..589a436957 100644
+index 46311dbba8..0ccc44bb82 100644
 --- a/apps/desktop/src/window/DesktopWindow.test.ts
 +++ b/apps/desktop/src/window/DesktopWindow.test.ts
 @@ -191,6 +191,7 @@ const layerDesktopServerExposure = Layer.succeed(DesktopServerExposure.DesktopSe
@@ -1427,7 +1427,7 @@ index d9ae6e76c2..40798d7621 100644
    getAdvertisedEndpoints: Effect.succeed([]),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 diff --git a/apps/mobile/package.json b/apps/mobile/package.json
-index 9810e2e3c8..a3da1d48ef 100644
+index 424d41e903..aea5447555 100644
 --- a/apps/mobile/package.json
 +++ b/apps/mobile/package.json
 @@ -78,6 +78,7 @@
@@ -2623,11 +2623,11 @@ index 0000000000..1e53e6cd55
 +  return [...variables, ...added];
 +};
 diff --git a/apps/mobile/src/persistence/mobile-preferences.ts b/apps/mobile/src/persistence/mobile-preferences.ts
-index f29fbc8c11..104e25e9fa 100644
+index 7a26fc2b8d..a73a510ef9 100644
 --- a/apps/mobile/src/persistence/mobile-preferences.ts
 +++ b/apps/mobile/src/persistence/mobile-preferences.ts
-@@ -94,6 +94,9 @@ export interface Preferences {
-   readonly pullRequestHideTestFiles?: boolean;
+@@ -103,6 +103,9 @@ export interface Preferences {
+   readonly pullRequestActivityVisibility?: PullRequestActivityVisibility;
    readonly pullRequestMergeMethod?: PullRequestMergeMethod;
    readonly liveActivitiesEnabled?: boolean;
 +  /** Explicit device-local Android agent notification opt-in. */
@@ -2636,8 +2636,8 @@ index f29fbc8c11..104e25e9fa 100644
    readonly themeId?: MobileThemeId;
    readonly lightThemeId?: MobileThemeId;
    readonly darkThemeId?: MobileThemeId;
-@@ -183,6 +186,8 @@ function sanitizePreferences(parsed: Preferences): Preferences {
-     pullRequestHideTestFiles?: boolean;
+@@ -193,6 +196,8 @@ function sanitizePreferences(parsed: Preferences): Preferences {
+     pullRequestActivityVisibility?: PullRequestActivityVisibility;
      pullRequestMergeMethod?: PullRequestMergeMethod;
      liveActivitiesEnabled?: boolean;
 +    localNotificationsEnabled?: boolean;
@@ -2645,7 +2645,7 @@ index f29fbc8c11..104e25e9fa 100644
      themeId?: MobileThemeId;
      lightThemeId?: MobileThemeId;
      darkThemeId?: MobileThemeId;
-@@ -240,6 +245,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
+@@ -254,6 +259,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
    if (typeof parsed.liveActivitiesEnabled === "boolean") {
      preferences.liveActivitiesEnabled = parsed.liveActivitiesEnabled;
    }
@@ -3756,15 +3756,16 @@ index b48485fc61..0e9aeb1964 100644
      if (mediaKind === "audio") {
        const filePath = imageSource._tag === "WorkspaceFile" ? imageSource.path : null;
 diff --git a/apps/web/src/components/ChatView.logic.test.ts b/apps/web/src/components/ChatView.logic.test.ts
-index 6cf3ce762d..0802c791ab 100644
+index dbbb445a5e..cf66d0e5a2 100644
 --- a/apps/web/src/components/ChatView.logic.test.ts
 +++ b/apps/web/src/components/ChatView.logic.test.ts
-@@ -45,12 +45,14 @@ import { Atom } from "effect/reactivity";
+@@ -53,13 +53,15 @@ import { AsyncResult, Atom } from "effect/reactivity";
  import { appAtomRegistry } from "../rpc/atomRegistry";
  import { environmentThreadDetails } from "../state/threads";
  
 -import type { Thread } from "../types";
 +import type { Thread, TurnDiffSummary } from "../types";
+ import { DraftId, hydrateImagesFromPersisted, useComposerDraftStore } from "../composerDraftStore";
  import { derivePhase } from "../session-logic";
  import { makeThreadFixture, makeThreadProjectionFixture } from "../test-fixtures";
  import {
@@ -3775,7 +3776,7 @@ index 6cf3ce762d..0802c791ab 100644
    resolveWorktreeSetupProgress,
    peekRememberedThreadTimeline,
    rememberReadyThreadTimeline,
-@@ -63,6 +65,7 @@ import {
+@@ -72,6 +74,7 @@ import {
    deriveLockedProvider,
    hasCompactableConversation,
    hasServerAcknowledgedLocalDispatch,
@@ -3783,7 +3784,7 @@ index 6cf3ce762d..0802c791ab 100644
    waitForRevertedMessage,
  } from "./ChatView.logic";
  
-@@ -782,6 +785,136 @@ describe("resolveComposerProviderSelection", () => {
+@@ -791,6 +794,136 @@ describe("resolveComposerProviderSelection", () => {
    });
  });
  
@@ -5741,10 +5742,10 @@ index 715a837dae..1d95161535 100644
    read_failed: "Failed to read the shared thread.",
    changed: "The guest link changed while it was being created.",
 diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
-index 5fcf696b96..f75aaa87be 100644
+index 25339cb321..a80988d1df 100644
 --- a/packages/contracts/src/ipc.ts
 +++ b/packages/contracts/src/ipc.ts
-@@ -509,6 +509,7 @@ export interface DesktopServerExposureState {
+@@ -510,6 +510,7 @@ export interface DesktopServerExposureState {
    mode: DesktopServerExposureMode;
    endpointUrl: string | null;
    advertisedHost: string | null;
@@ -5752,7 +5753,7 @@ index 5fcf696b96..f75aaa87be 100644
    tailscaleServeEnabled: boolean;
    tailscaleServePort: number;
  }
-@@ -517,6 +518,7 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
+@@ -518,6 +519,7 @@ export const DesktopServerExposureStateSchema = Schema.Struct({
    mode: DesktopServerExposureModeSchema,
    endpointUrl: Schema.NullOr(Schema.String),
    advertisedHost: Schema.NullOr(Schema.String),
@@ -5760,7 +5761,7 @@ index 5fcf696b96..f75aaa87be 100644
    tailscaleServeEnabled: Schema.Boolean,
    tailscaleServePort: Schema.Number,
  });
-@@ -1128,6 +1130,7 @@ export interface DesktopBridge {
+@@ -1129,6 +1131,7 @@ export interface DesktopBridge {
    resolveSshPasswordPrompt: (requestId: string, password: string | null) => Promise<void>;
    getServerExposureState: () => Promise<DesktopServerExposureState>;
    setServerExposureMode: (mode: DesktopServerExposureMode) => Promise<DesktopServerExposureState>;
@@ -5913,7 +5914,7 @@ index 14537ed69c..6457c50057 100644
    };
  }
 diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
-index 05026f5eb7..4244192571 100644
+index 22be5da14a..19e012056d 100644
 --- a/pnpm-lock.yaml
 +++ b/pnpm-lock.yaml
 @@ -610,6 +610,9 @@ importers:

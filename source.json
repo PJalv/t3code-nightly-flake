@@ -1,13 +1,13 @@
 {
-  "version": "0.1.10-nightly.20261115.4723",
-  "tag": "v0.1.10-nightly.20261115.4723",
-  "publishedAt": "2026-11-15T05:48:22Z",
-  "sourceRevision": "11c425b4b6b35dce4510d40028a4aa8f37a3879e",
-  "personalRevision": "82bfa70ab5118d8f8763c8986f5886117da0a678",
+  "version": "0.1.10-nightly.20261116.4774",
+  "tag": "v0.1.10-nightly.20261116.4774",
+  "publishedAt": "2026-11-16T07:48:27Z",
+  "sourceRevision": "16695c812fffe75e85f8cc3084d2c561aa3ca93f",
+  "personalRevision": "de09e73876ddb9d9d927abd9c1eb27f4adacff44",
   "personalPatch": "patches/personal-qol.patch",
-  "personalPatchSha256": "dc2bba692d29d665cb4e396cbf9bfc0b1ae72482ffb386771a4746b334f324f8",
-  "url": "https://github.com/pingdotgg/t3code/releases/download/v0.1.10-nightly.20261115.4723/T3-Code-Nightly-x86_64.AppImage",
-  "hash": "sha256-QE6hL5sq48HtfH/FNKd6thzOqQ4jzBBHL1TUvNqjS7c=",
-  "serverUrl": "https://github.com/pingdotgg/t3code/releases/download/v0.1.10-nightly.20261115.4723/t3-0.1.10-nightly.20261115.4723-linux-x64.tar.gz",
-  "serverHash": "sha256-xolfeR0ZTNFMFF6QKZKpL/wus/w7Tf0uJ2PRpnrWIpg="
+  "personalPatchSha256": "7a3200279db9f9dfbbbb3d33728927bb76d05edd598833dd8fd612ae654bf745",
+  "url": "https://github.com/pingdotgg/t3code/releases/download/v0.1.10-nightly.20261116.4774/T3-Code-Nightly-x86_64.AppImage",
+  "hash": "sha256-3xrshJYfoS3/x9TLcYhSxSCV5ODi6XMaLg3m0+OBkeU=",
+  "serverUrl": "https://github.com/pingdotgg/t3code/releases/download/v0.1.10-nightly.20261116.4774/t3-0.1.10-nightly.20261116.4774-linux-x64.tar.gz",
+  "serverHash": "sha256-NXGN2Ji1qe/zKa1O0UzqxewBnUh4PF1NHRIBrMT4Tpw="
 }
