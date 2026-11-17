@@ -1,8 +1,8 @@
 diff --git a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
-index ab57d5db32..313ccbd934 100644
+index 565a50f193..1b9313e352 100644
 --- a/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
 +++ b/apps/desktop/src/backend/DesktopBackendConfiguration.test.ts
-@@ -49,6 +49,7 @@ const layerServerExposure = Layer.succeed(DesktopServerExposure.DesktopServerExp
+@@ -50,6 +50,7 @@ const layerServerExposure = Layer.succeed(DesktopServerExposure.DesktopServerExp
    }),
    configureFromSettings: () => Effect.die("unexpected configureFromSettings"),
    setMode: () => Effect.die("unexpected setMode"),
@@ -687,10 +687,10 @@ index 76c2392c0b..28c4bd0e10 100644
      getAdvertisedEndpoints,
    });
 diff --git a/apps/desktop/src/ipc/DesktopIpcHandlers.ts b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
-index 60b72deb29..3fd412e083 100644
+index fe65edd0ee..bb5dc67dfb 100644
 --- a/apps/desktop/src/ipc/DesktopIpcHandlers.ts
 +++ b/apps/desktop/src/ipc/DesktopIpcHandlers.ts
-@@ -13,6 +13,7 @@ import {
+@@ -14,6 +14,7 @@ import {
  import {
    getAdvertisedEndpoints,
    getServerExposureState,
@@ -698,7 +698,7 @@ index 60b72deb29..3fd412e083 100644
    setServerExposureMode,
    setTailscaleServeEnabled,
  } from "./methods/serverExposure.ts";
-@@ -139,6 +140,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
+@@ -141,6 +142,7 @@ export const installDesktopIpcHandlers = Effect.fn("desktop.ipc.installHandlers"
  
    yield* ipc.handle(getServerExposureState);
    yield* ipc.handle(setServerExposureMode);
@@ -707,7 +707,7 @@ index 60b72deb29..3fd412e083 100644
    yield* ipc.handle(getAdvertisedEndpoints);
  
 diff --git a/apps/desktop/src/ipc/channels.ts b/apps/desktop/src/ipc/channels.ts
-index 9e5c7296a3..36c8556554 100644
+index d8652bd199..75f0bd3717 100644
 --- a/apps/desktop/src/ipc/channels.ts
 +++ b/apps/desktop/src/ipc/channels.ts
 @@ -74,6 +74,7 @@ export const SSH_PASSWORD_PROMPT_CHANNEL = "desktop:ssh-password-prompt";
@@ -743,10 +743,10 @@ index 9a9ce76897..b69c1e76ca 100644
    channel: IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL,
    payload: SetTailscaleServeEnabledInput,
 diff --git a/apps/desktop/src/preload.ts b/apps/desktop/src/preload.ts
-index ba9c17aae2..15658a26a6 100644
+index b4b15f6a7a..aff788ca8f 100644
 --- a/apps/desktop/src/preload.ts
 +++ b/apps/desktop/src/preload.ts
-@@ -230,6 +230,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
+@@ -232,6 +232,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
    getServerExposureState: () => ipcRenderer.invoke(IpcChannels.GET_SERVER_EXPOSURE_STATE_CHANNEL),
    setServerExposureMode: (mode) =>
      ipcRenderer.invoke(IpcChannels.SET_SERVER_EXPOSURE_MODE_CHANNEL, mode),
@@ -1427,7 +1427,7 @@ index d9ae6e76c2..40798d7621 100644
    getAdvertisedEndpoints: Effect.succeed([]),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 diff --git a/apps/mobile/package.json b/apps/mobile/package.json
-index 424d41e903..aea5447555 100644
+index 2ab0e38d89..5f596074b5 100644
 --- a/apps/mobile/package.json
 +++ b/apps/mobile/package.json
 @@ -78,6 +78,7 @@
@@ -2623,10 +2623,10 @@ index 0000000000..1e53e6cd55
 +  return [...variables, ...added];
 +};
 diff --git a/apps/mobile/src/persistence/mobile-preferences.ts b/apps/mobile/src/persistence/mobile-preferences.ts
-index 7a26fc2b8d..a73a510ef9 100644
+index 71d095b0b4..93f97f9a7c 100644
 --- a/apps/mobile/src/persistence/mobile-preferences.ts
 +++ b/apps/mobile/src/persistence/mobile-preferences.ts
-@@ -103,6 +103,9 @@ export interface Preferences {
+@@ -143,6 +143,9 @@ export interface Preferences {
    readonly pullRequestActivityVisibility?: PullRequestActivityVisibility;
    readonly pullRequestMergeMethod?: PullRequestMergeMethod;
    readonly liveActivitiesEnabled?: boolean;
@@ -2636,7 +2636,7 @@ index 7a26fc2b8d..a73a510ef9 100644
    readonly themeId?: MobileThemeId;
    readonly lightThemeId?: MobileThemeId;
    readonly darkThemeId?: MobileThemeId;
-@@ -193,6 +196,8 @@ function sanitizePreferences(parsed: Preferences): Preferences {
+@@ -236,6 +239,8 @@ function sanitizePreferences(parsed: Preferences): Preferences {
      pullRequestActivityVisibility?: PullRequestActivityVisibility;
      pullRequestMergeMethod?: PullRequestMergeMethod;
      liveActivitiesEnabled?: boolean;
@@ -2645,7 +2645,7 @@ index 7a26fc2b8d..a73a510ef9 100644
      themeId?: MobileThemeId;
      lightThemeId?: MobileThemeId;
      darkThemeId?: MobileThemeId;
-@@ -254,6 +259,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
+@@ -303,6 +308,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
    if (typeof parsed.liveActivitiesEnabled === "boolean") {
      preferences.liveActivitiesEnabled = parsed.liveActivitiesEnabled;
    }
@@ -3451,7 +3451,7 @@ index 0000000000..779e136cca
 +  );
 +});
 diff --git a/apps/server/src/serverSettings.test.ts b/apps/server/src/serverSettings.test.ts
-index 873649cb16..b259ff894c 100644
+index 03b89e4955..0cee119a99 100644
 --- a/apps/server/src/serverSettings.test.ts
 +++ b/apps/server/src/serverSettings.test.ts
 @@ -137,6 +137,33 @@ function strictSecretReferencePaths(
@@ -3535,7 +3535,7 @@ index 873649cb16..b259ff894c 100644
      Effect.gen(function* () {
        const config = yield* ServerConfig.ServerConfig;
 diff --git a/apps/server/src/serverSettings.ts b/apps/server/src/serverSettings.ts
-index 4dc30d29a6..1d71873f00 100644
+index 81106d27b7..f2ac575b55 100644
 --- a/apps/server/src/serverSettings.ts
 +++ b/apps/server/src/serverSettings.ts
 @@ -86,8 +86,45 @@ const textDecoder = new TextDecoder();
@@ -3587,10 +3587,10 @@ index 4dc30d29a6..1d71873f00 100644
      if (
        config === null ||
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index b48485fc61..0e9aeb1964 100644
+index 663b722ce2..6e0f20586b 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
-@@ -173,11 +173,16 @@ import { useAtomCommand } from "../state/use-atom-command";
+@@ -175,11 +175,16 @@ import { useAtomCommand } from "../state/use-atom-command";
  import { useAtomQueryRunner } from "../state/use-atom-query-runner";
  import { projectEnvironment } from "../state/projects";
  import { filesystemEnvironment } from "../state/filesystem";
@@ -3607,7 +3607,7 @@ index b48485fc61..0e9aeb1964 100644
    pickWorkspaceLinkMatch,
    WORKSPACE_BASENAME_LOOKUP_LIMIT,
    workspaceLinkLookupQuery,
-@@ -568,6 +573,14 @@ function useChatMarkdownState({
+@@ -570,6 +575,14 @@ function useChatMarkdownState({
    const searchProjectEntries = useAtomQueryRunner(projectEnvironment.searchEntries, {
      reportFailure: false,
    });
@@ -3622,7 +3622,7 @@ index b48485fc61..0e9aeb1964 100644
    const getFilesystemMetadata = useAtomQueryRunner(filesystemEnvironment.getMetadata, {
      reportFailure: false,
      refresh: true,
-@@ -854,6 +867,80 @@ function useChatMarkdownState({
+@@ -857,6 +870,80 @@ function useChatMarkdownState({
      }
      return findAgentDirectoryMatch(workspaceRelativePath, agentRoots, searchRoot);
    };
@@ -3703,7 +3703,7 @@ index b48485fc61..0e9aeb1964 100644
    const openFileInPanel = (fileLinkMeta: MarkdownFileLinkMeta, panelPath: string) => {
      if (!threadRef) return;
      // Every open supersedes pending lookups, including synchronous opens.
-@@ -875,10 +962,11 @@ function useChatMarkdownState({
+@@ -878,10 +965,11 @@ function useChatMarkdownState({
      })();
    };
    const fileLinkChip = (
@@ -3716,7 +3716,7 @@ index b48485fc61..0e9aeb1964 100644
      const resolveHostPath = () =>
        resolveMarkdownFileHostPath({
          meta: fileLinkMeta,
-@@ -1004,6 +1092,7 @@ function useChatMarkdownState({
+@@ -1011,6 +1099,7 @@ function useChatMarkdownState({
      skills,
      threadRef,
      updateThreadPullRequestLink,
@@ -3724,7 +3724,7 @@ index b48485fc61..0e9aeb1964 100644
    };
    return {
      componentState,
-@@ -1046,6 +1135,9 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
+@@ -1053,6 +1142,9 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
    };
  }
  
@@ -3734,7 +3734,7 @@ index b48485fc61..0e9aeb1964 100644
  const CHAT_MARKDOWN_COMPONENTS = {
    h1: markdownHeadingRenderer(1),
    h2: markdownHeadingRenderer(2),
-@@ -1478,6 +1570,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1500,6 +1592,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
        renderContextReference,
        fileLinkChip,
        resolvedTheme,
@@ -3742,7 +3742,7 @@ index b48485fc61..0e9aeb1964 100644
      } = use(ChatMarkdownRendererContext);
      const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
      const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
-@@ -1505,7 +1598,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1527,7 +1620,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
      const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
      const { className, style: _style, width, height, ...imageProps } = props;
      const authoredSizeStyle = authoredImageSizeStyle(width, height);
@@ -3756,7 +3756,7 @@ index b48485fc61..0e9aeb1964 100644
      if (mediaKind === "audio") {
        const filePath = imageSource._tag === "WorkspaceFile" ? imageSource.path : null;
 diff --git a/apps/web/src/components/ChatView.logic.test.ts b/apps/web/src/components/ChatView.logic.test.ts
-index dbbb445a5e..cf66d0e5a2 100644
+index dbbb445a5e..7f1793dcd2 100644
 --- a/apps/web/src/components/ChatView.logic.test.ts
 +++ b/apps/web/src/components/ChatView.logic.test.ts
 @@ -53,13 +53,15 @@ import { AsyncResult, Atom } from "effect/reactivity";
@@ -3784,7 +3784,7 @@ index dbbb445a5e..cf66d0e5a2 100644
    waitForRevertedMessage,
  } from "./ChatView.logic";
  
-@@ -791,6 +794,136 @@ describe("resolveComposerProviderSelection", () => {
+@@ -791,6 +794,172 @@ describe("resolveComposerProviderSelection", () => {
    });
  });
  
@@ -3880,42 +3880,78 @@ index dbbb445a5e..cf66d0e5a2 100644
 +        options?.within !== undefined && selector.includes(options.within) ? ({} as Element) : null,
 +    };
 +  }
++  // The refocus is gated on a deliberate text selection; a collapsed selection
++  // means "no selected text", so every element case below passes one to
++  // exercise the element branch, not the selection gate.
++  const collapsed: Pick<Selection, "isCollapsed"> = { isCollapsed: true };
++  const spread: Pick<Selection, "isCollapsed"> = { isCollapsed: false };
 +
 +  it("refocuses when nothing or the body holds focus", () => {
-+    expect(shouldRefocusComposerOnWindowFocus(null)).toBe(true);
-+    expect(shouldRefocusComposerOnWindowFocus(element("BODY"))).toBe(true);
++    expect(shouldRefocusComposerOnWindowFocus(null, collapsed)).toBe(true);
++    expect(shouldRefocusComposerOnWindowFocus(element("BODY"), collapsed)).toBe(true);
 +  });
 +
 +  it("refocuses away from a plain button, such as a pull request tab", () => {
-+    expect(shouldRefocusComposerOnWindowFocus(element("BUTTON"))).toBe(true);
++    expect(shouldRefocusComposerOnWindowFocus(element("BUTTON"), collapsed)).toBe(true);
 +  });
 +
 +  it("leaves other text fields alone", () => {
-+    expect(shouldRefocusComposerOnWindowFocus(element("INPUT"))).toBe(false);
-+    expect(shouldRefocusComposerOnWindowFocus(element("TEXTAREA"))).toBe(false);
-+    expect(shouldRefocusComposerOnWindowFocus(element("DIV", { editable: true }))).toBe(false);
-+    expect(shouldRefocusComposerOnWindowFocus(element("DIV", { role: "textbox" }))).toBe(false);
++    expect(shouldRefocusComposerOnWindowFocus(element("INPUT"), collapsed)).toBe(false);
++    expect(shouldRefocusComposerOnWindowFocus(element("TEXTAREA"), collapsed)).toBe(false);
++    expect(shouldRefocusComposerOnWindowFocus(element("DIV", { editable: true }), collapsed)).toBe(
++      false,
++    );
++    expect(shouldRefocusComposerOnWindowFocus(element("DIV", { role: "textbox" }), collapsed)).toBe(
++      false,
++    );
 +  });
 +
 +  it.each(["IFRAME", "WEBVIEW"])("leaves a focused %s preview alone", (tagName) => {
-+    expect(shouldRefocusComposerOnWindowFocus(element(tagName))).toBe(false);
++    expect(shouldRefocusComposerOnWindowFocus(element(tagName), collapsed)).toBe(false);
 +  });
 +
 +  it("leaves a focused terminal alone in the drawer and the right panel", () => {
 +    expect(
-+      shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "data-terminal-owner" })),
++      shouldRefocusComposerOnWindowFocus(
++        element("BUTTON", { within: "data-terminal-owner" }),
++        collapsed,
++      ),
 +    ).toBe(false);
 +  });
 +
 +  it("leaves a focused device screen alone", () => {
 +    expect(
-+      shouldRefocusComposerOnWindowFocus(element("DIV", { within: 'role="application"' })),
++      shouldRefocusComposerOnWindowFocus(
++        element("DIV", { within: 'role="application"' }),
++        collapsed,
++      ),
 +    ).toBe(false);
 +  });
 +
 +  it("leaves focus inside a dialog or popup alone", () => {
-+    expect(shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "dialog" }))).toBe(false);
-+    expect(shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "-popup" }))).toBe(false);
++    expect(
++      shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "dialog" }), collapsed),
++    ).toBe(false);
++    expect(
++      shouldRefocusComposerOnWindowFocus(element("BUTTON", { within: "-popup" }), collapsed),
++    ).toBe(false);
++  });
++
++  it("leaves selected text alone even when focus would yield to the composer", () => {
++    expect(shouldRefocusComposerOnWindowFocus(null, spread)).toBe(false);
++    expect(shouldRefocusComposerOnWindowFocus(element("BODY"), spread)).toBe(false);
++    expect(
++      shouldRefocusComposerOnWindowFocus(
++        element("BUTTON", { within: "data-terminal-owner" }),
++        spread,
++      ),
++    ).toBe(false);
++  });
++
++  it("treats a missing selection like a collapsed one", () => {
++    expect(shouldRefocusComposerOnWindowFocus(null, null)).toBe(true);
++    expect(shouldRefocusComposerOnWindowFocus(element("BUTTON"), null)).toBe(true);
++    expect(shouldRefocusComposerOnWindowFocus(element("INPUT"), null)).toBe(false);
 +  });
 +});
  describe("checkout Git memory", () => {
@@ -4974,10 +5010,10 @@ index 38be7d6115..62a9c4ce94 100644
        }
        control={
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index 7d7939e7f2..882cb54d6e 100644
+index 154ad97bae..07a3eebc28 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
-@@ -1251,6 +1251,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+@@ -1270,6 +1270,14 @@ export const SETTINGS_SEARCH_ITEMS = [
      searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
      localBackendManagementOnly: true,
    },
@@ -5742,7 +5778,7 @@ index 715a837dae..1d95161535 100644
    read_failed: "Failed to read the shared thread.",
    changed: "The guest link changed while it was being created.",
 diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
-index 25339cb321..a80988d1df 100644
+index b44f8e77f2..bc60e62d35 100644
 --- a/packages/contracts/src/ipc.ts
 +++ b/packages/contracts/src/ipc.ts
 @@ -510,6 +510,7 @@ export interface DesktopServerExposureState {
@@ -5761,7 +5797,7 @@ index 25339cb321..a80988d1df 100644
    tailscaleServeEnabled: Schema.Boolean,
    tailscaleServePort: Schema.Number,
  });
-@@ -1129,6 +1131,7 @@ export interface DesktopBridge {
+@@ -1130,6 +1132,7 @@ export interface DesktopBridge {
    resolveSshPasswordPrompt: (requestId: string, password: string | null) => Promise<void>;
    getServerExposureState: () => Promise<DesktopServerExposureState>;
    setServerExposureMode: (mode: DesktopServerExposureMode) => Promise<DesktopServerExposureState>;
@@ -5783,10 +5819,10 @@ index e3de3c29e1..a603f3361d 100644
  });
  export type AdvertisedEndpoint = typeof AdvertisedEndpoint.Type;
 diff --git a/packages/contracts/src/settings.test.ts b/packages/contracts/src/settings.test.ts
-index 1db913e38b..cfc4bde1f4 100644
+index 9dc56d7a6a..b539d29299 100644
 --- a/packages/contracts/src/settings.test.ts
 +++ b/packages/contracts/src/settings.test.ts
-@@ -533,6 +533,53 @@ describe("voice settings", () => {
+@@ -544,6 +544,53 @@ describe("voice settings", () => {
    });
  });
  
@@ -5841,7 +5877,7 @@ index 1db913e38b..cfc4bde1f4 100644
    it("distinguishes unmigrated lists from deliberately cleared lists", () => {
      expect(decodeServerSettings({})).toMatchObject({
 diff --git a/packages/contracts/src/settings.ts b/packages/contracts/src/settings.ts
-index 7bbb03595d..66b5b935e4 100644
+index 36b1b538d4..cbc48769ee 100644
 --- a/packages/contracts/src/settings.ts
 +++ b/packages/contracts/src/settings.ts
 @@ -64,6 +64,29 @@ import {
@@ -5874,7 +5910,7 @@ index 7bbb03595d..66b5b935e4 100644
  export const TimestampFormat = Schema.Literals(["locale", "12-hour", "24-hour"]);
  export type TimestampFormat = typeof TimestampFormat.Type;
  const DEFAULT_TIMESTAMP_FORMAT: TimestampFormat = "locale";
-@@ -1470,6 +1493,9 @@ export const ServerSettings = Schema.Struct({
+@@ -1477,6 +1500,9 @@ export const ServerSettings = Schema.Struct({
    hideTaggedThreads: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
    /** Beta: guest links for this machine's threads. Off refuses new links and pauses existing ones. */
    guestSharingEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
@@ -5884,7 +5920,7 @@ index 7bbb03595d..66b5b935e4 100644
    /**
     * Beta: links to the user's other machines, both ways. Off refuses new links, calls over links
     * and tasks on another machine; tasks already running there finish.
-@@ -1905,6 +1931,7 @@ export const ServerSettingsPatch = Schema.Struct({
+@@ -1916,6 +1942,7 @@ export const ServerSettingsPatch = Schema.Struct({
    hiddenThreadTags: Schema.optionalKey(Schema.Array(Schema.String)),
    hideTaggedThreads: Schema.optionalKey(Schema.Boolean),
    guestSharingEnabled: Schema.optionalKey(Schema.Boolean),
@@ -5914,7 +5950,7 @@ index 14537ed69c..6457c50057 100644
    };
  }
 diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
-index 22be5da14a..19e012056d 100644
+index 70431202c4..dc180cd6ac 100644
 --- a/pnpm-lock.yaml
 +++ b/pnpm-lock.yaml
 @@ -610,6 +610,9 @@ importers:
