@@ -1427,10 +1427,10 @@ index d9ae6e76c2..40798d7621 100644
    getAdvertisedEndpoints: Effect.succeed([]),
  } satisfies DesktopServerExposure.DesktopServerExposure["Service"]);
 diff --git a/apps/mobile/package.json b/apps/mobile/package.json
-index 2ab0e38d89..5f596074b5 100644
+index d09a497231..4687a728b1 100644
 --- a/apps/mobile/package.json
 +++ b/apps/mobile/package.json
-@@ -78,6 +78,7 @@
+@@ -79,6 +79,7 @@
      "@t3tools/mobile-review-diff-native": "file:./modules/t3-review-diff",
      "@t3tools/mobile-source-text": "file:./modules/t3-source-text",
      "@t3tools/mobile-terminal-native": "file:./modules/t3-terminal",
@@ -1628,7 +1628,7 @@ index 0000000000..4b062e0d92
 +  );
 +}
 diff --git a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
-index a2b972b0cc..daa05feb86 100644
+index 2c995bd8ea..1e66ffb1dd 100644
 --- a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 +++ b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 @@ -3,6 +3,7 @@ import {
@@ -1639,7 +1639,7 @@ index a2b972b0cc..daa05feb86 100644
  import Constants from "expo-constants";
  import * as Notifications from "expo-notifications";
  import * as Clock from "effect/Clock";
-@@ -212,6 +213,7 @@ export function setAgentAwarenessRelayTokenProvider(
+@@ -217,6 +218,7 @@ export function setAgentAwarenessRelayTokenProvider(
    relayTokenProviderIdentity = provider ? (identity ?? null) : null;
    if (!provider) {
      clearAndroidAgentNotifications();
@@ -1648,10 +1648,10 @@ index a2b972b0cc..daa05feb86 100644
      pushTokenSubscription = null;
      appStateSubscription?.remove();
 diff --git a/apps/mobile/src/features/devices/device-stream.browser.test.ts b/apps/mobile/src/features/devices/device-stream.browser.test.ts
-index 91a8e3bb82..ec51295ab3 100644
+index e3dde0c0ad..aea9f01408 100644
 --- a/apps/mobile/src/features/devices/device-stream.browser.test.ts
 +++ b/apps/mobile/src/features/devices/device-stream.browser.test.ts
-@@ -1,108 +1,151 @@
+@@ -1,112 +1,155 @@
 -import { describe, expect, it, vi } from "vite-plus/test";
 -
 +import { afterEach, expect, it, vi } from "vite-plus/test";
@@ -1789,6 +1789,10 @@ index 91a8e3bb82..ec51295ab3 100644
 +      buttonForeground: "black",
        buttonBorder: "gray",
      },
+     labels: {
+       screen: "iOS Simulator screen",
+       reconnectingControls: "Reconnecting device controls...",
+     },
 -  });
 -  return { configured, requested, videoBodies };
 +  };
@@ -1894,10 +1898,10 @@ index 91a8e3bb82..ec51295ab3 100644
 +  expect(vi.getTimerCount()).toBe(0);
  });
 diff --git a/apps/mobile/src/features/devices/device-stream.browser.ts b/apps/mobile/src/features/devices/device-stream.browser.ts
-index 2434c35168..880458abe4 100644
+index 7413bca5dc..337f0f56f3 100644
 --- a/apps/mobile/src/features/devices/device-stream.browser.ts
 +++ b/apps/mobile/src/features/devices/device-stream.browser.ts
-@@ -178,9 +178,22 @@ export function start(configuration: DeviceStreamConfiguration) {
+@@ -185,9 +185,22 @@ export function start(configuration: DeviceStreamConfiguration) {
    frame.addEventListener("pointercancel", endTouch);
    frame.addEventListener("lostpointercapture", endTouch);
    frame.addEventListener("keydown", (event) => {
@@ -1921,10 +1925,17 @@ index 2434c35168..880458abe4 100644
    window.addEventListener("pagehide", stop, { once: true });
    post({ type: "input", connected: false });
 diff --git a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
-index db19b55662..e1c19d985f 100644
+index f5c25bf36b..f2019e03c4 100644
 --- a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
-@@ -14,11 +14,12 @@ import * as Notifications from "expo-notifications";
+@@ -1,5 +1,5 @@
+ import { errorDisplayMessage } from "@t3tools/client-runtime/errors";
+-import { useGT, useMessages } from "gt-react-native";
++import { T, useGT, useMessages, msg } from "gt-react-native";
+ import * as Dialog from "../../components/ui/Dialog";
+ import { managedCapabilityDenial } from "@t3tools/client-runtime/contract-labels";
+ import { AuthRelayWriteScope, type EnvironmentId } from "@t3tools/contracts";
+@@ -13,12 +13,13 @@ import * as Notifications from "expo-notifications";
  import { useNavigation } from "@react-navigation/native";
  import * as Effect from "effect/Effect";
  import { AsyncResult } from "effect/reactivity";
@@ -1932,6 +1943,7 @@ index db19b55662..e1c19d985f 100644
 +import { useCallback, useRef, useState, useSyncExternalStore } from "react";
  import { Linking, Platform } from "react-native";
  import { useSafeAreaInsets } from "react-native-safe-area-context";
+ import { m as resolveMessage } from "../../i18n/messages";
  
  import { AppText as Text } from "../../components/ui/AppText";
 +import { tryCopyTextWithHaptic } from "../../lib/copyTextWithHaptic";
@@ -1963,15 +1975,16 @@ index db19b55662..e1c19d985f 100644
    if (AsyncResult.isFailure(preferencesResult)) return "enabled";
    if (!AsyncResult.isSuccess(preferencesResult)) return "checking";
    return preferencesResult.value.liveActivitiesEnabled === false ? "disabled" : "enabled";
-@@ -117,8 +125,111 @@ function useNotificationsReady(): boolean {
+@@ -117,9 +125,136 @@ function useNotificationsReady(): boolean {
    );
  }
  
 +function LocalSenderConfigurationRow({ enabled }: { readonly enabled: boolean }) {
++  const gt = useGT();
 +  return (
 +    <SettingsRow
 +      icon="doc.on.doc"
-+      label="Copy local sender configuration"
++      label={gt("Copy local sender configuration")}
 +      disabled={!enabled}
 +      onPress={() => {
 +        void (async () => {
@@ -1980,10 +1993,18 @@ index db19b55662..e1c19d985f 100644
 +          const copied = await tryCopyTextWithHaptic(
 +            JSON.stringify({ token, deviceId, userId: `local:${deviceId}` }, null, 2),
 +          );
-+          if (!copied) Dialog.alert("Could not copy", "Try again.");
-+          else Dialog.alert("Copied", "Sender configuration copied. Keep the push token private.");
++          if (!copied)
++            Dialog.alert(resolveMessage(msg("Could not copy")), resolveMessage(msg("Try again.")));
++          else
++            Dialog.alert(
++              resolveMessage(msg("Copied")),
++              resolveMessage(msg("Sender configuration copied. Keep the push token private.")),
++            );
 +        })().catch(() =>
-+          Dialog.alert("Could not get push token", "Enable notifications and try again."),
++          Dialog.alert(
++            resolveMessage(msg("Could not get push token")),
++            resolveMessage(msg("Enable notifications and try again.")),
++          ),
 +        );
 +      }}
 +    />
@@ -2006,6 +2027,7 @@ index db19b55662..e1c19d985f 100644
 +}
 +
 +function LocalAndroidNotificationsSettings() {
++  const gt = useGT();
 +  const preferencesResult = useAtomValue(mobilePreferencesAtom);
 +  const [overrides, setOverrides] = useState<{ enabled?: boolean; ongoing?: boolean }>({});
 +  const [busy, setBusy] = useState(false);
@@ -2019,20 +2041,26 @@ index db19b55662..e1c19d985f 100644
 +    if (outcome === "enabled") {
 +      setOverrides({ enabled: true, ongoing: withOngoing });
 +    } else if (outcome === "denied") {
-+      Dialog.alert("Notifications unavailable", "Notification permission is required.");
++      Dialog.alert(
++        resolveMessage(msg("Notifications unavailable")),
++        resolveMessage(msg("Notification permission is required.")),
++      );
 +    } else {
-+      Dialog.alert("Notifications unavailable", "Could not enable local notifications.");
++      Dialog.alert(
++        resolveMessage(msg("Notifications unavailable")),
++        resolveMessage(msg("Could not enable local notifications.")),
++      );
 +    }
 +    setBusy(false);
 +  }, []);
 +
 +  return (
-+    <SettingsScreen title="Notifications">
++    <SettingsScreen title={gt("Notifications")}>
 +      <ScrollView contentContainerClassName="gap-6 px-5 pt-4">
-+        <SettingsSection title="Device-local Android notifications">
++        <SettingsSection title={gt("Device-local Android notifications")}>
 +          <SettingsSwitchRow
 +            icon="bell.badge"
-+            label="Device Notifications"
++            label={gt("Device Notifications")}
 +            value={enabled}
 +            disabled={busy}
 +            onValueChange={(value) => {
@@ -2041,26 +2069,34 @@ index db19b55662..e1c19d985f 100644
 +                void disableLocalAgentNotifications()
 +                  .then(() => setOverrides({ enabled: false, ongoing: false }))
 +                  .catch(() =>
-+                    Dialog.alert("Notifications unavailable", "Could not save the setting."),
++                    Dialog.alert(
++                      resolveMessage(msg("Notifications unavailable")),
++                      resolveMessage(msg("Could not save the setting.")),
++                    ),
 +                  );
 +            }}
 +          />
 +          <SettingsSwitchRow
 +            icon="bolt.circle"
-+            label="Ongoing Agent Activity"
++            label={gt("Ongoing Agent Activity")}
 +            value={ongoing}
 +            disabled={!enabled || busy}
 +            onValueChange={(value) => {
 +              void setLocalAgentOngoing(value)
 +                .then(() => setOverrides((current) => ({ ...current, ongoing: value })))
 +                .catch(() =>
-+                  Dialog.alert("Notifications unavailable", "Could not update ongoing activity."),
++                  Dialog.alert(
++                    resolveMessage(msg("Notifications unavailable")),
++                    resolveMessage(msg("Could not update ongoing activity.")),
++                  ),
 +                );
 +            }}
 +          />
 +          <Text className="text-base text-foreground-muted">
-+            No T3 Connect account or relay is used. Delivery requires a separate sender configured
-+            with this app's Firebase project.
++            <T>
++              No T3 Connect account or relay is used. Delivery requires a separate sender configured
++              with this app's Firebase project.
++            </T>
 +          </Text>
 +          <LocalSenderConfigurationRow enabled={enabled} />
 +        </SettingsSection>
@@ -2070,12 +2106,13 @@ index db19b55662..e1c19d985f 100644
 +}
 +
  export function SettingsNotificationsRouteScreen() {
+   const gt = useGT();
    if (!hasCloudPublicConfig()) {
 +    if (Platform.OS === "android") return <LocalAndroidNotificationsSettings />;
      return (
-       <SettingsScreen title="Notifications">
+       <SettingsScreen title={gt("Notifications")}>
          <ScrollView
-@@ -151,6 +262,30 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -154,6 +289,30 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    const { savedConnectionsById } = useSavedRemoteConnections();
    const notificationStatus = useAtomValue(notificationStatusAtom);
    const setNotificationStatus = useAtomSet(notificationStatusAtom);
@@ -2106,7 +2143,7 @@ index db19b55662..e1c19d985f 100644
    // A write in progress or a failed one shows its own status until the auth or
    // preference state it was based on changes.
    const [liveActivityOverride, setLiveActivityOverride] = useState<{
-@@ -164,7 +299,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -167,7 +326,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
      liveActivityOverride.basis.isSignedIn === isSignedIn &&
      liveActivityOverride.basis.preferencesResult === preferencesResult
        ? liveActivityOverride.status
@@ -2115,7 +2152,7 @@ index db19b55662..e1c19d985f 100644
    const setLiveActivityStatus = (status: LiveActivityStatus) =>
      setLiveActivityOverride({ status, basis: liveActivityBasis });
    const liveActivityWriteInFlight = useRef(false);
-@@ -343,6 +478,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -366,6 +525,37 @@ function ConfiguredSettingsNotificationsRouteScreen() {
  
    const handleDeviceNotificationsChange = (enabled: boolean) => {
      if (enabled) {
@@ -2125,48 +2162,61 @@ index db19b55662..e1c19d985f 100644
 +            runtime.runPromiseExit(requestAgentNotificationPermission),
 +          );
 +          if (permission._tag !== "Success" || permission.value.type !== "granted") {
-+            Dialog.alert("Notifications unavailable", "Notification permission is required.");
++            Dialog.alert(
++              resolveMessage(msg("Notifications unavailable")),
++              resolveMessage(msg("Notification permission is required.")),
++            );
 +            return;
 +          }
 +          await enableLocalAgentNotifications(false);
 +          setLocalNotificationOverrides((current) => ({ ...current, enabled: true }));
 +          setNotificationStatus("enabled");
 +          Dialog.alert(
-+            "Notifications enabled",
-+            "Local notifications are enabled. A local Firebase sender is required for delivery.",
++            resolveMessage(msg("Notifications enabled")),
++            resolveMessage(
++              msg(
++                "Local notifications are enabled. A local Firebase sender is required for delivery.",
++              ),
++            ),
 +          );
 +        })().catch(() =>
-+          Dialog.alert("Notifications unavailable", "Could not enable local notifications."),
++          Dialog.alert(
++            resolveMessage(msg("Notifications unavailable")),
++            resolveMessage(msg("Could not enable local notifications.")),
++          ),
 +        );
 +        return;
 +      }
        if (!isSignedIn) {
          promptSignIn();
          return;
-@@ -351,6 +507,14 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -374,6 +564,17 @@ function ConfiguredSettingsNotificationsRouteScreen() {
        return;
      }
  
 +    if (!isSignedIn && Platform.OS === "android") {
 +      void disableLocalAgentNotifications().catch(() => {
-+        Dialog.alert("Notifications unavailable", "Could not save the notification setting.");
++        Dialog.alert(
++          resolveMessage(msg("Notifications unavailable")),
++          resolveMessage(msg("Could not save the notification setting.")),
++        );
 +      });
 +      setLocalNotificationOverrides((current) => ({ ...current, enabled: false }));
 +      setLocalNotificationOverrides((current) => ({ ...current, ongoing: false }));
 +      return;
 +    }
      Dialog.alert(
-       "Disable notifications",
-       "Open system Settings to disable notifications for T3 Code.",
-@@ -401,6 +565,24 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+       gt("Disable notifications"),
+       gt("Open system Settings to disable notifications for {product}.", { product: "T3 Code" }),
+@@ -424,6 +625,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    // Both writers settle their own failures, so awaiting them never throws.
    const handleLiveActivitiesChange = async (enabled: boolean) => {
      if (liveActivityWriteInFlight.current) return;
 +    if (!isSignedIn && Platform.OS === "android") {
 +      if (!localNotificationsEnabled && enabled) {
 +        Dialog.alert(
-+          "Enable notifications first",
-+          "Turn on Device Notifications before enabling ongoing activity.",
++          resolveMessage(msg("Enable notifications first")),
++          resolveMessage(msg("Turn on Device Notifications before enabling ongoing activity.")),
 +        );
 +        return;
 +      }
@@ -2176,14 +2226,17 @@ index db19b55662..e1c19d985f 100644
 +          setLiveActivityStatus(enabled ? "enabled" : "disabled");
 +        })
 +        .catch(() =>
-+          Dialog.alert("Ongoing activity unavailable", "Could not update local ongoing activity."),
++          Dialog.alert(
++            resolveMessage(msg("Ongoing activity unavailable")),
++            resolveMessage(msg("Could not update local ongoing activity.")),
++          ),
 +        );
 +      return;
 +    }
      if (!enabled) {
        liveActivityWriteInFlight.current = true;
        setLiveActivityStatus("linking");
-@@ -442,7 +624,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -465,7 +687,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
              }
              subtitle={agentAwarenessSubtitle}
              value={
@@ -2194,7 +2247,7 @@ index db19b55662..e1c19d985f 100644
              }
              onValueChange={handleDeviceNotificationsChange}
            />
-@@ -466,7 +650,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -489,7 +713,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
              value={
                agentAwarenessPushAvailable &&
                (liveActivityStatus === "enabled" || liveActivityStatus === "linking") &&
@@ -2203,7 +2256,7 @@ index db19b55662..e1c19d985f 100644
              }
              onValueChange={(enabled) => void handleLiveActivitiesChange(enabled)}
            />
-@@ -477,6 +661,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -500,6 +724,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
                onPress={() => void handleLiveActivitiesChange(false)}
              />
            ) : null}
@@ -2214,10 +2267,10 @@ index db19b55662..e1c19d985f 100644
              <SettingsRow
                icon="bolt.circle"
 diff --git a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
-index a3b698dd9a..87930004fc 100644
+index 76f8ecd032..4ca04e247f 100644
 --- a/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsProviderAccountsRouteScreen.tsx
-@@ -28,6 +28,7 @@ import { serverEnvironment } from "../../state/server";
+@@ -31,6 +31,7 @@ import { serverEnvironment } from "../../state/server";
  import { useEnvironmentsWithScope } from "../../state/session";
  import { useAtomCommand } from "../../state/use-atom-command";
  import { ListActionRow as SettingsActionRow } from "../../components/ui/ListActionRow";
@@ -2225,7 +2278,7 @@ index a3b698dd9a..87930004fc 100644
  import { useSettingsEnvironmentMenu } from "./components/SettingsEnvironmentFilterHeader";
  import { SettingsScreen } from "./components/SettingsScreen";
  import { SettingsSection } from "./components/SettingsSection";
-@@ -62,10 +63,13 @@ export function SettingsProviderAccountsRouteScreen() {
+@@ -73,10 +74,13 @@ export function SettingsProviderAccountsRouteScreen() {
                    </Text>
                  </View>
                ) : (
@@ -2245,10 +2298,10 @@ index a3b698dd9a..87930004fc 100644
            ))
 diff --git a/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx b/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx
 new file mode 100644
-index 0000000000..30250f664a
+index 0000000000..0925663d60
 --- /dev/null
 +++ b/apps/mobile/src/features/settings/components/CustomAcpCommandEditor.tsx
-@@ -0,0 +1,190 @@
+@@ -0,0 +1,196 @@
 +import {
 +  ProviderDriverKind,
 +  ProviderInstanceId,
@@ -2259,6 +2312,7 @@ index 0000000000..30250f664a
 +import * as Schema from "effect/Schema";
 +import { useState } from "react";
 +import { TextInput, View } from "react-native";
++import { T, useGT } from "gt-react-native";
 +import { AppText as Text } from "../../../components/ui/AppText";
 +import { serverEnvironment } from "../../../state/server";
 +import { useAtomCommand } from "../../../state/use-atom-command";
@@ -2334,6 +2388,7 @@ index 0000000000..30250f664a
 +};
 +
 +export function CustomAcpCommandEditor({ environment }: { readonly environment: SettingsTarget }) {
++  const gt = useGT();
 +  const instances = environment.serverConfig.settings.providerInstances;
 +  const save = useAtomCommand(serverEnvironment.mutateProviderInstance);
 +  const [id, setId] = useState("acpRegistry_custom");
@@ -2362,10 +2417,14 @@ index 0000000000..30250f664a
 +  }
 +  return (
 +    <View className="gap-3 p-4">
-+      <Text className="text-lg font-semibold text-foreground">Custom ACP command</Text>
++      <Text className="text-lg font-semibold text-foreground">
++        <T>Custom ACP command</T>
++      </Text>
 +      <Text className="text-sm text-foreground-muted">
-+        Runs on the selected environment. Arguments are a JSON array; environment overrides are a
-+        JSON object. No shell is used.
++        <T>
++          Runs on the selected environment. Arguments are a JSON array; environment overrides are a
++          JSON object. No shell is used.
++        </T>
 +      </Text>
 +      {Object.entries(instances)
 +        .filter(([, instance]) => instance.driver === "acpRegistry")
@@ -2373,7 +2432,7 @@ index 0000000000..30250f664a
 +          <SettingsActionRow
 +            key={key}
 +            icon="pencil"
-+            label={`Edit ${instance.displayName ?? key}`}
++            label={gt("Edit {name}", { name: instance.displayName ?? key })}
 +            disabled={pending}
 +            onPress={() => {
 +              const config = decodeSettings(instance.config ?? {});
@@ -2392,7 +2451,7 @@ index 0000000000..30250f664a
 +      {field("Display name", name, setName)}
 +      <SettingsActionRow
 +        icon="arrow.left.arrow.right"
-+        label={`ACP source: ${source}. Tap to switch.`}
++        label={gt("ACP source: {source}. Tap to switch.", { source })}
 +        disabled={pending}
 +        onPress={() => setSource(source === "local" ? "registry" : "local")}
 +      />
@@ -2402,13 +2461,13 @@ index 0000000000..30250f664a
 +      {field("Environment JSON", env, setEnv)}
 +      <SettingsActionRow
 +        icon="plus"
-+        label={existing ? "Save ACP configuration" : "Add ACP command"}
++        label={existing ? gt("Save ACP configuration") : gt("Add ACP command")}
 +        disabled={pending || (source === "local" ? !command.trim() : !agentId.trim())}
 +        onPress={() => {
 +          void (async () => {
 +            if (existing && existing.driver !== "acpRegistry") {
 +              // Same message the generic catch below produced for this branch.
-+              setMessage("Check the instance ID, arguments array, and environment object.");
++              setMessage(gt("Check the instance ID, arguments array, and environment object."));
 +              return;
 +            }
 +            setMessage(null);
@@ -2425,7 +2484,7 @@ index 0000000000..30250f664a
 +              });
 +              setMessage(saveResultMessage(result));
 +            } catch {
-+              setMessage("Check the instance ID, arguments array, and environment object.");
++              setMessage(gt("Check the instance ID, arguments array, and environment object."));
 +            }
 +            setPending(false);
 +          })();
@@ -3451,10 +3510,10 @@ index 0000000000..779e136cca
 +  );
 +});
 diff --git a/apps/server/src/serverSettings.test.ts b/apps/server/src/serverSettings.test.ts
-index 03b89e4955..0cee119a99 100644
+index 10d0b3fe6c..3b234814a5 100644
 --- a/apps/server/src/serverSettings.test.ts
 +++ b/apps/server/src/serverSettings.test.ts
-@@ -137,6 +137,33 @@ function strictSecretReferencePaths(
+@@ -138,6 +138,33 @@ function strictSecretReferencePaths(
  }
  
  it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("server settings", (it) => {
@@ -3488,7 +3547,7 @@ index 03b89e4955..0cee119a99 100644
    it.effect("serializes concurrent model preference edits without cancelling duplicate adds", () =>
      Effect.gen(function* () {
        const service = yield* ServerSettingsModule.ServerSettingsService;
-@@ -219,6 +246,45 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("server settings"
+@@ -220,6 +247,45 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("server settings"
        }),
      ).pipe(Effect.provide(layerServerSettings())),
    );
@@ -3535,10 +3594,10 @@ index 03b89e4955..0cee119a99 100644
      Effect.gen(function* () {
        const config = yield* ServerConfig.ServerConfig;
 diff --git a/apps/server/src/serverSettings.ts b/apps/server/src/serverSettings.ts
-index 81106d27b7..f2ac575b55 100644
+index e720fea508..373bce68ce 100644
 --- a/apps/server/src/serverSettings.ts
 +++ b/apps/server/src/serverSettings.ts
-@@ -86,8 +86,45 @@ const textDecoder = new TextDecoder();
+@@ -87,8 +87,45 @@ const textDecoder = new TextDecoder();
  const foldProviderInstanceEnabledFlags = (settings: ServerSettings): ServerSettings => {
    let changed = false;
    const providerInstances: Record<string, ProviderInstanceConfig> = {};
@@ -3587,10 +3646,10 @@ index 81106d27b7..f2ac575b55 100644
      if (
        config === null ||
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index 663b722ce2..6e0f20586b 100644
+index e92ea73ec4..773eb8c60f 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
-@@ -175,11 +175,16 @@ import { useAtomCommand } from "../state/use-atom-command";
+@@ -178,11 +178,16 @@ import { useAtomCommand } from "../state/use-atom-command";
  import { useAtomQueryRunner } from "../state/use-atom-query-runner";
  import { projectEnvironment } from "../state/projects";
  import { filesystemEnvironment } from "../state/filesystem";
@@ -3607,7 +3666,7 @@ index 663b722ce2..6e0f20586b 100644
    pickWorkspaceLinkMatch,
    WORKSPACE_BASENAME_LOOKUP_LIMIT,
    workspaceLinkLookupQuery,
-@@ -570,6 +575,14 @@ function useChatMarkdownState({
+@@ -578,6 +583,14 @@ function useChatMarkdownState({
    const searchProjectEntries = useAtomQueryRunner(projectEnvironment.searchEntries, {
      reportFailure: false,
    });
@@ -3622,7 +3681,7 @@ index 663b722ce2..6e0f20586b 100644
    const getFilesystemMetadata = useAtomQueryRunner(filesystemEnvironment.getMetadata, {
      reportFailure: false,
      refresh: true,
-@@ -857,6 +870,80 @@ function useChatMarkdownState({
+@@ -875,6 +888,80 @@ function useChatMarkdownState({
      }
      return findAgentDirectoryMatch(workspaceRelativePath, agentRoots, searchRoot);
    };
@@ -3703,7 +3762,7 @@ index 663b722ce2..6e0f20586b 100644
    const openFileInPanel = (fileLinkMeta: MarkdownFileLinkMeta, panelPath: string) => {
      if (!threadRef) return;
      // Every open supersedes pending lookups, including synchronous opens.
-@@ -878,10 +965,11 @@ function useChatMarkdownState({
+@@ -896,10 +983,11 @@ function useChatMarkdownState({
      })();
    };
    const fileLinkChip = (
@@ -3716,7 +3775,7 @@ index 663b722ce2..6e0f20586b 100644
      const resolveHostPath = () =>
        resolveMarkdownFileHostPath({
          meta: fileLinkMeta,
-@@ -1011,6 +1099,7 @@ function useChatMarkdownState({
+@@ -1029,6 +1117,7 @@ function useChatMarkdownState({
      skills,
      threadRef,
      updateThreadPullRequestLink,
@@ -3724,7 +3783,7 @@ index 663b722ce2..6e0f20586b 100644
    };
    return {
      componentState,
-@@ -1053,6 +1142,9 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
+@@ -1071,6 +1160,9 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
    };
  }
  
@@ -3734,7 +3793,7 @@ index 663b722ce2..6e0f20586b 100644
  const CHAT_MARKDOWN_COMPONENTS = {
    h1: markdownHeadingRenderer(1),
    h2: markdownHeadingRenderer(2),
-@@ -1500,6 +1592,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1526,6 +1618,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
        renderContextReference,
        fileLinkChip,
        resolvedTheme,
@@ -3742,7 +3801,7 @@ index 663b722ce2..6e0f20586b 100644
      } = use(ChatMarkdownRendererContext);
      const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
      const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
-@@ -1527,7 +1620,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1553,7 +1646,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
      const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
      const { className, style: _style, width, height, ...imageProps } = props;
      const authoredSizeStyle = authoredImageSizeStyle(width, height);
@@ -4003,10 +4062,10 @@ index 0000000000..d987861c39
 +  );
 +}
 diff --git a/apps/web/src/components/chat/V2ItemInspector.tsx b/apps/web/src/components/chat/V2ItemInspector.tsx
-index 8ff833524f..add2f752b8 100644
+index ad4fd7dd33..dd4d13709e 100644
 --- a/apps/web/src/components/chat/V2ItemInspector.tsx
 +++ b/apps/web/src/components/chat/V2ItemInspector.tsx
-@@ -11,7 +11,7 @@ import {
+@@ -12,7 +12,7 @@ import {
  import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
  import { isJavaScriptReplTool } from "@t3tools/shared/toolActivity";
  import { ExternalLinkIcon } from "lucide-react";
@@ -4015,7 +4074,7 @@ index 8ff833524f..add2f752b8 100644
  
  import { useRenderedAppearance } from "../../hooks/useTheme";
  import { cn } from "../../lib/utils";
-@@ -29,6 +29,82 @@ import type { ExpandedImagePreview } from "./ExpandedImagePreview";
+@@ -30,6 +30,88 @@ import type { ExpandedImagePreview } from "./ExpandedImagePreview";
  import { ShellCommandBlock } from "./ShellCommandBlock";
  import { useInitialOutputReady, type TurnItemSource } from "./timelineRowContext";
  
@@ -4051,7 +4110,7 @@ index 8ff833524f..add2f752b8 100644
 +            aria-expanded={expanded}
 +            onClick={() => setExpanded((value) => !value)}
 +          >
-+            {expanded ? "Hide diff" : "Show diff"}
++            {expanded ? <T>Hide diff</T> : <T>Show diff</T>}
 +          </Button>
 +        ) : null}
 +        {onOpenToolDiff ? (
@@ -4066,7 +4125,7 @@ index 8ff833524f..add2f752b8 100644
 +              })
 +            }
 +          >
-+            Open diff
++            <T>Open diff</T>
 +          </Button>
 +        ) : null}
 +      </div>
@@ -4074,7 +4133,13 @@ index 8ff833524f..add2f752b8 100644
 +        <StructuredValue value={item.diffStr} />
 +      ) : null}
 +      {expanded && hasDiff ? (
-+        <Suspense fallback={<div className="text-muted-foreground">Loading diff…</div>}>
++        <Suspense
++          fallback={
++            <div className="text-muted-foreground">
++              <T>Loading diff…</T>
++            </div>
++          }
++        >
 +          <V2FileChangeDiffView item={item} cacheKey={`v2:${item.id}:${item.fileName}`} />
 +        </Suspense>
 +      ) : null}
@@ -4098,7 +4163,7 @@ index 8ff833524f..add2f752b8 100644
  interface V2ItemInspectorProps {
    readonly onInitialOutputReady?: (() => void) | undefined;
    readonly projectedItem: OrchestrationV2ProjectedTurnItem;
-@@ -40,6 +116,14 @@ interface V2ItemInspectorProps {
+@@ -41,6 +123,14 @@ interface V2ItemInspectorProps {
    readonly source?: TurnItemSource | undefined;
  }
  
@@ -4113,7 +4178,7 @@ index 8ff833524f..add2f752b8 100644
  function SyntaxTokens({
    text,
    language,
-@@ -278,50 +362,14 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
+@@ -294,50 +384,14 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
        ) : null}
  
        {item.type === "file_change" ? (
@@ -4140,7 +4205,7 @@ index 8ff833524f..add2f752b8 100644
 -                  })
 -                }
 -              >
--                Open diff
+-                <T>Open diff</T>
 -              </Button>
 -            ) : null}
 -          </div>
@@ -4804,15 +4869,17 @@ index 71052227da..43faa82b39 100644
 +  expect(vi.getTimerCount()).toBe(0);
 +});
 diff --git a/apps/web/src/components/device/DeviceStreamView.tsx b/apps/web/src/components/device/DeviceStreamView.tsx
-index 33d7ca9d76..850d86a4ef 100644
+index 4600902027..99d38e754d 100644
 --- a/apps/web/src/components/device/DeviceStreamView.tsx
 +++ b/apps/web/src/components/device/DeviceStreamView.tsx
-@@ -322,9 +322,20 @@ export function DeviceStreamView(props: {
+@@ -324,11 +324,22 @@ export function DeviceStreamView(props: {
          )}
          tabIndex={0}
          role="application"
 +        data-keybinding-capture=""
-         aria-label={`${props.platform === "ios" ? "iOS Simulator" : "Android Emulator"} screen`}
+         aria-label={
+           props.platform === "ios" ? gt("iOS Simulator screen") : gt("Android Emulator screen")
+         }
          onKeyDown={(event) => {
            if (event.target !== event.currentTarget) return;
 +          if (
@@ -4828,7 +4895,7 @@ index 33d7ca9d76..850d86a4ef 100644
            if (event.metaKey && !["r", "R"].includes(event.key)) return;
            // Let browser paste chords fire the paste event.
            if (
-@@ -337,8 +348,9 @@ export function DeviceStreamView(props: {
+@@ -341,8 +352,9 @@ export function DeviceStreamView(props: {
            client?.sendKey(event.nativeEvent, "down");
          }}
          onPaste={(event) => {
@@ -4840,10 +4907,10 @@ index 33d7ca9d76..850d86a4ef 100644
          }}
          onKeyUp={(event) => {
 diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
-index 9d309a8b90..14a331abb1 100644
+index a6cf6a03b3..5ec1b8deb1 100644
 --- a/apps/web/src/components/settings/ConnectionsSettings.tsx
 +++ b/apps/web/src/components/settings/ConnectionsSettings.tsx
-@@ -353,6 +353,7 @@ function ConnectionsSettingsContent({
+@@ -365,6 +365,7 @@ function ConnectionsSettingsContent({
    const [removingSavedEnvironmentId, setRemovingSavedEnvironmentId] =
      useState<EnvironmentId | null>(null);
    const [isUpdatingDesktopServerExposure, setIsUpdatingDesktopServerExposure] = useState(false);
@@ -4851,7 +4918,7 @@ index 9d309a8b90..14a331abb1 100644
    const [isUpdatingTailscaleServe, setIsUpdatingTailscaleServe] = useState(false);
    const [isUpdatingWslBackend, setIsUpdatingWslBackend] = useState(false);
    const [desktopWslMutationError, setDesktopWslMutationError] = useState<string | null>(null);
-@@ -790,6 +791,41 @@ function ConnectionsSettingsContent({
+@@ -834,6 +835,41 @@ function ConnectionsSettingsContent({
    const handleSetDefaultAdvertisedEndpoint = (endpoint: AdvertisedEndpoint) => {
      setDefaultAdvertisedEndpointKey(endpointDefaultPreferenceKey(endpoint));
    };
@@ -4883,7 +4950,7 @@ index 9d309a8b90..14a331abb1 100644
 +      toastManager.add(
 +        stackedThreadToast({
 +          type: "error",
-+          title: "Could not set the network interface",
++          title: gt("Could not set the network interface"),
 +          description: message,
 +        }),
 +      );
@@ -4893,7 +4960,7 @@ index 9d309a8b90..14a331abb1 100644
  
    const renderNetworkAccessToggle = () => (
      <Switch
-@@ -1156,6 +1192,67 @@ function ConnectionsSettingsContent({
+@@ -1211,6 +1247,69 @@ function ConnectionsSettingsContent({
        managed={isLocalBackendNetworkAccessible ? undefined : remoteClientsDenial}
      />
    );
@@ -4919,12 +4986,14 @@ index 9d309a8b90..14a331abb1 100644
 +          isPreferredLanInterfaceMissing ? (
 +            <span className="block">
 +              <span className="text-warning">
-+                Interface {preferredLanInterfaceName} is no longer detected. Using automatic
-+                selection until it comes back.
++                <T>
++                  Interface <Var>{preferredLanInterfaceName}</Var> is no longer detected. Using
++                  automatic selection until it comes back.
++                </T>
 +              </span>
 +            </span>
 +          ) : (
-+            "Choose which network pairing links use when several interfaces are available."
++            gt("Choose which network pairing links use when several interfaces are available.")
 +          )
 +        }
 +        control={
@@ -4938,7 +5007,7 @@ index 9d309a8b90..14a331abb1 100644
 +            <SelectTrigger
 +              size="sm"
 +              className="w-full sm:w-64"
-+              aria-label="Local network interface"
++              aria-label={gt("Local network interface")}
 +              disabled={isUpdatingLanInterface}
 +            >
 +              <SelectValue>{selectValue === "auto" ? automaticLabel : selectValue}</SelectValue>
@@ -4961,7 +5030,7 @@ index 9d309a8b90..14a331abb1 100644
    const renderDisabledNetworkAccessRow = () => (
      <SettingsRow
        title={searchableSetting("network-access").title}
-@@ -1289,6 +1386,7 @@ function ConnectionsSettingsContent({
+@@ -1355,6 +1454,7 @@ function ConnectionsSettingsContent({
              {canManageLocalBackend && desktopBridge ? (
                <>
                  {renderNetworkAccessRow()}
@@ -4970,11 +5039,20 @@ index 9d309a8b90..14a331abb1 100644
                  {renderTailscaleRow()}
                  {renderWslRow()}
 diff --git a/apps/web/src/components/settings/LabsSettingsPanel.tsx b/apps/web/src/components/settings/LabsSettingsPanel.tsx
-index 38be7d6115..62a9c4ce94 100644
+index 2934359769..88141785d7 100644
 --- a/apps/web/src/components/settings/LabsSettingsPanel.tsx
 +++ b/apps/web/src/components/settings/LabsSettingsPanel.tsx
-@@ -79,8 +79,9 @@ function BoringSidebarMultilineRow() {
- function GuestLinksRowWithSignIn() {
+@@ -1,7 +1,7 @@
+ import { managedCapabilityDenial } from "@t3tools/client-runtime/contract-labels";
+ import { useAuth } from "@clerk/react";
+ import { Link } from "@tanstack/react-router";
+-import { T, useGT, useMessages } from "gt-react";
++import { T, Var, useGT, useMessages } from "gt-react";
+ 
+ import { hasCloudPublicConfig } from "~/cloud/publicConfig";
+ import { useT3ConnectAuthPrompt } from "../clerk/useT3ConnectAuthPrompt";
+@@ -91,8 +91,9 @@ function GuestLinksRowWithSignIn() {
+   const gt = useGT();
    const { isSignedIn } = useAuth();
    const { openAuthPrompt } = useT3ConnectAuthPrompt();
 +  const settings = useScopedSettings();
@@ -4984,42 +5062,52 @@ index 38be7d6115..62a9c4ce94 100644
    return (
      <SettingsRow
        {...searchableSetting("guest-links")}
-@@ -116,11 +117,19 @@ function GuestLinksRow() {
+@@ -131,14 +132,26 @@ function GuestLinksRow() {
+       // Turning guest links off still works without T3 Connect.
+       managed={settings.guestSharingEnabled ? undefined : connectDenial}
        description={
-         <>
-           Share a thread with a guest who watches it live in a browser and sends messages you
+-        <T>
+-          Share a thread with a guest who watches it live in a browser and sends messages you
 -          approve. Needs T3 Connect: sign in and link this machine in{" "}
 -          <Link to="/settings/access" className="underline underline-offset-2">
 -            Sharing & access
 -          </Link>
 -          . Turning it off stops every guest link.
-+          approve.{" "}
+-        </T>
++        <>
++          <T>
++            Share a thread with a guest who watches it live in a browser and sends messages you
++            approve.{" "}
++          </T>
 +          {settings.guestLinkBaseUrl !== null ? (
-+            <>Uses this machine's configured guest endpoint: {settings.guestLinkBaseUrl}.</>
++            <T>
++              Uses this machine's configured guest endpoint: <Var>{settings.guestLinkBaseUrl}</Var>.
++            </T>
 +          ) : (
-+            <>
++            <T>
 +              Needs T3 Connect: sign in and link this machine in{" "}
 +              <Link to="/settings/access" className="underline underline-offset-2">
 +                Sharing & access
 +              </Link>
 +              .
-+            </>
++            </T>
 +          )}{" "}
-+          Turning it off stops every guest link.
-         </>
++          <T>Turning it off stops every guest link.</T>
++        </>
        }
        control={
+         <ScopedSwitch
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index 154ad97bae..07a3eebc28 100644
+index b02f8d2f0b..ff2cbb29df 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
-@@ -1270,6 +1270,14 @@ export const SETTINGS_SEARCH_ITEMS = [
-     searchTerms: ["expose backend remote pairing local machine interfaces host restart"],
+@@ -1328,6 +1328,14 @@ export const SETTINGS_SEARCH_ITEMS = [
+     searchTerms: [msg("expose backend remote pairing local machine interfaces host restart")],
      localBackendManagementOnly: true,
    },
 +  {
 +    id: "lan-interface",
-+    title: "LAN interface",
++    title: msg("LAN interface"),
 +    to: "/settings/connections",
 +    targetId: "connections-environment",
 +    searchTerms: ["network interface lan ip address qr code pairing wifi ethernet multi homed"],
@@ -5027,7 +5115,7 @@ index 154ad97bae..07a3eebc28 100644
 +  },
    {
      id: "tailscale-https",
-     title: "Tailscale HTTPS",
+     title: msg("Tailscale HTTPS"),
 diff --git a/apps/web/src/lib/composerInputFocus.test.ts b/apps/web/src/lib/composerInputFocus.test.ts
 new file mode 100644
 index 0000000000..4f58a9d1cc
@@ -5653,10 +5741,10 @@ index ad930680fb..6b2251d50c 100644
      const { client, sockets, sps, events, Decoder, decoders, decodedFrame, drawImage } =
        recoveryFixture("android");
 diff --git a/packages/client-runtime/src/device/stream.ts b/packages/client-runtime/src/device/stream.ts
-index 4e9b976771..d8e8062421 100644
+index c570ee107a..4f15c85492 100644
 --- a/packages/client-runtime/src/device/stream.ts
 +++ b/packages/client-runtime/src/device/stream.ts
-@@ -432,6 +432,7 @@ export function createDeviceStreamClient(
+@@ -436,6 +436,7 @@ export function createDeviceStreamClient(
    let decodedVideoGeneration: number | null = null;
    let iosInputAdmitted = false;
    let iosInputUnavailable = false;
@@ -5664,7 +5752,7 @@ index 4e9b976771..d8e8062421 100644
    let timestamp = 0;
    let awaitingKeyframe = true;
    let screen: DeviceScreenSize | null = null;
-@@ -687,10 +688,16 @@ export function createDeviceStreamClient(
+@@ -693,10 +694,16 @@ export function createDeviceStreamClient(
      }
    };
  
@@ -5685,7 +5773,7 @@ index 4e9b976771..d8e8062421 100644
    };
  
    const scheduleRetry = (channel: "video" | "input", run: () => void) => {
-@@ -1197,6 +1204,12 @@ export function createDeviceStreamClient(
+@@ -1228,6 +1235,12 @@ export function createDeviceStreamClient(
    /** `inputOnly` keeps a socket for input beside a WebRTC feed, so its reconnects leave video alone. */
    const connectAndroid = (inputOnly = false) => {
      if (stopped) return;
@@ -5698,7 +5786,7 @@ index 4e9b976771..d8e8062421 100644
      const ws = new WebSocket(
        wsUrl(`/ws?device=${device}&${inputOnly ? "video=0" : "frame-meta=1"}`),
      );
-@@ -1210,13 +1223,16 @@ export function createDeviceStreamClient(
+@@ -1241,13 +1254,16 @@ export function createDeviceStreamClient(
      ws.onmessage = (event) => {
        if (stopped || socket !== ws || inputOnly) return;
        if (typeof event.data === "string") {
@@ -5718,7 +5806,7 @@ index 4e9b976771..d8e8062421 100644
          }
          return;
        }
-@@ -1237,7 +1253,11 @@ export function createDeviceStreamClient(
+@@ -1268,7 +1284,11 @@ export function createDeviceStreamClient(
              if (!isCurrent() || epoch !== decoderEpoch) return;
              configuring = false;
              awaitingKeyframe = true;
@@ -5731,7 +5819,7 @@ index 4e9b976771..d8e8062421 100644
            },
          );
          return;
-@@ -1401,9 +1421,20 @@ export function createDeviceStreamClient(
+@@ -1436,9 +1456,20 @@ export function createDeviceStreamClient(
        }
        if (phase !== "down") return;
        if (event.key === "Escape") return send(JSON.stringify({ type: "back" }));
@@ -5877,7 +5965,7 @@ index 9dc56d7a6a..b539d29299 100644
    it("distinguishes unmigrated lists from deliberately cleared lists", () => {
      expect(decodeServerSettings({})).toMatchObject({
 diff --git a/packages/contracts/src/settings.ts b/packages/contracts/src/settings.ts
-index 36b1b538d4..cbc48769ee 100644
+index 678f58294c..11505604ac 100644
 --- a/packages/contracts/src/settings.ts
 +++ b/packages/contracts/src/settings.ts
 @@ -64,6 +64,29 @@ import {
@@ -5950,10 +6038,10 @@ index 14537ed69c..6457c50057 100644
    };
  }
 diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
-index 70431202c4..dc180cd6ac 100644
+index f1772ae841..58b9e6b3c5 100644
 --- a/pnpm-lock.yaml
 +++ b/pnpm-lock.yaml
-@@ -610,6 +610,9 @@ importers:
+@@ -618,6 +618,9 @@ importers:
        '@t3tools/mobile-terminal-native':
          specifier: file:./modules/t3-terminal
          version: file:apps/mobile/modules/t3-terminal

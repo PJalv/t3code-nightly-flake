@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     t3code-source = {
-      url = "github:pingdotgg/t3code/cd9c39fe3c25ad71657cc0b8631b6de76775261e";
+      url = "github:pingdotgg/t3code/ce884e3a9d11ec46a31aa6ee7c5838dac76f3d02";
       flake = false;
     };
   };
@@ -50,7 +50,7 @@
           capture = pattern: lib.findFirst (m: m != null) null (map (builtins.match pattern) lines);
           linux64Index = lib.lists.findFirstIndex (line: builtins.match " *linux64: \\{" line != null) null lines;
           linux64 = if linux64Index == null then [ ] else lib.sublist (linux64Index + 1) 3 lines;
-          version = capture ''const VERSION = "([0-9.]+)";'';
+          version = capture ''.*const VERSION = "([0-9.]+)";'';
           sha256 = lib.findFirst (m: m != null) null (map (builtins.match "[ ]*sha256: \"([0-9a-f]{64})\",") linux64);
         in
         assert lib.assertMsg (version != null && sha256 != null)
