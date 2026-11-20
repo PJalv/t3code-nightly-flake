@@ -1,5 +1,7 @@
-name: Update latest nightly
+name: Check for newer nightly
 
+# Upgrades need the personal patch rebased onto the new source, which this
+# job cannot do, so it only reports whether a newer nightly exists.
 on:
   schedule:
     - cron: "17 18 * * *"
@@ -11,26 +13,24 @@ on:
         required: true
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
-  update:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: cachix/install-nix-action@v31
-      - name: Select delayed nightly
+      - name: Check for a newer nightly
         env:
           T3CODE_DELAY_HOURS: ${{ inputs.delay_hours || '0' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./scripts/update.sh
-      - run: nix flake check --print-build-logs
-      - uses: peter-evans/create-pull-request@v8
-        with:
-          branch: automation/update-delayed-nightly
-          delete-branch: true
-          commit-message: "t3code: update latest nightly"
-          title: "t3code: update latest nightly"
-          body: |
-            Automated update to the newest T3 Code nightly matching the configured minimum age.
+        run: |
+          status=0
+          output="$(./scripts/update.sh --check)" || status=$?
+          echo "$output"
+          case "$status" in
+            0) ;;
+            10) echo "::notice title=Newer T3 Code nightly::$output" ;;
+            *) exit "$status" ;;
+          esac
+          echo "$output" >> "$GITHUB_STEP_SUMMARY"

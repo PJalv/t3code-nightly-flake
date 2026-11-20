@@ -93,9 +93,10 @@ Optionally require a stabilization delay:
 ./scripts/update.sh --delay-hours 72
 ```
 
-The daily GitHub Actions workflow opens an update PR. It also refreshes the
-pinned `nixpkgs`, even when the selected T3 Code nightly has not changed. The
-delay can be overridden when running the workflow manually.
+The daily GitHub Actions workflow runs `./scripts/update.sh --check` and posts
+a notice when a newer nightly exists; it does not change the pin, because the
+personal patch has to be rebased first. The delay can be overridden when
+running the workflow manually.
 
 Do not use T3 Code's npm update action for the Nix-store binary; update the
 flake input instead.
