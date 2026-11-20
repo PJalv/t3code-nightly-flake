@@ -1,5 +1,4 @@
-{ lib
-, stdenvNoCC
+{ stdenvNoCC
 , stdenv
 , cacert
 , fetchPnpmDeps
@@ -8,7 +7,6 @@
 , libsecret
 , nodejs_24
 , pkg-config
-, patch
 , spdxLicenseData
 , pnpm_11
 , pnpmConfigHook
@@ -62,7 +60,7 @@ stdenvNoCC.mkDerivation {
     # Change this only when the lockfile or a vendored tgz changed, and only
     # to a `got:` value CI reproduces: a fetch that drops packages (seen once
     # on a nearly full /) still succeeds and reports a smaller, wrong hash.
-    hash = "sha256-f42TpWOEz809YJ3zAYfly5MyItmBWonBE0xjNksea0c=";
+    hash = "sha256-QmAO/GC8f3jqijqROhaHcG1aboZ9uFlffpv/iDdyKd8=";
   }).overrideAttrs (old: {
     # The unpacked pnpm store, the virtual store, pnpm's download cache
     # (HOME) and the installed node_modules are all dead after the fixup
@@ -88,7 +86,6 @@ stdenvNoCC.mkDerivation {
 
   nativeBuildInputs = [
     cacert
-    patch
     git
     glib
     libsecret
@@ -121,8 +118,6 @@ stdenvNoCC.mkDerivation {
         fs.writeFileSync(file, JSON.stringify(packageJson, null, 2) + "\n");
       ' "$packageJson" "${version}"
     done
-    echo '${(lib.importJSON ./source.json).personalPatchSha256}  ${./patches/personal-qol.patch}' | sha256sum -c -
-    patch -p1 < ${./patches/personal-qol.patch}
     mkdir -p .generated/third-party-licenses/spdx
     ln -s ${spdxLicenseData}/json/details .generated/third-party-licenses/spdx/v3.28.0
   '';

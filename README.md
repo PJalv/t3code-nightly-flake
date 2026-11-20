@@ -3,12 +3,15 @@
 The latest T3 Code nightly runtime for Nix, with the Android tooling its Device
 panel needs. Agent CLIs such as Pi and Codex are not bundled.
 
-The web, server, and desktop JavaScript bundles are built from the pinned
-[`pingdotgg/t3code`](https://github.com/pingdotgg/t3code) source revision, then
-apply the personal QoL patch recorded in `source.json`. The patch is based on
-the exact upstream revision pinned by this flake, so it builds without publishing
-the personal source branch. The upstream AppImage supplies Electron and its
-prebuilt native modules.
+The web, server, and desktop JavaScript bundles are built from the commit of
+[`PJalv/t3code`](https://github.com/PJalv/t3code)'s `personal/nightly` branch
+pinned in `flake.nix`. That branch is one upstream
+[`pingdotgg/t3code`](https://github.com/pingdotgg/t3code) nightly plus personal
+commits (one per feature) and the Gerrit pull request provider. `source.json`
+records which nightly it is based on (`version`, `upstreamRevision`) and that
+nightly's release assets: the upstream AppImage supplies Electron and its
+prebuilt native modules, and the Linux CLI archive the server's native
+dependencies.
 
 The default policy selects the newest available upstream nightly. An optional
 minimum release age can still be supplied to the updater when desired.
@@ -82,10 +85,13 @@ Update to the newest available nightly:
 ./scripts/update.sh
 ```
 
-This checkout carries a personal patch. Before upgrading, rebase it on the new
-upstream source and refresh the source revision, patch hash, and pnpm dependency
-hash together. `./scripts/update.sh --check` only reports the update and does
-not change files.
+`./scripts/update.sh --check` compares the newest nightly with the fork
+branch's base and only reports. To upgrade, rebase `personal/nightly` onto the
+new nightly and push it (with `--force-with-lease`, after tagging the old tip
+`backup/...`), then move the `t3code-source` URL in `flake.nix` and
+`flake.lock`, the release facts in `source.json`, and the pnpm dependency hash
+together. Without `--check`, the script refreshes the pinned nixpkgs when the
+base is current and refuses otherwise.
 
 Optionally require a stabilization delay:
 
@@ -95,8 +101,8 @@ Optionally require a stabilization delay:
 
 The daily GitHub Actions workflow runs `./scripts/update.sh --check` and posts
 a notice when a newer nightly exists; it does not change the pin, because the
-personal patch has to be rebased first. The delay can be overridden when
-running the workflow manually.
+fork branch has to be rebased first. The delay can be overridden when running
+the workflow manually.
 
 Do not use T3 Code's npm update action for the Nix-store binary; update the
 flake input instead.

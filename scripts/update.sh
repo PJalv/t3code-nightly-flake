@@ -9,8 +9,11 @@ usage() {
   cat <<'EOF'
 Usage: scripts/update.sh [--delay-hours HOURS] [--check]
 
-Selects the newest T3 Code nightly. Use --delay-hours HOURS to require a
-minimum release age. Updates source.json and refreshes the pinned nixpkgs.
+Compares the newest T3 Code nightly with the nightly that PJalv/t3code
+personal/nightly is based on (source.json). Use --delay-hours HOURS to require
+a minimum release age. When the base is current, refreshes the pinned nixpkgs;
+with --check it only reports. A newer nightly needs the fork branch rebased
+first, so this script never moves the pin itself.
 EOF
 }
 
@@ -73,8 +76,7 @@ jq --argjson cutoff "$cutoff" '
         version: ($release.tag_name | sub("^v"; "")),
         tag: $release.tag_name,
         publishedAt: $release.published_at,
-        url: .browser_download_url,
-        serverUrl: $server.browser_download_url
+        revision: $release.target_commitish
       }
   )
 ' "$releases" > "$candidate"
@@ -85,36 +87,23 @@ if [ "$(jq -r 'type' "$candidate")" != "object" ]; then
 fi
 
 new_version="$(jq -r '.version' "$candidate")"
-old_version="$(jq -r '.version' "$root/source.json")"
+new_revision="$(jq -r '.revision' "$candidate")"
+base_version="$(jq -r '.version' "$root/source.json")"
+# An age delay can select a nightly older than the fork base; only a newer one is an update.
+newer="$(jq -r --slurpfile base "$root/source.json" \
+  '(.publishedAt | fromdateiso8601) > ($base[0].publishedAt | fromdateiso8601)' "$candidate")"
 
-# The AppImage, source revision, dependency hash, and QoL patch must move together.
-if [ "$new_version" != "$old_version" ] && ! $check_only && [ -s "$root/patches/personal-qol.patch" ]; then
-  echo "personal QoL build is pinned to ${old_version}; rebase the patch and update the source pin and dependency hash before upgrading to ${new_version}" >&2
-  exit 1
-fi
-
-if [ "$new_version" = "$old_version" ]; then
-  echo "T3 Code already current: ${new_version} (${delay_hours}-hour delay)"
+if [ "$newer" != true ]; then
+  echo "T3 Code already current: fork base ${base_version} (${delay_hours}-hour delay)"
   if $check_only; then
     exit 0
   fi
+elif $check_only; then
+  echo "update available: fork base ${base_version} -> ${new_version} (${new_revision})"
+  exit 10
 else
-  if $check_only; then
-    echo "update available: ${old_version} -> ${new_version}"
-    exit 10
-  fi
-
-  url="$(jq -r '.url' "$candidate")"
-  hash="$(nix store prefetch-file --json "$url" | jq -r '.hash')"
-  server_url="$(jq -r '.serverUrl' "$candidate")"
-  server_hash="$(nix store prefetch-file --json "$server_url" | jq -r '.hash')"
-  jq \
-    --arg hash "$hash" \
-    --arg serverHash "$server_hash" \
-    '. + { hash: $hash, serverHash: $serverHash }' \
-    "$candidate" > "$root/source.json.new"
-  mv "$root/source.json.new" "$root/source.json"
-  echo "updated T3 Code: ${old_version} -> ${new_version}"
+  echo "fork base is ${base_version}; rebase PJalv/t3code personal/nightly onto ${new_version} (${new_revision}), then move the flake input, source.json and the pnpm deps hash together" >&2
+  exit 1
 fi
 
 (

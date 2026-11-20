@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     t3code-source = {
-      url = "github:pingdotgg/t3code/59651c1761f6c63e9b6056839067066968e6a406";
+      url = "github:PJalv/t3code/d30f3878d78e4d0d665b7183120b67059ffc6171";
       flake = false;
     };
   };
@@ -171,6 +171,9 @@
           grep -q 'T3_DISABLE_CHECKPOINTS' ${t3code}/bin/.t3code-wrapped
           grep -q 'preferredLanInterfaceName' ${sourceAssets}/apps/desktop/dist-electron/main.cjs
           grep -R -q 'Show diff' ${sourceAssets}/apps/server/dist/client/assets
+          grep -a -R -q 'upload_gerrit' ${sourceAssets}/apps/server/dist
+          # A marker that exists nowhere proves these greps can fail.
+          ! grep -a -R -q 'T3CODE_SENTINEL_MUST_BE_ABSENT_ZZZ' ${sourceAssets}/apps
           touch "$out"
         '';
         server-help = pkgs.runCommand "t3code-server-help" { } ''
