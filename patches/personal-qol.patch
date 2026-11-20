@@ -707,7 +707,7 @@ index fe65edd0ee..bb5dc67dfb 100644
    yield* ipc.handle(getAdvertisedEndpoints);
  
 diff --git a/apps/desktop/src/ipc/channels.ts b/apps/desktop/src/ipc/channels.ts
-index bb708a6ab7..a72181296c 100644
+index 4a99d52b0e..e067e731d6 100644
 --- a/apps/desktop/src/ipc/channels.ts
 +++ b/apps/desktop/src/ipc/channels.ts
 @@ -74,6 +74,7 @@ export const SSH_PASSWORD_PROMPT_CHANNEL = "desktop:ssh-password-prompt";
@@ -743,7 +743,7 @@ index 9a9ce76897..b69c1e76ca 100644
    channel: IpcChannels.SET_TAILSCALE_SERVE_ENABLED_CHANNEL,
    payload: SetTailscaleServeEnabledInput,
 diff --git a/apps/desktop/src/preload.ts b/apps/desktop/src/preload.ts
-index b413656a15..f9319d45da 100644
+index 280c5ad6c6..c1fc2862b0 100644
 --- a/apps/desktop/src/preload.ts
 +++ b/apps/desktop/src/preload.ts
 @@ -232,6 +232,8 @@ contextBridge.exposeInMainWorld("desktopBridge", {
@@ -1628,7 +1628,7 @@ index 0000000000..4b062e0d92
 +  );
 +}
 diff --git a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
-index 2c995bd8ea..1e66ffb1dd 100644
+index bea319f087..289a15648f 100644
 --- a/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 +++ b/apps/mobile/src/features/agent-awareness/remoteRegistration.ts
 @@ -3,6 +3,7 @@ import {
@@ -1639,7 +1639,7 @@ index 2c995bd8ea..1e66ffb1dd 100644
  import Constants from "expo-constants";
  import * as Notifications from "expo-notifications";
  import * as Clock from "effect/Clock";
-@@ -217,6 +218,7 @@ export function setAgentAwarenessRelayTokenProvider(
+@@ -219,6 +220,7 @@ export function setAgentAwarenessRelayTokenProvider(
    relayTokenProviderIdentity = provider ? (identity ?? null) : null;
    if (!provider) {
      clearAndroidAgentNotifications();
@@ -1925,7 +1925,7 @@ index 7413bca5dc..337f0f56f3 100644
    window.addEventListener("pagehide", stop, { once: true });
    post({ type: "input", connected: false });
 diff --git a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
-index b7524355f2..8fca7af22c 100644
+index 6bc53854d2..cca394381d 100644
 --- a/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 +++ b/apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx
 @@ -1,5 +1,5 @@
@@ -1935,8 +1935,8 @@ index b7524355f2..8fca7af22c 100644
  import * as Dialog from "../../components/ui/Dialog";
  import { managedCapabilityDenial } from "@t3tools/client-runtime/contract-labels";
  import {
-@@ -18,12 +18,13 @@ import { useNavigation } from "@react-navigation/native";
- import * as Effect from "effect/Effect";
+@@ -20,12 +20,13 @@ import * as Effect from "effect/Effect";
+ import * as Exit from "effect/Exit";
  import * as Schema from "effect/Schema";
  import { AsyncResult } from "effect/reactivity";
 -import { useRef, useState, useSyncExternalStore } from "react";
@@ -1950,7 +1950,7 @@ index b7524355f2..8fca7af22c 100644
  import {
    createEnvironmentCommand,
    isAtomCommandInterrupted,
-@@ -41,6 +42,12 @@ import {
+@@ -43,6 +44,12 @@ import {
    LiveActivityEnvironmentUpdateError,
    setLiveActivityUpdatesEnabled,
  } from "../agent-awareness/liveActivityPreferences";
@@ -1963,7 +1963,7 @@ index b7524355f2..8fca7af22c 100644
  import { requestAgentNotificationPermission } from "../agent-awareness/notificationPermissions";
  import {
    agentAwarenessNotificationsReady,
-@@ -157,9 +164,10 @@ function liveActivityStatusFrom(
+@@ -162,9 +169,10 @@ function liveActivityStatusFrom(
    isLoaded: boolean,
    isSignedIn: boolean | undefined,
    preferencesResult: AsyncResult.AsyncResult<{ readonly liveActivitiesEnabled?: boolean }, unknown>,
@@ -1975,7 +1975,7 @@ index b7524355f2..8fca7af22c 100644
    if (AsyncResult.isFailure(preferencesResult)) return "enabled";
    if (!AsyncResult.isSuccess(preferencesResult)) return "checking";
    return preferencesResult.value.liveActivitiesEnabled === false ? "disabled" : "enabled";
-@@ -182,9 +190,136 @@ function useNotificationsReady(): boolean {
+@@ -187,9 +195,136 @@ function useNotificationsReady(): boolean {
    );
  }
  
@@ -2112,7 +2112,7 @@ index b7524355f2..8fca7af22c 100644
      return (
        <SettingsScreen title={gt("Notifications")}>
          <ScrollView
-@@ -219,6 +354,30 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -223,6 +358,30 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    const { savedConnectionsById } = useSavedRemoteConnections();
    const notificationStatus = useAtomValue(notificationStatusAtom);
    const setNotificationStatus = useAtomSet(notificationStatusAtom);
@@ -2143,7 +2143,7 @@ index b7524355f2..8fca7af22c 100644
    // A write in progress or a failed one shows its own status until the auth or
    // preference state it was based on changes.
    const [liveActivityOverride, setLiveActivityOverride] = useState<{
-@@ -232,7 +391,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -236,7 +395,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
      liveActivityOverride.basis.isSignedIn === isSignedIn &&
      liveActivityOverride.basis.preferencesResult === preferencesResult
        ? liveActivityOverride.status
@@ -2152,7 +2152,7 @@ index b7524355f2..8fca7af22c 100644
    const setLiveActivityStatus = (status: LiveActivityStatus) =>
      setLiveActivityOverride({ status, basis: liveActivityBasis });
    const liveActivityWriteInFlight = useRef(false);
-@@ -444,6 +603,37 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -448,6 +607,37 @@ function ConfiguredSettingsNotificationsRouteScreen() {
  
    const handleDeviceNotificationsChange = (enabled: boolean) => {
      if (enabled) {
@@ -2190,7 +2190,7 @@ index b7524355f2..8fca7af22c 100644
        if (!isSignedIn) {
          promptSignIn();
          return;
-@@ -452,6 +642,17 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -456,6 +646,17 @@ function ConfiguredSettingsNotificationsRouteScreen() {
        return;
      }
  
@@ -2208,7 +2208,7 @@ index b7524355f2..8fca7af22c 100644
      Dialog.alert(
        gt("Disable notifications"),
        gt("Open system Settings to disable notifications for {product}.", { product: "T3 Code" }),
-@@ -529,6 +730,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -533,6 +734,27 @@ function ConfiguredSettingsNotificationsRouteScreen() {
    // Both writers settle their own failures, so awaiting them never throws.
    const handleLiveActivitiesChange = async (enabled: boolean) => {
      if (liveActivityWriteInFlight.current) return;
@@ -2236,7 +2236,7 @@ index b7524355f2..8fca7af22c 100644
      if (!enabled) {
        liveActivityWriteInFlight.current = true;
        setLiveActivityStatus("linking");
-@@ -570,7 +792,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -574,7 +796,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
              }
              subtitle={agentAwarenessSubtitle}
              value={
@@ -2247,7 +2247,7 @@ index b7524355f2..8fca7af22c 100644
              }
              onValueChange={handleDeviceNotificationsChange}
            />
-@@ -594,7 +818,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -598,7 +822,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
              value={
                agentAwarenessPushAvailable &&
                (liveActivityStatus === "enabled" || liveActivityStatus === "linking") &&
@@ -2256,7 +2256,7 @@ index b7524355f2..8fca7af22c 100644
              }
              onValueChange={(enabled) => void handleLiveActivitiesChange(enabled)}
            />
-@@ -605,6 +829,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
+@@ -609,6 +833,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
                onPress={() => void handleLiveActivitiesChange(false)}
              />
            ) : null}
@@ -3184,7 +3184,7 @@ index b5b21a7af2..b23e800415 100644
              schedule: Schedule.spaced(ACCESS_RECHECK_INTERVAL),
              until: ([host, enabled]) => host !== share.host || !enabled,
 diff --git a/apps/server/src/orchestration-v2/CheckpointService.test.ts b/apps/server/src/orchestration-v2/CheckpointService.test.ts
-index 62fa68c4c5..0f1da9ea63 100644
+index fec015b5a1..94fc317446 100644
 --- a/apps/server/src/orchestration-v2/CheckpointService.test.ts
 +++ b/apps/server/src/orchestration-v2/CheckpointService.test.ts
 @@ -1,5 +1,8 @@
@@ -3197,7 +3197,7 @@ index 62fa68c4c5..0f1da9ea63 100644
  import {
    CheckpointScopeId,
    NodeId,
-@@ -23,6 +26,125 @@ import * as CheckpointStore from "../checkpointing/CheckpointStore.ts";
+@@ -24,6 +27,125 @@ import * as CheckpointStore from "../checkpointing/CheckpointStore.ts";
  import * as CheckpointService from "./CheckpointService.ts";
  import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
  
@@ -3324,19 +3324,19 @@ index 62fa68c4c5..0f1da9ea63 100644
    "skips unsupported baseline and turn checkpoints without swallowing capture failures",
    () =>
 diff --git a/apps/server/src/orchestration-v2/CheckpointService.ts b/apps/server/src/orchestration-v2/CheckpointService.ts
-index 3e0fbe95e8..f3c6a910e5 100644
+index fb6490834c..5e902bb1a6 100644
 --- a/apps/server/src/orchestration-v2/CheckpointService.ts
 +++ b/apps/server/src/orchestration-v2/CheckpointService.ts
-@@ -250,25 +250,33 @@ export const layer: Layer.Layer<
-     const withWorkspaceLock = <A, E, R>(cwd: string, effect: Effect.Effect<A, E, R>) =>
-       workspaceLocks.withLock(cwd, effect);
- 
+@@ -273,26 +273,33 @@ export const layer: Layer.Layer<
+         );
+       },
+     );
 +    // Keep run completion and provider-native diffs working without writing workspace snapshots.
 +    const isGitCheckpointable = (cwd: string) =>
 +      process.env.T3_DISABLE_CHECKPOINTS === "1"
 +        ? Effect.succeed(false)
 +        : checkpointStore.isGitRepository(cwd);
-+
+ 
      // A failed probe is an operational error, not proof that the workspace has no repository.
      const probeRepository = (scope: OrchestrationV2CheckpointScope) =>
 -      checkpointStore.isGitRepository(scope.cwd).pipe(
@@ -3519,10 +3519,10 @@ index 0000000000..779e136cca
 +  );
 +});
 diff --git a/apps/server/src/serverSettings.test.ts b/apps/server/src/serverSettings.test.ts
-index 10d0b3fe6c..3b234814a5 100644
+index f837fd8ca9..d61bd01cf0 100644
 --- a/apps/server/src/serverSettings.test.ts
 +++ b/apps/server/src/serverSettings.test.ts
-@@ -138,6 +138,33 @@ function strictSecretReferencePaths(
+@@ -139,6 +139,33 @@ function strictSecretReferencePaths(
  }
  
  it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("server settings", (it) => {
@@ -3556,7 +3556,7 @@ index 10d0b3fe6c..3b234814a5 100644
    it.effect("serializes concurrent model preference edits without cancelling duplicate adds", () =>
      Effect.gen(function* () {
        const service = yield* ServerSettingsModule.ServerSettingsService;
-@@ -220,6 +247,45 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("server settings"
+@@ -221,6 +248,45 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("server settings"
        }),
      ).pipe(Effect.provide(layerServerSettings())),
    );
@@ -3603,7 +3603,7 @@ index 10d0b3fe6c..3b234814a5 100644
      Effect.gen(function* () {
        const config = yield* ServerConfig.ServerConfig;
 diff --git a/apps/server/src/serverSettings.ts b/apps/server/src/serverSettings.ts
-index e720fea508..373bce68ce 100644
+index 66f0595aab..b367ef7706 100644
 --- a/apps/server/src/serverSettings.ts
 +++ b/apps/server/src/serverSettings.ts
 @@ -87,8 +87,45 @@ const textDecoder = new TextDecoder();
@@ -3655,10 +3655,10 @@ index e720fea508..373bce68ce 100644
      if (
        config === null ||
 diff --git a/apps/web/src/components/ChatMarkdown.tsx b/apps/web/src/components/ChatMarkdown.tsx
-index 8d7fa648ef..794339ff60 100644
+index f6062475ac..b51f4ee51b 100644
 --- a/apps/web/src/components/ChatMarkdown.tsx
 +++ b/apps/web/src/components/ChatMarkdown.tsx
-@@ -180,11 +180,16 @@ import { useAtomCommand } from "../state/use-atom-command";
+@@ -183,10 +183,15 @@ import { useAtomCommand } from "../state/use-atom-command";
  import { useAtomQueryRunner } from "../state/use-atom-query-runner";
  import { projectEnvironment } from "../state/projects";
  import { filesystemEnvironment } from "../state/filesystem";
@@ -3667,7 +3667,6 @@ index 8d7fa648ef..794339ff60 100644
 +  collectWorkspaceBasenameCandidates,
 +} from "../workspaceBasenameResolution";
  import {
-   claimWorkspaceBasenameLookup,
    findAgentDirectoryMatch,
    needsWorkspaceBasenameLookup,
    pickProjectLinkMatch,
@@ -3675,7 +3674,7 @@ index 8d7fa648ef..794339ff60 100644
    pickWorkspaceLinkMatch,
    WORKSPACE_BASENAME_LOOKUP_LIMIT,
    workspaceLinkLookupQuery,
-@@ -587,6 +592,14 @@ function useChatMarkdownState({
+@@ -589,6 +594,14 @@ function useChatMarkdownState({
    const searchProjectEntries = useAtomQueryRunner(projectEnvironment.searchEntries, {
      reportFailure: false,
    });
@@ -3690,7 +3689,7 @@ index 8d7fa648ef..794339ff60 100644
    const getFilesystemMetadata = useAtomQueryRunner(filesystemEnvironment.getMetadata, {
      reportFailure: false,
      refresh: true,
-@@ -891,6 +904,80 @@ function useChatMarkdownState({
+@@ -893,6 +906,80 @@ function useChatMarkdownState({
      }
      return findAgentDirectoryMatch(workspaceRelativePath, agentRoots, searchRoot);
    };
@@ -3770,8 +3769,8 @@ index 8d7fa648ef..794339ff60 100644
 +
    const openFileInPanel = (fileLinkMeta: MarkdownFileLinkMeta, panelPath: string) => {
      if (!threadRef) return;
-     // Every open supersedes pending lookups, including synchronous opens.
-@@ -912,10 +999,11 @@ function useChatMarkdownState({
+     const openAt = (path: string) =>
+@@ -920,10 +1007,11 @@ function useChatMarkdownState({
      })();
    };
    const fileLinkChip = (
@@ -3784,7 +3783,7 @@ index 8d7fa648ef..794339ff60 100644
      const resolveHostPath = () =>
        resolveMarkdownFileHostPath({
          meta: fileLinkMeta,
-@@ -1048,6 +1136,7 @@ function useChatMarkdownState({
+@@ -1056,6 +1144,7 @@ function useChatMarkdownState({
      skills,
      threadRef,
      updateThreadPullRequestLink,
@@ -3792,7 +3791,7 @@ index 8d7fa648ef..794339ff60 100644
    };
    return {
      componentState,
-@@ -1090,6 +1179,9 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
+@@ -1098,6 +1187,9 @@ function markdownHeadingRenderer(level: 1 | 2 | 3 | 4 | 5 | 6) {
    };
  }
  
@@ -3802,7 +3801,7 @@ index 8d7fa648ef..794339ff60 100644
  const CHAT_MARKDOWN_COMPONENTS = {
    h1: markdownHeadingRenderer(1),
    h2: markdownHeadingRenderer(2),
-@@ -1569,6 +1661,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1577,6 +1669,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
        renderContextReference,
        fileLinkChip,
        resolvedTheme,
@@ -3810,7 +3809,7 @@ index 8d7fa648ef..794339ff60 100644
      } = use(ChatMarkdownRendererContext);
      const imageExpand = use(MarkdownLinkContext) ? undefined : expandMedia;
      const contextReference = typeof src === "string" ? parseComposerContextHref(src) : null;
-@@ -1596,7 +1689,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
+@@ -1597,7 +1690,11 @@ const CHAT_MARKDOWN_COMPONENTS = {
      const copyMarkdown = markdownImageCopy(altText, srcString, authoredTitle);
      const { className, style: _style, width, height, ...imageProps } = props;
      const authoredSizeStyle = authoredImageSizeStyle(width, height);
@@ -3824,10 +3823,10 @@ index 8d7fa648ef..794339ff60 100644
      if (mediaKind === "audio") {
        const filePath = imageSource._tag === "WorkspaceFile" ? imageSource.path : null;
 diff --git a/apps/web/src/components/ChatView.logic.test.ts b/apps/web/src/components/ChatView.logic.test.ts
-index dbbb445a5e..7f1793dcd2 100644
+index 298a7c9b44..6d8cc0d632 100644
 --- a/apps/web/src/components/ChatView.logic.test.ts
 +++ b/apps/web/src/components/ChatView.logic.test.ts
-@@ -53,13 +53,15 @@ import { AsyncResult, Atom } from "effect/reactivity";
+@@ -54,13 +54,15 @@ import { AsyncResult, Atom } from "effect/reactivity";
  import { appAtomRegistry } from "../rpc/atomRegistry";
  import { environmentThreadDetails } from "../state/threads";
  
@@ -3844,7 +3843,7 @@ index dbbb445a5e..7f1793dcd2 100644
    resolveWorktreeSetupProgress,
    peekRememberedThreadTimeline,
    rememberReadyThreadTimeline,
-@@ -72,6 +74,7 @@ import {
+@@ -73,6 +75,7 @@ import {
    deriveLockedProvider,
    hasCompactableConversation,
    hasServerAcknowledgedLocalDispatch,
@@ -3852,7 +3851,7 @@ index dbbb445a5e..7f1793dcd2 100644
    waitForRevertedMessage,
  } from "./ChatView.logic";
  
-@@ -791,6 +794,172 @@ describe("resolveComposerProviderSelection", () => {
+@@ -792,6 +795,172 @@ describe("resolveComposerProviderSelection", () => {
    });
  });
  
@@ -4916,10 +4915,10 @@ index 4600902027..99d38e754d 100644
          }}
          onKeyUp={(event) => {
 diff --git a/apps/web/src/components/settings/ConnectionsSettings.tsx b/apps/web/src/components/settings/ConnectionsSettings.tsx
-index a6cf6a03b3..5ec1b8deb1 100644
+index 8f4d8778bc..0fc99e865f 100644
 --- a/apps/web/src/components/settings/ConnectionsSettings.tsx
 +++ b/apps/web/src/components/settings/ConnectionsSettings.tsx
-@@ -365,6 +365,7 @@ function ConnectionsSettingsContent({
+@@ -367,6 +367,7 @@ function ConnectionsSettingsContent({
    const [removingSavedEnvironmentId, setRemovingSavedEnvironmentId] =
      useState<EnvironmentId | null>(null);
    const [isUpdatingDesktopServerExposure, setIsUpdatingDesktopServerExposure] = useState(false);
@@ -4927,7 +4926,7 @@ index a6cf6a03b3..5ec1b8deb1 100644
    const [isUpdatingTailscaleServe, setIsUpdatingTailscaleServe] = useState(false);
    const [isUpdatingWslBackend, setIsUpdatingWslBackend] = useState(false);
    const [desktopWslMutationError, setDesktopWslMutationError] = useState<string | null>(null);
-@@ -834,6 +835,41 @@ function ConnectionsSettingsContent({
+@@ -836,6 +837,41 @@ function ConnectionsSettingsContent({
    const handleSetDefaultAdvertisedEndpoint = (endpoint: AdvertisedEndpoint) => {
      setDefaultAdvertisedEndpointKey(endpointDefaultPreferenceKey(endpoint));
    };
@@ -4969,7 +4968,7 @@ index a6cf6a03b3..5ec1b8deb1 100644
  
    const renderNetworkAccessToggle = () => (
      <Switch
-@@ -1211,6 +1247,69 @@ function ConnectionsSettingsContent({
+@@ -1213,6 +1249,69 @@ function ConnectionsSettingsContent({
        managed={isLocalBackendNetworkAccessible ? undefined : remoteClientsDenial}
      />
    );
@@ -5039,7 +5038,7 @@ index a6cf6a03b3..5ec1b8deb1 100644
    const renderDisabledNetworkAccessRow = () => (
      <SettingsRow
        title={searchableSetting("network-access").title}
-@@ -1355,6 +1454,7 @@ function ConnectionsSettingsContent({
+@@ -1363,6 +1462,7 @@ function ConnectionsSettingsContent({
              {canManageLocalBackend && desktopBridge ? (
                <>
                  {renderNetworkAccessRow()}
@@ -5107,7 +5106,7 @@ index 2934359769..88141785d7 100644
        control={
          <ScopedSwitch
 diff --git a/apps/web/src/components/settings/settingsSearch.ts b/apps/web/src/components/settings/settingsSearch.ts
-index b02f8d2f0b..ff2cbb29df 100644
+index 51ac4d7e19..3644d7c207 100644
 --- a/apps/web/src/components/settings/settingsSearch.ts
 +++ b/apps/web/src/components/settings/settingsSearch.ts
 @@ -1328,6 +1328,14 @@ export const SETTINGS_SEARCH_ITEMS = [
@@ -5876,7 +5875,7 @@ index 715a837dae..1d95161535 100644
    read_failed: "Failed to read the shared thread.",
    changed: "The guest link changed while it was being created.",
 diff --git a/packages/contracts/src/ipc.ts b/packages/contracts/src/ipc.ts
-index a9dbc8b81d..11b70e35ad 100644
+index 77a523c036..cb51176483 100644
 --- a/packages/contracts/src/ipc.ts
 +++ b/packages/contracts/src/ipc.ts
 @@ -510,6 +510,7 @@ export interface DesktopServerExposureState {
@@ -5895,7 +5894,7 @@ index a9dbc8b81d..11b70e35ad 100644
    tailscaleServeEnabled: Schema.Boolean,
    tailscaleServePort: Schema.Number,
  });
-@@ -1143,6 +1145,7 @@ export interface DesktopBridge {
+@@ -1159,6 +1161,7 @@ export interface DesktopBridge {
    resolveSshPasswordPrompt: (requestId: string, password: string | null) => Promise<void>;
    getServerExposureState: () => Promise<DesktopServerExposureState>;
    setServerExposureMode: (mode: DesktopServerExposureMode) => Promise<DesktopServerExposureState>;
@@ -5975,7 +5974,7 @@ index 9dc56d7a6a..b539d29299 100644
    it("distinguishes unmigrated lists from deliberately cleared lists", () => {
      expect(decodeServerSettings({})).toMatchObject({
 diff --git a/packages/contracts/src/settings.ts b/packages/contracts/src/settings.ts
-index 678f58294c..11505604ac 100644
+index 378b8af0e4..43d58e504f 100644
 --- a/packages/contracts/src/settings.ts
 +++ b/packages/contracts/src/settings.ts
 @@ -64,6 +64,29 @@ import {
@@ -6008,7 +6007,7 @@ index 678f58294c..11505604ac 100644
  export const TimestampFormat = Schema.Literals(["locale", "12-hour", "24-hour"]);
  export type TimestampFormat = typeof TimestampFormat.Type;
  const DEFAULT_TIMESTAMP_FORMAT: TimestampFormat = "locale";
-@@ -1477,6 +1500,9 @@ export const ServerSettings = Schema.Struct({
+@@ -1479,6 +1502,9 @@ export const ServerSettings = Schema.Struct({
    hideTaggedThreads: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
    /** Beta: guest links for this machine's threads. Off refuses new links and pauses existing ones. */
    guestSharingEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
@@ -6018,7 +6017,7 @@ index 678f58294c..11505604ac 100644
    /**
     * Beta: links to the user's other machines, both ways. Off refuses new links, calls over links
     * and tasks on another machine; tasks already running there finish.
-@@ -1916,6 +1942,7 @@ export const ServerSettingsPatch = Schema.Struct({
+@@ -1919,6 +1945,7 @@ export const ServerSettingsPatch = Schema.Struct({
    hiddenThreadTags: Schema.optionalKey(Schema.Array(Schema.String)),
    hideTaggedThreads: Schema.optionalKey(Schema.Boolean),
    guestSharingEnabled: Schema.optionalKey(Schema.Boolean),
@@ -6048,7 +6047,7 @@ index 14537ed69c..6457c50057 100644
    };
  }
 diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
-index 7dd5d6b6b8..3bbfde7bdb 100644
+index 08a6a21359..10cda43d82 100644
 --- a/pnpm-lock.yaml
 +++ b/pnpm-lock.yaml
 @@ -618,6 +618,9 @@ importers:
