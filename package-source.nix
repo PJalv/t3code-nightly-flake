@@ -59,8 +59,9 @@ stdenvNoCC.mkDerivation {
     fetcherVersion = 4;
     # Unfiltered: filtered fetches skip packages the sandboxed install
     # resolves (observed with the Sep 13 lockfile and @effect/platform-bun).
-    # Only take a new value from a clean CI fetch's `got:` line: a local fetch
-    # of the same drv has produced a different, non-reproducible hash.
+    # Change this only when the lockfile or a vendored tgz changed, and only
+    # to a `got:` value CI reproduces: a fetch that drops packages (seen once
+    # on a nearly full /) still succeeds and reports a smaller, wrong hash.
     hash = "sha256-f42TpWOEz809YJ3zAYfly5MyItmBWonBE0xjNksea0c=";
   }).overrideAttrs (old: {
     # The unpacked pnpm store, the virtual store, pnpm's download cache
