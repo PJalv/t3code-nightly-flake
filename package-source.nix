@@ -59,11 +59,9 @@ stdenvNoCC.mkDerivation {
     fetcherVersion = 4;
     # Unfiltered: filtered fetches skip packages the sandboxed install
     # resolves (observed with the Sep 13 lockfile and @effect/platform-bun).
-    # The 20261109.4399 lockfile added the `pele` catalog dependency, bumped
-    # the vendored react-native-enriched-markdown tgz (t3.16 -> t3.18, patch
-    # dropped) and changed the pnpmfile checksum — proven by a real fetch
-    # with a placeholder hash reporting this value as `got:`.
-    hash = "sha256-dNzl9cjCIE2OzVjJTy+3cxYVlv9LaLx5gGNQKSVk/94=";
+    # Only take a new value from a clean CI fetch's `got:` line: a local fetch
+    # of the same drv has produced a different, non-reproducible hash.
+    hash = "sha256-f42TpWOEz809YJ3zAYfly5MyItmBWonBE0xjNksea0c=";
   }).overrideAttrs (old: {
     # The unpacked pnpm store, the virtual store, pnpm's download cache
     # (HOME) and the installed node_modules are all dead after the fixup
