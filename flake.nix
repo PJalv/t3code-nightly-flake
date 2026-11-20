@@ -79,6 +79,10 @@
         abiVersions = [ "x86_64" ];
         includeSources = false;
         includeNDK = false;
+        # T3 uses platform-tools, emulator and cmdline-tools/latest only. The
+        # legacy `tools` package (with its own JDK 8) and CMake are dead weight.
+        toolsVersion = null;
+        includeCmake = false;
       };
       androidSdkBase = androidComposition.androidsdk;
       androidPlatformTools = androidComposition.platform-tools;
