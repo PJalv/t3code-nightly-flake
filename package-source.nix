@@ -60,7 +60,7 @@ stdenvNoCC.mkDerivation {
     # Change this only when the lockfile or a vendored tgz changed, and only
     # to a `got:` value CI reproduces: a fetch that drops packages (seen once
     # on a nearly full /) still succeeds and reports a smaller, wrong hash.
-    hash = "sha256-QmAO/GC8f3jqijqROhaHcG1aboZ9uFlffpv/iDdyKd8=";
+    hash = "sha256-TGWMMTTvpk5lzLJYDuS+FgUYQm4fTSkjJv+0u3xPBW4=";
   }).overrideAttrs (old: {
     # The unpacked pnpm store, the virtual store, pnpm's download cache
     # (HOME) and the installed node_modules are all dead after the fixup

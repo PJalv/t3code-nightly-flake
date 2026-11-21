@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     t3code-source = {
-      url = "github:PJalv/t3code/b540dc5b71835c883fe87c791b3547826b981c13";
+      url = "github:PJalv/t3code/1fc9f0ecc553feb98b232fa8bfc74042e813b840";
       flake = false;
     };
   };
