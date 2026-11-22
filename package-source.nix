@@ -28,8 +28,9 @@ let
     cp ${src}/.pnpmfile.cjs $out/.pnpmfile.cjs
     cp -r ${src}/patches $out/patches
     # local (file:) dependencies referenced by the lockfile
-    mkdir -p $out/apps/mobile/deps $out/apps/mobile/modules $out/deps
+    mkdir -p $out/apps/mobile/deps $out/apps/mobile/modules $out/apps/web/deps $out/deps
     cp ${src}/apps/mobile/deps/*.tgz $out/apps/mobile/deps/ 2>/dev/null || true
+    cp ${src}/apps/web/deps/*.tgz $out/apps/web/deps/ 2>/dev/null || true
     for m in t3-highlights t3-review-diff t3-source-text t3-terminal; do
       cp -r ${src}/apps/mobile/modules/$m $out/apps/mobile/modules/$m
     done
@@ -60,7 +61,7 @@ stdenvNoCC.mkDerivation {
     # Change this only when the lockfile or a vendored tgz changed, and only
     # to a `got:` value CI reproduces: a fetch that drops packages (seen once
     # on a nearly full /) still succeeds and reports a smaller, wrong hash.
-    hash = "sha256-QmAO/GC8f3jqijqROhaHcG1aboZ9uFlffpv/iDdyKd8=";
+    hash = "sha256-KZdMGNRlrHGQF0imE8vzSwU9NmQz0cZL8rb67tdC1wk=";
   }).overrideAttrs (old: {
     # The unpacked pnpm store, the virtual store, pnpm's download cache
     # (HOME) and the installed node_modules are all dead after the fixup
