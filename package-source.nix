@@ -50,6 +50,8 @@ stdenvNoCC.mkDerivation {
   pname = "t3code-source-assets";
   inherit src version;
 
+  patches = [ ./patches/gerrit-migration-history.patch ];
+
   pnpmDeps = (fetchPnpmDeps {
     pname = "t3code-source-assets";
     src = pnpmFetchSrc;
@@ -129,6 +131,7 @@ stdenvNoCC.mkDerivation {
     # Filtered pnpm installs expose Effect under the server workspace, while
     # the server release script imports it from a repository-root helper.
     ln -s ../apps/server/node_modules/effect node_modules/effect
+    (cd apps/server && pnpm exec vp test run src/persistence/Migrations.test.ts)
     pnpm exec vp run build:desktop
 
     runHook postBuild
