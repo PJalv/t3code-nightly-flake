@@ -167,8 +167,10 @@
           grep -a -R -q 'Pi started agent work outside an active T3 turn' ${sourceAssets}/apps/server/dist
           grep -a -R -q 'delegate_task' ${sourceAssets}/apps/server/dist
           grep -a -R -q 'T3_DISABLE_CHECKPOINTS' ${sourceAssets}/apps/server/dist
+          grep -a -R -q 'T3_PREVIEW_FORCE_HEADLESS' ${sourceAssets}/apps/server/dist
           grep -q 'T3_DISABLE_CHECKPOINTS' ${server}/bin/t3code-server
           grep -q 'T3_DISABLE_CHECKPOINTS' ${t3code}/bin/.t3code-wrapped
+          grep -q 'T3_PREVIEW_FORCE_HEADLESS' ${t3code}/bin/.t3code-wrapped
           grep -q 'preferredLanInterfaceName' ${sourceAssets}/apps/desktop/dist-electron/main.cjs
           grep -R -q 'Show diff' ${sourceAssets}/apps/server/dist/client/assets
           grep -a -R -q 'upload_gerrit' ${sourceAssets}/apps/server/dist

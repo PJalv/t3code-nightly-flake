@@ -50,7 +50,10 @@ stdenvNoCC.mkDerivation {
   pname = "t3code-source-assets";
   inherit src version;
 
-  patches = [ ./patches/gerrit-migration-history.patch ];
+  patches = [
+    ./patches/gerrit-migration-history.patch
+    ./patches/preview-force-headless.patch
+  ];
 
   pnpmDeps = (fetchPnpmDeps {
     pname = "t3code-source-assets";

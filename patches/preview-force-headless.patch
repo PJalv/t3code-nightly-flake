@@ -1,0 +1,15 @@
+--- a/apps/server/src/preview/DesktopBrowserChannel.ts
++++ b/apps/server/src/preview/DesktopBrowserChannel.ts
+@@ -74,7 +74,11 @@ const make = Effect.gen(function* () {
+   const inbound = new Map<string, Queue.Queue<string>>();
+   const writeLock = yield* Semaphore.make(1);
+ 
+-  if (inputFd === undefined || controlFd === undefined) {
++  if (
++    process.env.T3_PREVIEW_FORCE_HEADLESS === "1" ||
++    inputFd === undefined ||
++    controlFd === undefined
++  ) {
+     return DesktopBrowserChannel.of({
+       available: false,
+       awaitAttached: Effect.fn("DesktopBrowserChannel.awaitAttached")(function () {
