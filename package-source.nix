@@ -50,10 +50,9 @@ stdenvNoCC.mkDerivation {
   pname = "t3code-source-assets";
   inherit src version;
 
-  patches = [
-    ./patches/gerrit-migration-history.patch
-    ./patches/preview-force-headless.patch
-  ];
+  # gerrit-migration-history.patch retired: the 20261125 fork branch carries
+  # the reconcile fix in its own source; preview-force-headless stays.
+  patches = [ ./patches/preview-force-headless.patch ];
 
   pnpmDeps = (fetchPnpmDeps {
     pname = "t3code-source-assets";
@@ -66,7 +65,7 @@ stdenvNoCC.mkDerivation {
     # Change this only when the lockfile or a vendored tgz changed, and only
     # to a `got:` value CI reproduces: a fetch that drops packages (seen once
     # on a nearly full /) still succeeds and reports a smaller, wrong hash.
-    hash = "sha256-KZdMGNRlrHGQF0imE8vzSwU9NmQz0cZL8rb67tdC1wk=";
+    hash = "sha256-BxP11tanD/0tKhxuGx2mV9eg1GtcN7JWU+SfpeX3itc=";
   }).overrideAttrs (old: {
     # The unpacked pnpm store, the virtual store, pnpm's download cache
     # (HOME) and the installed node_modules are all dead after the fixup
