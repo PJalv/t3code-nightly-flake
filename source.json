@@ -1,10 +1,10 @@
 {
-  "version": "0.1.12-nightly.20261125.5230",
-  "tag": "v0.1.12-nightly.20261125.5230",
-  "publishedAt": "2026-11-25T06:59:09Z",
-  "upstreamRevision": "ca81b7b97a1c4b91e5ac25768d0f6629f37732fd",
-  "url": "https://github.com/pingdotgg/t3code/releases/download/v0.1.12-nightly.20261125.5230/T3-Code-Nightly-x86_64.AppImage",
-  "hash": "sha256-ShPPbtm6lRb/GVORVNHdhPFj4s4METEwVLL1hzmPnmY=",
-  "serverUrl": "https://github.com/pingdotgg/t3code/releases/download/v0.1.12-nightly.20261125.5230/t3-0.1.12-nightly.20261125.5230-linux-x64.tar.gz",
-  "serverHash": "sha256-pnlbT3ADkSbddfMx0lfKsGHe6agJdiOxijCdHTJX/yc="
+  "version": "0.1.13-nightly.20261125.5258",
+  "tag": "v0.1.13-nightly.20261125.5258",
+  "publishedAt": "2026-11-25T19:49:34Z",
+  "upstreamRevision": "bf961f8121c6336915ecf7b3f97ce6e68ab38fd7",
+  "url": "https://github.com/pingdotgg/t3code/releases/download/v0.1.13-nightly.20261125.5258/T3-Code-Nightly-x86_64.AppImage",
+  "hash": "sha256-ScVxQGUbI29gHovDNYqmXPjbRE9nCzjhnm/KNuCnvKA=",
+  "serverUrl": "https://github.com/pingdotgg/t3code/releases/download/v0.1.13-nightly.20261125.5258/t3-0.1.13-nightly.20261125.5258-linux-x64.tar.gz",
+  "serverHash": "sha256-tZrV1qUs3NZ2SCJ3BQNwhMb9Pn/vFD1ptz1vqN+HIXQ="
 }
